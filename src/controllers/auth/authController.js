@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
+const crypto = require('crypto');
 const User = require('../../models/User');
 const { ApiError } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
@@ -232,6 +233,149 @@ exports.getCurrentUser = async (req, res, next) => {
       data: {
         user
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Forgot password - Send password reset token
+ * @route POST /api/v1/auth/forgotPassword
+ * @access Public
+ */
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    const { email } = req.body;
+    
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next(new ApiError('There is no user with that email address', 404));
+    }
+    
+    // Generate random reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    
+    // Hash token before saving to database
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+      
+    // Save to database with expiry time (10 minutes)
+    user.passwordResetToken = hashedToken;
+    user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+    await user.save({ validateBeforeSave: false });
+    
+    // TODO: Send email with reset token (implement email service)
+    // For now, returning token in response (only for development)
+    
+    logger.info(`Password reset token generated for user: ${user.email}`);
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'Token sent to email',
+      // Remove in production:
+      resetToken
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Reset password using token
+ * @route PATCH /api/v1/auth/resetPassword/:token
+ * @access Public
+ */
+exports.resetPassword = async (req, res, next) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    const { token } = req.params;
+    const { password } = req.body;
+    
+    // Hash the provided token
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+      
+    // Find user with this token that hasn't expired
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return next(new ApiError('Token is invalid or has expired', 400));
+    }
+    
+    // Update password and clear reset fields
+    user.password = password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    
+    // Generate new JWT token
+    const newToken = generateToken(user._id);
+    
+    res.status(200).json({
+      status: 'success',
+      token: newToken,
+      message: 'Password has been reset successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update current user password
+ * @route PATCH /api/v1/auth/updatePassword
+ * @access Private
+ */
+exports.updatePassword = async (req, res, next) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    const { currentPassword, newPassword } = req.body;
+    
+    // Get current user with password
+    const user = await User.findById(req.user._id).select('+password');
+    
+    // Check if current password is correct
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return next(new ApiError('Current password is incorrect', 401));
+    }
+    
+    // Update password
+    user.password = newPassword;
+    await user.save();
+    
+    // Generate new token
+    const token = generateToken(user._id);
+    
+    res.status(200).json({
+      status: 'success',
+      token,
+      message: 'Password updated successfully'
     });
   } catch (error) {
     next(error);

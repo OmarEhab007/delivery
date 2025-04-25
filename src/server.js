@@ -12,6 +12,10 @@ const logger = require('./utils/logger');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const truckRoutes = require('./routes/truckRoutes');
+const shipmentRoutes = require('./routes/shipmentRoutes');
+const applicationRoutes = require('./routes/applicationRoutes');
 // Add other route imports as they are developed
 
 // Initialize Express app
@@ -31,6 +35,10 @@ app.use(morgan('dev'));
 
 // API Routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/trucks', truckRoutes);
+app.use('/api/v1/shipments', shipmentRoutes);
+app.use('/api/v1/applications', applicationRoutes);
 // Add other routes as they are developed
 
 // Socket.io setup for real-time tracking

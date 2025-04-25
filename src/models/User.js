@@ -33,6 +33,9 @@ const userSchema = new mongoose.Schema(
       enum: ['Merchant', 'TruckOwner', 'Driver'],
       required: [true, 'Please specify user role']
     },
+    // Password reset fields
+    passwordResetToken: String,
+    passwordResetExpires: Date,
     // Merchant-specific fields
     // None for basic implementation
     

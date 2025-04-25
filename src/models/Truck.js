@@ -7,6 +7,11 @@ const truckSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Truck must belong to a truck owner']
     },
+    driverId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+      // Not required as it may be assigned later
+    },
     plateNumber: {
       type: String,
       required: [true, 'Plate number is required'],
@@ -56,6 +61,7 @@ const truckSchema = new mongoose.Schema(
 // Indexes
 truckSchema.index({ ownerId: 1 });
 truckSchema.index({ plateNumber: 1 });
+truckSchema.index({ driverId: 1 });
 
 // Virtual for current shipment (if assigned)
 truckSchema.virtual('currentShipment', {
@@ -64,6 +70,15 @@ truckSchema.virtual('currentShipment', {
   foreignField: 'assignedTruckId',
   justOne: true,
   match: { status: { $in: ['CONFIRMED', 'IN_TRANSIT', 'AT_BORDER'] } }
+});
+
+// Populate driver info when querying
+truckSchema.pre(/^find/, function(next) {
+  this.populate({
+    path: 'driverId',
+    select: 'name email phone licenseNumber'
+  });
+  next();
 });
 
 const Truck = mongoose.model('Truck', truckSchema);

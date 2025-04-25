@@ -62,4 +62,37 @@ router.post(
 // Get current user
 router.get('/me', protect, authController.getCurrentUser);
 
+// Forgot Password
+router.post(
+  '/forgotPassword',
+  [
+    body('email').isEmail().withMessage('Please provide a valid email')
+  ],
+  authController.forgotPassword
+);
+
+// Reset Password
+router.patch(
+  '/resetPassword/:token',
+  [
+    body('password')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters')
+  ],
+  authController.resetPassword
+);
+
+// Update Password (for logged in users)
+router.patch(
+  '/updatePassword',
+  protect,
+  [
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters')
+  ],
+  authController.updatePassword
+);
+
 module.exports = router;
