@@ -13,11 +13,10 @@ services:
       - NODE_ENV=development
       - PORT=3000
       - MONGODB_URI=mongodb://mongodb:27017/delivery-app
-      - JWT_SECRET=your_development_secret
+      - JWT_SECRET=secretsecret
       - JWT_EXPIRES_IN=24h
     volumes:
       - ./:/app
-      - /app/node_modules
     command: npm run dev
     restart: unless-stopped
 

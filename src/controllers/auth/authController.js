@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const User = require('../../models/User');
 const { ApiError } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
+const asyncHandler = require('express-async-handler');
+const { ApiSuccess } = require('../../middleware/apiSuccess');
 
 /**
  * Generate JWT token
@@ -12,7 +14,7 @@ const logger = require('../../utils/logger');
  */
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN
+    expiresIn: '30d' // Use a valid expiration time (30 days)
   });
 };
 
@@ -381,3 +383,51 @@ exports.updatePassword = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Register a new admin user
+ * @route POST /api/auth/register/admin
+ * @access Private (Admin only)
+ */
+const registerAdmin = asyncHandler(async (req, res, next) => {
+  const { name, email, password, phone, adminPermissions } = req.body;
+  
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return next(new ApiError('User with this email already exists', 400));
+  }
+  
+  // Create a new admin user
+  const admin = await User.create({
+    name,
+    email,
+    password,
+    phone,
+    role: 'Admin',
+    adminPermissions: adminPermissions || ['FULL_ACCESS']
+  });
+  
+  // Generate JWT token
+  const token = generateToken(admin._id);
+  
+  // Return success response with token
+  return ApiSuccess(
+    res,
+    {
+      message: 'Admin registered successfully',
+      user: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        adminPermissions: admin.adminPermissions
+      },
+      token
+    },
+    201
+  );
+});
+
+// Export all controller functions
+exports.registerAdmin = registerAdmin;

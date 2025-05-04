@@ -14,6 +14,18 @@ const registerValidation = [
   body('phone').notEmpty().withMessage('Phone number is required')
 ];
 
+// Admin registration (by Admin only)
+router.post(
+  '/register/admin',
+  protect,
+  restrictTo('Admin'),
+  [
+    ...registerValidation,
+    body('role').equals('Admin').withMessage('Role must be Admin')
+  ],
+  authController.registerAdmin
+);
+
 // Merchant registration
 router.post(
   '/register/merchant',

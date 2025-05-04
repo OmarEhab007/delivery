@@ -30,8 +30,16 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['Merchant', 'TruckOwner', 'Driver'],
+      enum: ['Admin', 'Merchant', 'TruckOwner', 'Driver'],
       required: [true, 'Please specify user role']
+    },
+    // Admin-specific fields
+    adminPermissions: {
+      type: [String],
+      enum: ['FULL_ACCESS', 'USER_MANAGEMENT', 'SHIPMENT_MANAGEMENT', 'TRUCK_MANAGEMENT', 'APPLICATION_MANAGEMENT'],
+      default: function() {
+        return this.role === 'Admin' ? ['FULL_ACCESS'] : [];
+      }
     },
     // Password reset fields
     passwordResetToken: String,

@@ -4,7 +4,8 @@ This is a backend application that connects Merchants with Truck Owners (and the
 
 ## Features
 
-- User management with role-based access (Merchant, Truck Owner, Driver)
+- User management with role-based access (Admin, Merchant, Truck Owner, Driver)
+- Automatic admin user creation on first run
 - Shipment creation and management
 - Fleet management (trucks and drivers)
 - Application/bid system for shipments
@@ -53,7 +54,7 @@ delivery-app/
 ### Installation
 
 1. Clone the repository
-2. Copy `.env.example` to `.env` and update the values
+2. Copy `env.sample` to `.env` and update the values
 3. Install dependencies:
    ```
    npm install
@@ -62,6 +63,8 @@ delivery-app/
    ```
    npm run dev
    ```
+   
+   **Note**: On first run, an admin user will be automatically created if one doesn't exist. See [Admin Initialization](docs/ADMIN_INITIALIZATION.md) for details.
 
 ### Using Docker
 

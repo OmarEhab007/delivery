@@ -13,7 +13,7 @@ This guide provides steps to quickly set up and start working on the Delivery Ap
 
 2. **Set up environment variables**
    ```bash
-   cp .env.example .env
+   cp env.sample .env
    ```
    Edit `.env` file and set appropriate values for your environment.
 
@@ -25,6 +25,8 @@ This guide provides steps to quickly set up and start working on the Delivery Ap
    npm run dev
    ```
    The server will start on port 3000 (or the port specified in your `.env` file).
+   
+   **Note**: During the first run, the system will automatically create an admin user if no admin exists in the database. See [Admin Initialization](docs/ADMIN_INITIALIZATION.md) for details.
 
 ### Option 2: Using Docker
 
@@ -153,7 +155,12 @@ The API follows RESTful principles with the following structure:
    - Verify token expiration time
    - Ensure you're using the correct token format in requests
 
-3. **Docker Issues**
+3. **Admin Access Issues**
+   - If you can't log in as admin, check `logs/app.log` for admin creation status
+   - Verify admin credentials match those in your `.env` file
+   - If needed, manually create an admin using `node src/scripts/createAdminUser.js`
+
+4. **Docker Issues**
    - Ensure Docker and Docker Compose are installed
    - Check if ports are available (not in use by other services)
    - Verify Docker service is running
