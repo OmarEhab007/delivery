@@ -75,6 +75,122 @@ const userSchema = new mongoose.Schema(
         return this.role === 'Driver';
       }
     },
+    driverLicense: {
+      documentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Document'
+      },
+      issueDate: Date,
+      expiryDate: Date,
+      issuedBy: String,
+      verified: {
+        type: Boolean,
+        default: false
+      },
+      verificationDate: Date
+    },
+    // Driver status fields
+    isAvailable: {
+      type: Boolean,
+      default: function() {
+        return this.role === 'Driver' ? true : undefined;
+      }
+    },
+    driverStatus: {
+      type: String,
+      enum: ['ACTIVE', 'OFF_DUTY', 'ON_BREAK', 'INACTIVE'],
+      default: function() {
+        return this.role === 'Driver' ? 'INACTIVE' : undefined;
+      }
+    },
+    statusHistory: [{
+      status: {
+        type: String,
+        enum: ['ACTIVE', 'OFF_DUTY', 'ON_BREAK', 'INACTIVE']
+      },
+      reason: String,
+      timestamp: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    currentLocation: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
+      },
+      coordinates: {
+        type: [Number],
+        default: [0, 0]
+      }
+    },
+    driverLogs: [{
+      timestamp: {
+        type: Date,
+        default: Date.now
+      },
+      type: {
+        type: String,
+        enum: ['CHECK_IN', 'CHECK_OUT', 'BREAK_START', 'BREAK_END', 'STATUS_CHANGE']
+      },
+      location: {
+        type: {
+          type: String,
+          enum: ['Point'],
+          default: 'Point'
+        },
+        coordinates: {
+          type: [Number],
+          default: [0, 0]
+        }
+      },
+      truckId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Truck'
+      },
+      truckCondition: String,
+      fuelLevel: Number,
+      totalMiles: Number,
+      notes: String
+    }],
+    
+    // Document management fields
+    documents: [
+      {
+        documentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Document'
+        },
+        name: String,
+        documentType: String,
+        required: {
+          type: Boolean,
+          default: false
+        },
+        verified: {
+          type: Boolean,
+          default: false
+        },
+        uploadDate: Date
+      }
+    ],
+    requiredDocuments: [
+      {
+        name: String,
+        documentType: String,
+        description: String,
+        isProvided: {
+          type: Boolean,
+          default: false
+        }
+      }
+    ],
+    verificationStatus: {
+      type: String,
+      enum: ['UNVERIFIED', 'PENDING', 'VERIFIED', 'REJECTED'],
+      default: 'UNVERIFIED'
+    },
     
     // Common fields
     active: {
@@ -106,6 +222,58 @@ userSchema.virtual('drivers', {
   match: { role: 'Driver' }
 });
 
+// Virtual for all related documents
+userSchema.virtual('allDocuments', {
+  ref: 'Document',
+  localField: '_id',
+  foreignField: 'entityId',
+  justOne: false,
+  match: { entityType: 'User', isActive: true }
+});
+
+// Helper method to add a document to user
+userSchema.methods.addDocument = function(document) {
+  // Check if document already exists
+  const exists = this.documents.some(doc => 
+    doc.documentId && doc.documentId.toString() === document._id.toString()
+  );
+  
+  if (!exists) {
+    this.documents.push({
+      documentId: document._id,
+      name: document.name,
+      documentType: document.documentType,
+      uploadDate: new Date()
+    });
+    
+    // Mark required document as provided if it matches
+    if (this.requiredDocuments && this.requiredDocuments.length > 0) {
+      this.requiredDocuments.forEach(reqDoc => {
+        if (reqDoc.documentType === document.documentType && !reqDoc.isProvided) {
+          reqDoc.isProvided = true;
+        }
+      });
+    }
+    
+    // Update specific document fields based on type
+    if (document.documentType === 'DRIVER_LICENSE' && this.role === 'Driver') {
+      this.driverLicense = {
+        ...this.driverLicense,
+        documentId: document._id
+      };
+      
+      // Update driver verification status if not already verified
+      if (this.verificationStatus === 'UNVERIFIED') {
+        this.verificationStatus = 'PENDING';
+      }
+    }
+    
+    return this.save();
+  }
+  
+  return this;
+};
+
 // Pre-save hook to hash password
 userSchema.pre('save', async function(next) {
   // Only hash the password if it's modified (or new)
@@ -121,6 +289,9 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// Create a 2dsphere index on the location field for geospatial queries
+userSchema.index({ currentLocation: '2dsphere' });
 
 const User = mongoose.model('User', userSchema);
 

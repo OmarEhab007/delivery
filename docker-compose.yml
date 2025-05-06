@@ -1,32 +1,39 @@
-version: '3.8'
-
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     ports:
       - "3000:3000"
     depends_on:
       - mongodb
     environment:
-      - NODE_ENV=development
-      - PORT=3000
+      - NODE_ENV=production
       - MONGODB_URI=mongodb://mongodb:27017/delivery-app
-      - JWT_SECRET=secretsecret
-      - JWT_EXPIRES_IN=24h
-    volumes:
-      - ./:/app
-    command: npm run dev
-    restart: unless-stopped
+      - PORT=3000
+      # Set to false for standalone MongoDB, true for replica set
+      - USE_MONGODB_TRANSACTIONS=false
+    restart: always
+    networks:
+      - app-network
 
   mongodb:
-    image: mongo:6.0
+    image: mongo:latest
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-    restart: unless-stopped
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    # For enabling transactions, uncomment these lines to run as a replica set
+    # command: mongod --replSet rs0 --bind_ip_all
+    # healthcheck:
+    #   test: test $$(echo "rs.status().ok || rs.initiate().ok" | mongo --quiet) -eq 1
+    #   interval: 10s
+    #   start_period: 30s
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   mongodb_data:

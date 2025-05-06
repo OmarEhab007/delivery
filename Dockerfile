@@ -7,8 +7,8 @@ COPY package*.json ./
 # Clean install of dependencies
 RUN npm ci
 
-# Explicitly install express-async-handler to ensure it's available
-# RUN npm install express-async-handler
+# Explicitly install required packages to ensure they're available
+# RUN npm install express-async-handler express-validatorn
 
 COPY . .
 

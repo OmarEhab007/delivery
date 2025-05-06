@@ -34,6 +34,14 @@ The tests are organized by module:
    - Application approval workflow
    - Application search and filtering
 
+5. **End-to-End Tests** (`end-to-end.test.js`)
+   - Complete user journey from registration to shipment completion
+   - Tests multiple parallel shipments and workflows
+   - Covers real-world scenarios including delays and status transitions
+   - Validates complex business logic across different user roles
+   - Tests parallel processing of multiple shipments
+   - More information in [END_TO_END_TESTS.md](./END_TO_END_TESTS.md)
+
 ## Test Utilities
 
 The `utils/testUtils.js` file contains helper functions for creating test data:
@@ -43,10 +51,14 @@ The `utils/testUtils.js` file contains helper functions for creating test data:
 
 ## Running Tests
 
-You can run tests using the provided bash script:
+You can run tests using the provided bash scripts:
 
 ```bash
+# Run all tests
 ./run-tests.sh
+
+# Run only end-to-end tests
+./run-e2e-tests.sh
 ```
 
 Or run specific test files:
@@ -56,6 +68,7 @@ npm test -- auth.test.js
 npm test -- fleet.test.js
 npm test -- shipment.test.js
 npm test -- application.test.js
+npm test -- end-to-end.test.js
 ```
 
 Or run all tests:
@@ -72,6 +85,19 @@ The test suite covers the following aspects of each module:
 - Authorization and access control
 - Business logic and workflows
 - Error handling
+- End-to-end user journeys and critical paths
+
+### End-to-End Test Coverage Highlights
+
+Our comprehensive end-to-end tests provide exceptional coverage:
+
+1. **Multi-User Workflows**: Tests interactions between multiple merchants, truck owners, and drivers
+2. **Parallel Processing**: Tests handling of multiple shipments in different states simultaneously
+3. **Error Handling**: Tests recovery from delayed shipments and error scenarios
+4. **Complete Lifecycle**: Tracks shipments from creation through assignment, pickup, transit, delivery, and completion
+5. **Complex Business Logic**: Validates that the application's core business rules work correctly in real-world scenarios
+
+For a complete breakdown of the end-to-end test coverage, see [END_TO_END_TESTS.md](./END_TO_END_TESTS.md).
 
 ## Test Limitations and Challenges
 
@@ -87,6 +113,8 @@ There are a few limitations and challenges with the current test suite:
 
 5. **MongoDB Connection**: Tests use an in-memory MongoDB server to avoid affecting production data. This requires proper setup and teardown.
 
+6. **End-to-End Test Dependencies**: The end-to-end tests run sequentially and depend on the success of previous steps. If an early step fails, subsequent tests will also fail.
+
 ## Using Tests as Documentation
 
 Even if tests cannot be directly executed due to environment or configuration issues, the test files serve as valuable documentation for the API:
@@ -95,6 +123,7 @@ Even if tests cannot be directly executed due to environment or configuration is
 2. They explain the data structures and relationships
 3. They demonstrate the business logic and workflows
 4. They show validation and authorization requirements
+5. The end-to-end tests document complete user journeys
 
 ## Adding New Tests
 
@@ -103,4 +132,5 @@ When adding new features, please follow these guidelines:
 2. Structure tests with descriptive `describe` and `it` blocks
 3. Test both success and failure scenarios
 4. Test authorization and permissions
-5. Ensure tests are isolated and do not depend on other tests 
+5. Ensure tests are isolated and do not depend on other tests
+6. For complex workflows, consider adding them to the end-to-end tests 

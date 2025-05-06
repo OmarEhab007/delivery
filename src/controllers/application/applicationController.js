@@ -6,6 +6,7 @@ const Truck = require('../../models/Truck');
 const User = require('../../models/User');
 const { ApiError } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
+const db = require('../../utils/db');
 
 /**
  * Create a new application/bid for a shipment
@@ -359,49 +360,119 @@ exports.acceptApplication = async (req, res, next) => {
       return next(new ApiError(`Cannot accept application for shipment with status: ${shipment.status}`, 400));
     }
     
-    // Start a transaction
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    // Check if transactions are supported
+    const transactionsSupported = await db.supportsTransactions();
     
-    try {
-      // Accept the application
-      application.status = ApplicationStatus.ACCEPTED;
-      await application.save({ session });
-      
-      // Reject all other applications for this shipment
-      await Application.rejectOthers(shipment._id, application._id);
-      
-      // Update the shipment
-      shipment.status = ShipmentStatus.CONFIRMED;
-      shipment.selectedApplicationId = application._id;
-      shipment.assignedTruckId = application.truckId;
-      shipment.assignedDriverId = application.driverId;
-      
-      // Add timeline entry
-      await shipment.addTimelineEntry({
-        status: ShipmentStatus.CONFIRMED,
-        note: 'Application accepted and shipment confirmed'
-      });
-      
-      // Commit the transaction
-      await session.commitTransaction();
-      session.endSession();
-      
-      res.status(200).json({
-        status: 'success',
-        data: {
-          application,
-          shipment
-        }
-      });
-    } catch (error) {
-      // Abort transaction in case of error
-      await session.abortTransaction();
-      session.endSession();
-      throw error;
+    if (transactionsSupported) {
+      // With transactions
+      return await acceptWithTransaction(application, shipment, res, next);
+    } else {
+      // Without transactions (fallback mode)
+      return await acceptWithoutTransaction(application, shipment, res, next);
     }
   } catch (error) {
     next(error);
+  }
+};
+
+/**
+ * Accept application using MongoDB transactions
+ * @private
+ */
+const acceptWithTransaction = async (application, shipment, res, next) => {
+  // Start a transaction
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
+  try {
+    // Accept the application
+    application.status = ApplicationStatus.ACCEPTED;
+    await application.save({ session });
+    
+    // Reject all other applications for this shipment
+    await Application.rejectOthers(shipment._id, application._id);
+    
+    // Update the shipment
+    shipment.status = ShipmentStatus.CONFIRMED;
+    shipment.selectedApplicationId = application._id;
+    shipment.assignedTruckId = application.truckId;
+    shipment.assignedDriverId = application.driverId;
+    
+    // Add timeline entry
+    await shipment.addTimelineEntry({
+      status: ShipmentStatus.CONFIRMED,
+      note: 'Application accepted and shipment confirmed'
+    });
+    
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        application,
+        shipment
+      }
+    });
+  } catch (error) {
+    // Abort transaction in case of error
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
+/**
+ * Accept application without using transactions (fallback mode)
+ * @private
+ */
+const acceptWithoutTransaction = async (application, shipment, res, next) => {
+  try {
+    // Accept the application
+    application.status = ApplicationStatus.ACCEPTED;
+    await application.save();
+    
+    // Reject all other applications for this shipment
+    // Use a non-transaction version
+    await Application.updateMany(
+      { 
+        shipmentId: shipment._id, 
+        _id: { $ne: application._id },
+        status: ApplicationStatus.PENDING 
+      },
+      { 
+        status: ApplicationStatus.REJECTED,
+        rejectionReason: 'Another application was selected'
+      }
+    );
+    
+    // Update the shipment
+    shipment.status = ShipmentStatus.CONFIRMED;
+    shipment.selectedApplicationId = application._id;
+    shipment.assignedTruckId = application.truckId;
+    shipment.assignedDriverId = application.driverId;
+    
+    // Add timeline entry
+    await shipment.addTimelineEntry({
+      status: ShipmentStatus.CONFIRMED,
+      note: 'Application accepted and shipment confirmed'
+    });
+    
+    await shipment.save();
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        application,
+        shipment
+      }
+    });
+  } catch (error) {
+    // If any operation fails, we don't have transaction rollback
+    // Log the error and propagate it up
+    logger.error('Error in non-transaction mode:', error);
+    throw error;
   }
 };
 

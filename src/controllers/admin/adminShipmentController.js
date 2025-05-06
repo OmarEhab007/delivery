@@ -167,10 +167,90 @@ const changeShipmentStatus = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * Assign shipment to driver
+ * @route PATCH /api/admin/shipments/:id/assign
+ * @access Private (Admin only)
+ */
+const assignShipmentToDriver = asyncHandler(async (req, res, next) => {
+  const { driverId, truckId } = req.body;
+  
+  if (!driverId) {
+    return next(new ApiError('Driver ID is required', 400));
+  }
+  
+  // Find the shipment
+  const shipment = await Shipment.findById(req.params.id);
+  
+  if (!shipment) {
+    return next(new ApiError('Shipment not found', 404));
+  }
+  
+  // Check if the shipment is in a status that can be assigned
+  const assignableStatuses = ['REQUESTED', 'CONFIRMED'];
+  if (!assignableStatuses.includes(shipment.status)) {
+    return next(new ApiError(`Cannot assign shipment with status: ${shipment.status}. Shipment must be in REQUESTED or CONFIRMED status.`, 400));
+  }
+  
+  // Find the driver to ensure they exist and are a driver
+  const User = require('../../models/User');
+  const driver = await User.findById(driverId);
+  
+  if (!driver) {
+    return next(new ApiError('Driver not found', 404));
+  }
+  
+  if (driver.role !== 'Driver') {
+    return next(new ApiError('Selected user is not a driver', 400));
+  }
+  
+  // Check if driver is available
+  if (!driver.isAvailable) {
+    return next(new ApiError('Driver is not available for assignment', 400));
+  }
+  
+  // If truck ID is provided, verify it exists
+  if (truckId) {
+    const Truck = require('../../models/Truck');
+    const truck = await Truck.findById(truckId);
+    
+    if (!truck) {
+      return next(new ApiError('Truck not found', 404));
+    }
+    
+    // Check if truck is available
+    if (truck.status !== 'Available') {
+      return next(new ApiError('Truck is not available for assignment', 400));
+    }
+    
+    // Set the assigned truck ID
+    shipment.assignedTruckId = truckId;
+  }
+  
+  // Assign the driver and update the shipment status
+  shipment.assignedDriverId = driverId;
+  shipment.status = 'ASSIGNED';
+  
+  // Add a timeline entry for the assignment
+  await shipment.addTimelineEntry({
+    status: 'ASSIGNED',
+    note: `Shipment assigned to driver by admin`,
+    location: shipment.currentLocation
+  });
+  
+  await shipment.save();
+  
+  return ApiSuccess(res, {
+    message: 'Shipment successfully assigned to driver',
+    shipment
+  });
+});
+
 module.exports = {
   getAllShipments,
   getShipmentById,
   updateShipment,
   deleteShipment,
-  changeShipmentStatus
+  changeShipmentStatus,
+  assignShipmentToDriver
 }; 

@@ -49,6 +49,14 @@ router.patch('/shipments/:id/status',
   adminShipmentController.changeShipmentStatus
 );
 
+// Assign shipment to driver
+router.patch('/shipments/:id/assign',
+  [
+    body('driverId').notEmpty().withMessage('Driver ID is required')
+  ],
+  adminShipmentController.assignShipmentToDriver
+);
+
 // Application management routes
 router.route('/applications')
   .get(adminApplicationController.getAllApplications);

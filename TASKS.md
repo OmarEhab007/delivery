@@ -68,13 +68,14 @@ This document outlines the implementation tasks for the Delivery App project. It
 - [x] Implement bid comparison functionality
 - [x] Create application search and filtering
 
-### 6. Document Management
-- [ ] Set up file upload service with AWS S3
-- [ ] Create document metadata storage
-- [ ] Implement document upload/download endpoints
-- [ ] Add document type validation
-- [ ] Create document verification workflow
-- [ ] Implement document access control
+### 6. Document Management (COMPLETED)
+- [x] Set up on-premises file storage service
+- [x] Create document metadata storage and Document model
+- [x] Implement document upload/download endpoints
+- [x] Add document type validation
+- [x] Create document verification workflow
+- [x] Implement document access control
+- [x] Integrate document linking with entities (Shipment, Application, Truck)
 
 ### 7. Notification System
 - [ ] Set up Twilio integration
@@ -108,22 +109,17 @@ This document outlines the implementation tasks for the Delivery App project. It
 
 ## Next Tasks to Implement
 
-1. Document Management:
-   - Set up file upload service with AWS S3
-   - Create document metadata storage
-   - Implement document upload/download endpoints
-
-2. Notification System:
+1. Notification System:
    - Set up Twilio integration
    - Create notification service
    - Implement event-based notifications
 
-3. Real-time Tracking:
+2. Real-time Tracking:
    - Set up Socket.io
    - Create location update endpoints
    - Implement real-time location broadcasting
 
-4. Deployment and DevOps:
+3. Deployment and DevOps:
    - Optimize Docker configuration for production
    - Create deployment instructions
    - Set up CI/CD pipeline
@@ -138,4 +134,5 @@ This document outlines the implementation tasks for the Delivery App project. It
 - Shipment Management module completed
 - Application/Bid System completed
 - API Testing and Documentation completed
-- Next focus should be on Document Management
+- Document Management module completed with on-premises storage and entity linking
+- Next focus should be on Notification System

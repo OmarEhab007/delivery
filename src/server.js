@@ -10,6 +10,7 @@ const connectDB = require('./config/database');
 const { errorHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 const initializeAdminUser = require('./utils/initAdmin');
+const documentService = require('./services/documentService');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -18,6 +19,9 @@ const truckRoutes = require('./routes/truckRoutes');
 const shipmentRoutes = require('./routes/shipmentRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const driverRoutes = require('./routes/driverRoutes');
+const documentRoutes = require('./routes/documentRoutes');
+const truckOwnerRoutes = require('./routes/truckOwnerRoutes');
 // Add other route imports as they are developed
 
 // Initialize Express app
@@ -30,6 +34,9 @@ if (process.env.NODE_ENV !== 'test') {
   connectDB().then(async () => {
     // Commented out admin initialization for now
     await initializeAdminUser();
+    
+    // Initialize document storage directory
+    await documentService.initializeStorage();
   }).catch(err => {
     logger.error(`Database connection error: ${err.message}`);
   });
@@ -49,6 +56,9 @@ app.use('/api/trucks', truckRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/driver', driverRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/truck-owner', truckOwnerRoutes);
 // Add other routes as they are developed
 
 // Socket.io setup for real-time tracking

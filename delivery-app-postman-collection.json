@@ -29,6 +29,36 @@
       "key": "adminToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "documentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shipmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "truckId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "driverId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -362,8 +392,13 @@
                 "method": "GET",
                 "url": {
                   "raw": "{{baseUrl}}/admin/users?page=1&limit=10&role=Merchant",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["admin", "users"],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "users"
+                  ],
                   "query": [
                     {
                       "key": "page",
@@ -477,8 +512,13 @@
                 "method": "GET",
                 "url": {
                   "raw": "{{baseUrl}}/admin/shipments?page=1&limit=10&status=Pending",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["admin", "shipments"],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "shipments"
+                  ],
                   "query": [
                     {
                       "key": "page",
@@ -604,6 +644,29 @@
                 "description": "Change a shipment's status"
               },
               "response": []
+            },
+            {
+              "name": "Assign Shipment to Driver",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/admin/shipments/{{shipmentId}}/assign",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"driverId\": \"{{driverId}}\",\n    \"truckId\": \"{{truckId}}\"\n}"
+                },
+                "description": "Assign a shipment to a driver with an optional truck"
+              },
+              "response": []
             }
           ]
         },
@@ -616,8 +679,13 @@
                 "method": "GET",
                 "url": {
                   "raw": "{{baseUrl}}/admin/applications?page=1&limit=10&status=Pending",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["admin", "applications"],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "applications"
+                  ],
                   "query": [
                     {
                       "key": "page",
@@ -735,8 +803,13 @@
                 "method": "GET",
                 "url": {
                   "raw": "{{baseUrl}}/admin/trucks?page=1&limit=10&status=Available",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["admin", "trucks"],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "trucks"
+                  ],
                   "query": [
                     {
                       "key": "page",
@@ -1022,8 +1095,13 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/trucks/search?model=Volvo&minCapacity=5000",
-              "host": ["{{baseUrl}}"],
-              "path": ["trucks", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trucks",
+                "search"
+              ],
               "query": [
                 {
                   "key": "model",
@@ -1180,8 +1258,13 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/shipments/search?status=REQUESTED&minWeight=100",
-              "host": ["{{baseUrl}}"],
-              "path": ["shipments", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "shipments",
+                "search"
+              ],
               "query": [
                 {
                   "key": "status",
@@ -1465,6 +1548,703 @@
           "value": ""
         }
       ]
+    },
+    {
+      "name": "Document Management",
+      "item": [
+        {
+          "name": "Upload Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"documentId\", jsonData.data._id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/documents/upload",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": "/path/to/your/document.pdf"
+                },
+                {
+                  "key": "name",
+                  "value": "Shipment Invoice #12345",
+                  "type": "text"
+                },
+                {
+                  "key": "documentType",
+                  "value": "SHIPPING_INVOICE",
+                  "type": "text",
+                  "description": "Valid values: SHIPPING_INVOICE, BILL_OF_LADING, CUSTOMS_DECLARATION, PROOF_OF_DELIVERY, DRIVER_LICENSE, VEHICLE_REGISTRATION, INSURANCE_CERTIFICATE, HAZARDOUS_MATERIALS_CERT, PAYMENT_RECEIPT, OTHER"
+                },
+                {
+                  "key": "entityType",
+                  "value": "Shipment",
+                  "type": "text",
+                  "description": "Valid values: Shipment, Application, Truck, User"
+                },
+                {
+                  "key": "entityId",
+                  "value": "{{shipmentId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Invoice for shipment delivery",
+                  "type": "text"
+                },
+                {
+                  "key": "expiryDate",
+                  "value": "2023-12-31",
+                  "type": "text",
+                  "description": "Optional - ISO date format"
+                },
+                {
+                  "key": "metadata",
+                  "value": "{\"invoiceNumber\":\"INV-12345\",\"amount\":\"1250.00\"}",
+                  "type": "text",
+                  "description": "Optional - JSON string of metadata"
+                }
+              ]
+            },
+            "description": "Upload a new document (all user roles can upload documents related to their entities)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Multiple Documents",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/documents/upload-multiple",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "src": ["/path/to/doc1.pdf", "/path/to/doc2.pdf"],
+                  "description": "Multiple files"
+                },
+                {
+                  "key": "entityType",
+                  "value": "Shipment",
+                  "type": "text"
+                },
+                {
+                  "key": "entityId",
+                  "value": "{{shipmentId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "fileData_doc1.pdf",
+                  "value": "{\"name\":\"Invoice\",\"documentType\":\"SHIPPING_INVOICE\",\"description\":\"Invoice document\"}",
+                  "type": "text",
+                  "description": "Metadata for first file - must match filename exactly"
+                },
+                {
+                  "key": "fileData_doc2.pdf",
+                  "value": "{\"name\":\"Bill of Lading\",\"documentType\":\"BILL_OF_LADING\",\"description\":\"Bill of Lading document\"}",
+                  "type": "text",
+                  "description": "Metadata for second file - must match filename exactly"
+                }
+              ]
+            },
+            "description": "Upload multiple documents in a single request"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/documents/{{documentId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "description": "Get document metadata by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Download Document",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/documents/{{documentId}}/download",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "description": "Download the document file"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Entity Documents",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/documents/entity/Shipment/{{shipmentId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "description": "Get all documents related to a specific entity"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Document",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/documents/{{documentId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Document Name\",\n    \"description\": \"Updated document description\",\n    \"expiryDate\": \"2024-12-31\"\n}"
+            },
+            "description": "Update document metadata"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Document (Admin/Manager)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/documents/{{documentId}}/verify",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"notes\": \"Document verified and found to be valid\"\n}"
+            },
+            "description": "Verify a document (admin/manager only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/documents/{{documentId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "description": "Delete a document (only by document owner)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Driver Operations",
+      "item": [
+        {
+          "name": "Get Assigned Shipments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/driver/shipments?status=IN_TRANSIT&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "driver",
+                "shipments"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "IN_TRANSIT",
+                  "description": "Filter by shipment status"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "description": "Get all shipments assigned to the current driver"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Shipment Status",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/driver/shipments/:shipmentId/status",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"DELIVERED\",\n    \"notes\": \"Delivered to recipient\"\n}"
+            },
+            "description": "Update the status of a shipment (for driver's assigned shipments only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Current Location",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/driver/location",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"latitude\": 37.7749,\n    \"longitude\": -122.4194,\n    \"shipmentId\": \"{{shipmentId}}\"\n}"
+            },
+            "description": "Update the current location of the driver and associated shipment"
+          },
+          "response": []
+        },
+        {
+          "name": "Start Delivery",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/driver/shipments/:shipmentId/start",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"notes\": \"Starting delivery route\",\n    \"startOdometer\": 12345\n}"
+            },
+            "description": "Mark a shipment as started (pickup confirmed)"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Delivery",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/driver/shipments/:shipmentId/complete",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"notes\": \"Delivery completed successfully\",\n    \"endOdometer\": 12495,\n    \"recipientName\": \"John Doe\",\n    \"recipientSignature\": \"base64encodedSignatureData\"\n}"
+            },
+            "description": "Mark a shipment as completed (delivery confirmed)"
+          },
+          "response": []
+        },
+        {
+          "name": "Report Issue",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/driver/shipments/:shipmentId/issues",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"issueType\": \"DELIVERY_FAILED\",\n    \"description\": \"No one available to receive the shipment\",\n    \"latitude\": 37.7749,\n    \"longitude\": -122.4194\n}"
+            },
+            "description": "Report an issue with a shipment"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Proof of Delivery",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/driver/shipments/:shipmentId/proof",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/path/to/your/delivery-proof.jpg"
+                },
+                {
+                  "key": "proofType",
+                  "value": "SIGNATURE",
+                  "type": "text"
+                },
+                {
+                  "key": "notes",
+                  "value": "Signature from recipient",
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "Upload proof of delivery (signature, photo, etc.)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Delivery Route",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/driver/route/:shipmentId",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "description": "Get the suggested delivery route for a shipment"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Driver Status",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/driver/status",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"ACTIVE\",\n    \"reason\": \"Back on duty\"\n}"
+            },
+            "description": "Update the driver's current status (ACTIVE, OFF_DUTY, ON_BREAK, etc.)"
+          },
+          "response": []
+        },
+        {
+          "name": "Driver Check-in",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/driver/checkin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"latitude\": 37.7749,\n    \"longitude\": -122.4194,\n    \"truckCondition\": \"GOOD\",\n    \"fuelLevel\": 75,\n    \"notes\": \"Starting daily route\"\n}"
+            },
+            "description": "Daily driver check-in with truck status"
+          },
+          "response": []
+        },
+        {
+          "name": "Driver Check-out",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/driver/checkout",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"latitude\": 37.7850,\n    \"longitude\": -122.4383,\n    \"truckCondition\": \"GOOD\",\n    \"fuelLevel\": 45,\n    \"totalMiles\": 120,\n    \"notes\": \"Completed daily route\"\n}"
+            },
+            "description": "End of day driver check-out with truck status"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Driver Dashboard",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/driver/dashboard",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "description": "Get driver dashboard with stats, upcoming deliveries, and notifications"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Delivery History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/driver/history?startDate=2023-01-01&endDate=2023-12-31&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "driver",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2023-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2023-12-31"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              }
+            ],
+            "description": "Get delivery history for the driver with filtering options"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Truck Owner",
+      "item": [
+        {
+          "name": "Shipment Assignment",
+          "item": [
+            {
+              "name": "Get My Shipments",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/truck-owner/shipments",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{truckOwnerToken}}"
+                  }
+                ],
+                "description": "Get all shipments assigned to truck owner"
+              },
+              "response": []
+            },
+            {
+              "name": "Assign Shipment to Driver",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/truck-owner/shipments/{{shipmentId}}/assign",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{truckOwnerToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"driverId\": \"{{driverId}}\",\n    \"truckId\": \"{{truckId}}\"\n}"
+                },
+                "description": "Assign a shipment to a driver owned by the truck owner"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Available Drivers",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/truck-owner/drivers/available",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{truckOwnerToken}}"
+                  }
+                ],
+                "description": "Get all available drivers owned by the truck owner"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Available Trucks",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/truck-owner/trucks/available",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{truckOwnerToken}}"
+                  }
+                ],
+                "description": "Get all available trucks owned by the truck owner"
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Driver",
+      "item": [
+        {
+          "name": "Shipments",
+          "item": [
+            {
+              "name": "Get Assigned Shipments",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/driver/shipments?status=IN_TRANSIT&page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "driver",
+                    "shipments"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "IN_TRANSIT",
+                      "description": "Filter by shipment status"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "description": "Get all shipments assigned to the current driver"
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
     }
   ]
-} 
+}

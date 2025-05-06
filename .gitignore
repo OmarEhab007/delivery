@@ -55,3 +55,6 @@ tmp/
 .vscode/
 *.swp
 *.swo
+
+# upload file 
+uploads/
