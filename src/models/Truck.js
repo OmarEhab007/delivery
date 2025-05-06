@@ -249,6 +249,27 @@ truckSchema.methods.recordMaintenance = function(maintenance) {
   return this.save();
 };
 
+// Helper method to mark truck as assigned to a shipment
+truckSchema.methods.assignToShipment = function(driverId) {
+  this.available = false;
+  this.status = 'IN_SERVICE';
+  
+  // If driver is provided, assign the driver to this truck
+  if (driverId) {
+    this.driverId = driverId;
+  }
+  
+  return this.save();
+};
+
+// Helper method to mark truck as available after a shipment is completed
+truckSchema.methods.markAsAvailable = function() {
+  this.available = true;
+  this.status = 'AVAILABLE';
+  
+  return this.save();
+};
+
 // Populate driver info when querying
 truckSchema.pre(/^find/, function(next) {
   this.populate({

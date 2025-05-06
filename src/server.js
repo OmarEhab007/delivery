@@ -24,6 +24,13 @@ const documentRoutes = require('./routes/documentRoutes');
 const truckOwnerRoutes = require('./routes/truckOwnerRoutes');
 // Add other route imports as they are developed
 
+// For debugging
+const { Document, DocumentType } = require('./models/Document');
+const { Shipment } = require('./models/Shipment');
+const { Application } = require('./models/Application');
+const Truck = require('./models/Truck');
+const User = require('./models/User');
+
 // Initialize Express app
 const app = express();
 const httpServer = createServer(app);
@@ -60,6 +67,31 @@ app.use('/api/driver', driverRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/truck-owner', truckOwnerRoutes);
 // Add other routes as they are developed
+
+// Debug route - no auth required
+app.get('/debug-models', (req, res) => {
+  const models = {
+    Document: typeof Document !== 'undefined',
+    Shipment: typeof Shipment !== 'undefined',
+    Application: typeof Application !== 'undefined',
+    Truck: typeof Truck !== 'undefined',
+    User: typeof User !== 'undefined'
+  };
+  
+  const methods = {
+    Document: typeof Document?.findById === 'function',
+    Shipment: typeof Shipment?.findById === 'function',
+    Application: typeof Application?.findById === 'function',
+    Truck: typeof Truck?.findById === 'function',
+    User: typeof User?.findById === 'function'
+  };
+  
+  res.status(200).json({
+    success: true,
+    models,
+    methods
+  });
+});
 
 // Socket.io setup for real-time tracking
 io.on('connection', (socket) => {

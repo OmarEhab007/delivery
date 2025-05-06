@@ -53,4 +53,11 @@ router.patch(
   documentController.updateDocument
 );
 
+// Create a separate router for our debug route
+const debugRouter = express.Router();
+
+// Debug route - no authentication required
+debugRouter.get('/debug', documentController.debugModels);
+
+// Export both routers
 module.exports = router; 

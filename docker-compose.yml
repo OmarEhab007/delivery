@@ -9,7 +9,7 @@ services:
       - NODE_ENV=production
       - MONGODB_URI=mongodb://mongodb:27017/delivery-app
       - PORT=3000
-      # Set to false for standalone MongoDB, true for replica set
+      # Set to false for standalone MongoDB (no replica set)
       - USE_MONGODB_TRANSACTIONS=false
     restart: always
     networks:
@@ -21,13 +21,12 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    # For enabling transactions, uncomment these lines to run as a replica set
-    # command: mongod --replSet rs0 --bind_ip_all
-    # healthcheck:
-    #   test: test $$(echo "rs.status().ok || rs.initiate().ok" | mongo --quiet) -eq 1
-    #   interval: 10s
-    #   start_period: 30s
+      # Using simplified initialization script
+      - ./docker/mongo-init-simple.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    # Standard MongoDB without replica set
+    environment:
+      - MONGO_INITDB_DATABASE=delivery-app
+    restart: always
     networks:
       - app-network
 

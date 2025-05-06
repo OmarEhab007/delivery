@@ -106,12 +106,20 @@ exports.createApplication = async (req, res, next) => {
  */
 exports.getMyApplications = async (req, res, next) => {
   try {
-    const applications = await Application.find({
+    // Build query object
+    const query = {
       ownerId: req.user.id
-    })
-    .populate('shipmentId')
-    .populate('truckId')
-    .populate('driverId');
+    };
+    
+    // Add status filter if provided
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+    
+    const applications = await Application.find(query)
+      .populate('shipmentId')
+      .populate('truckId')
+      .populate('driverId');
     
     res.status(200).json({
       status: 'success',
@@ -337,7 +345,9 @@ exports.acceptApplication = async (req, res, next) => {
   try {
     // Find application
     const application = await Application.findById(req.params.id)
-      .populate('shipmentId');
+      .populate('shipmentId')
+      .populate('truckId')
+      .populate('driverId');
     
     if (!application) {
       return next(new ApiError('Application not found', 404));
@@ -358,6 +368,17 @@ exports.acceptApplication = async (req, res, next) => {
     // Check if shipment is still in REQUESTED state
     if (shipment.status !== ShipmentStatus.REQUESTED) {
       return next(new ApiError(`Cannot accept application for shipment with status: ${shipment.status}`, 400));
+    }
+    
+    // Check if truck and driver are still available
+    const truck = application.truckId;
+    if (!truck || !truck.available) {
+      return next(new ApiError('The truck in this application is no longer available', 400));
+    }
+    
+    const driver = application.driverId;
+    if (!driver) {
+      return next(new ApiError('The driver in this application is not available', 400));
     }
     
     // Check if transactions are supported
@@ -387,22 +408,46 @@ const acceptWithTransaction = async (application, shipment, res, next) => {
   try {
     // Accept the application
     application.status = ApplicationStatus.ACCEPTED;
+    
+    // Add to status history
+    application.statusHistory.push({
+      status: ApplicationStatus.ACCEPTED,
+      timestamp: new Date(),
+      changedBy: shipment.merchantId
+    });
+    
     await application.save({ session });
     
     // Reject all other applications for this shipment
-    await Application.rejectOthers(shipment._id, application._id);
+    await Application.rejectOthers(shipment._id, application._id, shipment.merchantId);
     
-    // Update the shipment
-    shipment.status = ShipmentStatus.CONFIRMED;
+    // Mark the truck as unavailable
+    const truck = await Truck.findById(application.truckId).session(session);
+    if (truck) {
+      truck.available = false;
+      truck.status = 'IN_SERVICE';
+      
+      // Assign driver if provided
+      if (application.driverId) {
+        truck.driverId = application.driverId;
+      }
+      
+      await truck.save({ session });
+    }
+    
+    // Update the shipment with the assigned truck and driver from the application
+    shipment.status = ShipmentStatus.ASSIGNED; // Changed from CONFIRMED to ASSIGNED to reflect driver and truck assignment
     shipment.selectedApplicationId = application._id;
     shipment.assignedTruckId = application.truckId;
     shipment.assignedDriverId = application.driverId;
     
     // Add timeline entry
     await shipment.addTimelineEntry({
-      status: ShipmentStatus.CONFIRMED,
-      note: 'Application accepted and shipment confirmed'
+      status: ShipmentStatus.ASSIGNED,
+      note: 'Application accepted. Truck and driver assigned to shipment.'
     });
+    
+    await shipment.save({ session });
     
     // Commit the transaction
     await session.commitTransaction();
@@ -431,6 +476,14 @@ const acceptWithoutTransaction = async (application, shipment, res, next) => {
   try {
     // Accept the application
     application.status = ApplicationStatus.ACCEPTED;
+    
+    // Add to status history
+    application.statusHistory.push({
+      status: ApplicationStatus.ACCEPTED,
+      timestamp: new Date(),
+      changedBy: shipment.merchantId
+    });
+    
     await application.save();
     
     // Reject all other applications for this shipment
@@ -443,20 +496,34 @@ const acceptWithoutTransaction = async (application, shipment, res, next) => {
       },
       { 
         status: ApplicationStatus.REJECTED,
-        rejectionReason: 'Another application was selected'
+        rejectionReason: 'Another application was selected',
+        $push: {
+          statusHistory: {
+            status: ApplicationStatus.REJECTED,
+            timestamp: new Date(),
+            note: 'Another application was selected',
+            changedBy: shipment.merchantId
+          }
+        }
       }
     );
     
-    // Update the shipment
-    shipment.status = ShipmentStatus.CONFIRMED;
+    // Mark the truck as unavailable
+    const truck = await Truck.findById(application.truckId);
+    if (truck) {
+      await truck.assignToShipment(application.driverId);
+    }
+    
+    // Update the shipment with the assigned truck and driver from the application
+    shipment.status = ShipmentStatus.ASSIGNED; // Changed from CONFIRMED to ASSIGNED to reflect driver and truck assignment
     shipment.selectedApplicationId = application._id;
     shipment.assignedTruckId = application.truckId;
     shipment.assignedDriverId = application.driverId;
     
     // Add timeline entry
     await shipment.addTimelineEntry({
-      status: ShipmentStatus.CONFIRMED,
-      note: 'Application accepted and shipment confirmed'
+      status: ShipmentStatus.ASSIGNED,
+      note: 'Application accepted. Truck and driver assigned to shipment.'
     });
     
     await shipment.save();

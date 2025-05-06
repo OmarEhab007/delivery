@@ -2,7 +2,7 @@ const documentService = require('../services/documentService');
 const { Document, DocumentType } = require('../models/Document');
 const { Shipment } = require('../models/Shipment');
 const { Application } = require('../models/Application');
-const { Truck } = require('../models/Truck');
+const Truck = require('../models/Truck');
 const User = require('../models/User');
 const { catchAsync } = require('../utils/catchAsync');
 const { createCustomError } = require('../utils/errorResponse');
@@ -12,18 +12,33 @@ const mongoose = require('mongoose');
 // Validate entity exists before document upload
 const validateEntity = async (entityType, entityId) => {
   try {
+    // Debug logging
+    console.log('validateEntity called with:', { entityType, entityId });
+    
     let entity;
     switch (entityType) {
       case 'Shipment':
+        if (!Shipment || typeof Shipment.findById !== 'function') {
+          throw createCustomError('Shipment model is not properly initialized', 500);
+        }
         entity = await Shipment.findById(entityId);
         break;
       case 'Application':
+        if (!Application || typeof Application.findById !== 'function') {
+          throw createCustomError('Application model is not properly initialized', 500);
+        }
         entity = await Application.findById(entityId);
         break;
       case 'Truck':
+        if (!Truck || typeof Truck.findById !== 'function') {
+          throw createCustomError('Truck model is not properly initialized', 500);
+        }
         entity = await Truck.findById(entityId);
         break;
       case 'User':
+        if (!User || typeof User.findById !== 'function') {
+          throw createCustomError('User model is not properly initialized', 500);
+        }
         entity = await User.findById(entityId);
         break;
       default:
@@ -36,6 +51,7 @@ const validateEntity = async (entityType, entityId) => {
 
     return entity;
   } catch (error) {
+    console.error('Error in validateEntity:', error);
     throw error;
   }
 };
@@ -508,6 +524,31 @@ const updateDocument = catchAsync(async (req, res) => {
   });
 });
 
+// Debug function to check if models are accessible
+const debugModels = catchAsync(async (req, res) => {
+  const models = {
+    Document: typeof Document !== 'undefined',
+    Shipment: typeof Shipment !== 'undefined',
+    Application: typeof Application !== 'undefined',
+    Truck: typeof Truck !== 'undefined',
+    User: typeof User !== 'undefined'
+  };
+  
+  const methods = {
+    Document: typeof Document.findById === 'function',
+    Shipment: typeof Shipment.findById === 'function',
+    Application: typeof Application.findById === 'function',
+    Truck: typeof Truck.findById === 'function',
+    User: typeof User.findById === 'function'
+  };
+  
+  res.status(200).json({
+    success: true,
+    models,
+    methods
+  });
+});
+
 module.exports = {
   uploadDocument,
   uploadMultipleDocuments,
@@ -516,5 +557,6 @@ module.exports = {
   getDocumentsByEntity,
   deleteDocument,
   verifyDocument,
-  updateDocument
+  updateDocument,
+  debugModels
 }; 

@@ -7,6 +7,8 @@ const { protect, restrictTo } = require('../middleware/authMiddleware');
 // Apply protection middleware to all routes
 router.use(protect);
 
+// ===== IMPORTANT: Define static routes BEFORE dynamic routes =====
+
 // Create a new application (TruckOwner only)
 router.post(
   '/',
@@ -25,6 +27,12 @@ router.post(
 
 // Get all applications for the current truck owner
 router.get('/', restrictTo('TruckOwner'), applicationController.getMyApplications);
+
+// Get my applications (with optional status filter)
+// IMPORTANT: This must be defined BEFORE the /:id route
+router.get('/my', restrictTo('TruckOwner'), applicationController.getMyApplications);
+
+// ===== Dynamic routes with parameters below =====
 
 // Get a single application by ID
 router.get('/:id', applicationController.getApplication);

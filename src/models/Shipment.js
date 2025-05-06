@@ -271,8 +271,8 @@ shipmentSchema.index({ currentLocation: '2dsphere' });
 shipmentSchema.methods.addTimelineEntry = function(entry) {
   this.timeline.push(entry);
   
-  // Update the shipment status if provided in the entry
-  if (entry.status) {
+  // Update the shipment status if provided in the entry and is a valid shipment status
+  if (entry.status && Object.values(ShipmentStatus).includes(entry.status)) {
     this.status = entry.status;
   }
   

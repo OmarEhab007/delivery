@@ -1,39 +1,7 @@
-// This script initializes MongoDB replica set
-// when running in a Docker container
+// This script initializes MongoDB with basic users and collections
+// Simple version without replica set configuration
 
-// Wait for MongoDB to start
-print("Waiting for MongoDB to start...");
-sleep(5000);
-
-// Initiate replica set
-try {
-  print("Checking replica set status...");
-  const status = rs.status();
-  print("Replica set already initialized. Status: " + JSON.stringify(status));
-} catch (err) {
-  // If error, initiate replica set
-  print("Initializing replica set...");
-  try {
-    const config = {
-      _id: "rs0",
-      members: [
-        { _id: 0, host: "mongodb:27017" }
-      ]
-    };
-    rs.initiate(config);
-    
-    // Wait for replica set initialization
-    sleep(5000);
-    const status = rs.status();
-    print("Replica set initialized. Status: " + JSON.stringify(status));
-  } catch (initErr) {
-    print("Error initializing replica set: " + initErr);
-  }
-}
-
-// Wait for primary
-print("Waiting for replica set to elect primary...");
-sleep(3000);
+print("Starting simplified MongoDB initialization...");
 
 // Set up admin user
 try {
@@ -77,6 +45,23 @@ try {
   } else {
     print("Application user already exists.");
   }
+  
+  // Create initial collections if they don't exist
+  if (!appDb.getCollectionNames().includes('users')) {
+    appDb.createCollection('users');
+    print("Created users collection.");
+  }
+  
+  if (!appDb.getCollectionNames().includes('shipments')) {
+    appDb.createCollection('shipments');
+    print("Created shipments collection.");
+  }
+  
+  if (!appDb.getCollectionNames().includes('trucks')) {
+    appDb.createCollection('trucks');
+    print("Created trucks collection.");
+  }
+  
 } catch (appUserErr) {
   print("Error setting up application user: " + appUserErr);
 }

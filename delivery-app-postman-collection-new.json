@@ -1,0 +1,1765 @@
+{
+  "info": {
+    "name": "Delivery App API Collection",
+    "description": "Complete API collection for the Delivery App platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "merchantToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "truckOwnerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "driverToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shipmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "truckId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "documentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "driverId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:3000/health",
+        "description": "Check if the server is running"
+      },
+      "response": []
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register Merchant",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register/merchant",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test Merchant\",\n    \"email\": \"merchant@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+1234567890\",\n    \"role\": \"Merchant\"\n}"
+            },
+            "description": "Register a new merchant user"
+          },
+          "response": []
+        },
+        {
+          "name": "Register Truck Owner",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register/truckOwner",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test Truck Owner\",\n    \"email\": \"truckowner@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+1234567890\",\n    \"role\": \"TruckOwner\",\n    \"companyName\": \"Test Trucking Co.\",\n    \"companyAddress\": \"123 Truck St, City\"\n}"
+            },
+            "description": "Register a new truck owner user"
+          },
+          "response": []
+        },
+        {
+          "name": "Register Admin (by Admin)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register/admin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Admin User\",\n    \"email\": \"admin@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+1234567890\",\n    \"role\": \"Admin\",\n    \"adminPermissions\": [\"FULL_ACCESS\"]\n}"
+            },
+            "description": "Register a new admin user (must be done by an existing admin)"
+          },
+          "response": []
+        },
+        {
+          "name": "Register Driver (by Truck Owner)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register/driver",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test Driver\",\n    \"email\": \"driver@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+1234567890\",\n    \"role\": \"Driver\",\n    \"licenseNumber\": \"DL12345678\"\n}"
+            },
+            "description": "Register a new driver (must be done by a truck owner)"
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"adminToken\", jsonData.token || jsonData.data?.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "description": "Login as admin and save the token"
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Merchant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"merchantToken\", jsonData.token || jsonData.data?.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"merchant@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "description": "Login as merchant and save the token"
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Truck Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"truckOwnerToken\", jsonData.token || jsonData.data?.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"truckowner@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "description": "Login as truck owner and save the token"
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Driver",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"driverToken\", jsonData.token || jsonData.data?.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"driver@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "description": "Login as driver and save the token"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "description": "Get the current user's profile (can use any user token)"
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/forgotPassword",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"merchant@example.com\"\n}"
+            },
+            "description": "Request a password reset token"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/auth/resetPassword/:token",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"password\": \"newpassword123\"\n}"
+            },
+            "description": "Reset password using token received via email"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Password",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/auth/updatePassword",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"currentPassword\": \"password123\",\n    \"newPassword\": \"newpassword123\"\n}"
+            },
+            "description": "Update password for logged in user"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Dashboard",
+          "item": [
+            {
+              "name": "Get Dashboard Stats",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/admin/dashboard",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "description": "Get dashboard statistics for admin overview"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "User Management",
+          "item": [
+            {
+              "name": "Get All Users",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/admin/users?page=1&limit=10&role=Merchant",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "users"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "role",
+                      "value": "Merchant"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "description": "Get all users with filtering options"
+              },
+              "response": []
+            },
+            {
+              "name": "Get User by ID",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "// Use the userId variable that might be set from previous requests"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/admin/users/{{userId}}",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "description": "Get a specific user by ID"
+              },
+              "response": []
+            },
+            {
+              "name": "Update User Status",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/admin/users/{{userId}}/status",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"active\": false,\n    \"reason\": \"Account suspended due to policy violation\"\n}"
+                },
+                "description": "Update a user's active status"
+              },
+              "response": []
+            },
+            {
+              "name": "Delete User",
+              "request": {
+                "method": "DELETE",
+                "url": "{{baseUrl}}/admin/users/{{userId}}",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "description": "Delete a user (soft delete in most cases)"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Shipment Management",
+          "item": [
+            {
+              "name": "Get All Shipments",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/admin/shipments?page=1&limit=10&status=REQUESTED",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "shipments"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "status",
+                      "value": "REQUESTED"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "description": "Get all shipments with filtering options"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Shipment by ID",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/admin/shipments/{{shipmentId}}",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "description": "Get a specific shipment by ID"
+              },
+              "response": []
+            },
+            {
+              "name": "Update Shipment Status",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/admin/shipments/{{shipmentId}}/status",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"status\": \"CONFIRMED\",\n    \"note\": \"Manually confirmed by admin\"\n}"
+                },
+                "description": "Update the status of a shipment"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Verification",
+          "item": [
+            {
+              "name": "Verify Truck",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/admin/trucks/{{truckId}}/verify",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"verified\": true,\n    \"note\": \"All documents verified and approved\"\n}"
+                },
+                "description": "Verify a truck's documents and information"
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Driver",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/admin/drivers/{{driverId}}/verify",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"verified\": true,\n    \"note\": \"License and ID verified\"\n}"
+                },
+                "description": "Verify a driver's documents and information"
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Document",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/admin/documents/{{documentId}}/verify",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"verified\": true,\n    \"note\": \"Document verified and approved\"\n}"
+                },
+                "description": "Verify a document's authenticity"
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Shipments (Merchant)",
+      "item": [
+        {
+          "name": "Create Shipment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data?._id || jsonData.data?.id || jsonData._id || jsonData.id) {",
+                  "    pm.collectionVariables.set(\"shipmentId\", jsonData.data?._id || jsonData.data?.id || jsonData._id || jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/shipments",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"origin\": {\n        \"address\": \"123 Start St, New York, NY\"\n    },\n    \"destination\": {\n        \"address\": \"456 End Ave, Los Angeles, CA\"\n    },\n    \"cargoDetails\": {\n        \"description\": \"Electronics\",\n        \"weight\": 500,\n        \"volume\": 10,\n        \"category\": \"Consumer Goods\",\n        \"hazardous\": false,\n        \"specialInstructions\": \"Handle with care\"\n    }\n}"
+            },
+            "description": "Create a new shipment (Merchant only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Shipments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shipments?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "description": "Get all shipments for the current merchant"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Shipments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shipments/search?status=REQUESTED&startDate=2023-01-01&endDate=2023-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipments", "search"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "REQUESTED"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2023-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2023-12-31"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "description": "Search shipments with filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shipment by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "description": "Get a specific shipment by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Shipment",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"cargoDetails\": {\n        \"description\": \"Updated Electronics Description\",\n        \"specialInstructions\": \"Updated handling instructions\"\n    }\n}"
+            },
+            "description": "Update a shipment (only if status is REQUESTED)"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Shipment",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}/cancel",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Changed shipping plans\"\n}"
+            },
+            "description": "Cancel a shipment (if not already in transit)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shipment Applications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}/applications",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "description": "Get all applications for a specific shipment"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Timeline Entry",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}/timeline",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"ISSUE_REPORTED\",\n    \"note\": \"Customer requested schedule change\"\n}"
+            },
+            "description": "Add a timeline entry to the shipment (TruckOwner or Driver)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "Submit Application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data?._id || jsonData.data?.id || jsonData._id || jsonData.id) {",
+                  "    pm.collectionVariables.set(\"applicationId\", jsonData.data?._id || jsonData.data?.id || jsonData._id || jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/applications",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"shipmentId\": \"{{shipmentId}}\",\n    \"truckId\": \"{{truckId}}\",\n    \"driverId\": \"{{driverId}}\",\n    \"bidDetails\": {\n        \"price\": 1500,\n        \"currency\": \"USD\",\n        \"notes\": \"Available for immediate pickup\",\n        \"validUntil\": \"2023-12-31T23:59:59Z\"\n    }\n}"
+            },
+            "description": "Submit an application for a shipment (TruckOwner only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Applications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/applications/my?status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "my"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Get all applications submitted by the current truck owner"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Application by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/applications/{{applicationId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Get a specific application by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Application",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/applications/{{applicationId}}/accept",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"note\": \"Accepted based on competitive pricing and good ratings\"\n}"
+            },
+            "description": "Accept an application (Merchant only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Application",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/applications/{{applicationId}}/reject",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Price is too high compared to other offers\"\n}"
+            },
+            "description": "Reject an application (Merchant only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Application",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/applications/{{applicationId}}/cancel",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Truck unavailable due to maintenance issues\"\n}"
+            },
+            "description": "Cancel an application (TruckOwner only)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Truck Management",
+      "item": [
+        {
+          "name": "Register Truck",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data?._id || jsonData.data?.id || jsonData._id || jsonData.id) {",
+                  "    pm.collectionVariables.set(\"truckId\", jsonData.data?._id || jsonData.data?.id || jsonData._id || jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/trucks",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"plateNumber\": \"XYZ12345\",\n    \"model\": \"Volvo FH16\",\n    \"capacity\": 30,\n    \"year\": 2020,\n    \"dimensions\": {\n        \"length\": 16.5,\n        \"width\": 2.5,\n        \"height\": 4.0\n    },\n    \"features\": [\"GPS\", \"Refrigeration\", \"Tail Lift\"]\n}"
+            },
+            "description": "Register a new truck (TruckOwner only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Trucks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/trucks?status=AVAILABLE",
+              "host": ["{{baseUrl}}"],
+              "path": ["trucks"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "AVAILABLE"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Get all trucks owned by the current truck owner"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Truck by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/trucks/{{truckId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Get a specific truck by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Truck",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/trucks/{{truckId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"IN_MAINTENANCE\",\n    \"available\": false,\n    \"maintenanceHistory\": [\n        {\n            \"type\": \"REGULAR\",\n            \"description\": \"Scheduled maintenance\",\n            \"cost\": 500,\n            \"odometer\": 50000\n        }\n    ]\n}"
+            },
+            "description": "Update truck details and status"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Truck",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/trucks/{{truckId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Delete a truck (if not assigned to any active shipments)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Truck Owner",
+      "item": [
+        {
+          "name": "Get My Drivers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/truck-owner/drivers?isAvailable=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["truck-owner", "drivers"],
+              "query": [
+                {
+                  "key": "isAvailable",
+                  "value": "true"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Get all drivers managed by the current truck owner"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Driver",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/truck-owner/drivers/{{driverId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone\": \"+1987654321\",\n    \"isAvailable\": false,\n    \"driverStatus\": \"OFF_DUTY\"\n}"
+            },
+            "description": "Update driver details (TruckOwner only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Shipments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/truck-owner/shipments/available?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["truck-owner", "shipments", "available"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Get all available shipments that can be applied for"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Driver",
+      "item": [
+        {
+          "name": "Profile & Status",
+          "item": [
+            {
+              "name": "Get Driver Profile",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/driver/profile",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "description": "Get the current driver's profile"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Current Truck",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/driver/truck",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "description": "Get the truck currently assigned to the driver"
+              },
+              "response": []
+            },
+            {
+              "name": "Update Availability",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/driver/availability",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"isAvailable\": true\n}"
+                },
+                "description": "Update driver availability status"
+              },
+              "response": []
+            },
+            {
+              "name": "Update Driver Status",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/driver/status",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"status\": \"ACTIVE\",\n    \"reason\": \"Returned from break\"\n}"
+                },
+                "description": "Update detailed driver status"
+              },
+              "response": []
+            },
+            {
+              "name": "Update Location",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/driver/location",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"latitude\": 34.0522,\n    \"longitude\": -118.2437\n}"
+                },
+                "description": "Update driver's current location"
+              },
+              "response": []
+            },
+            {
+              "name": "Driver Check-in",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/driver/checkin",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"latitude\": 34.0522,\n    \"longitude\": -118.2437,\n    \"truckCondition\": \"Good\",\n    \"fuelLevel\": 85\n}"
+                },
+                "description": "Driver daily check-in"
+              },
+              "response": []
+            },
+            {
+              "name": "Driver Check-out",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/driver/checkout",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"latitude\": 34.0522,\n    \"longitude\": -118.2437,\n    \"totalMiles\": 120,\n    \"fuelLevel\": 45\n}"
+                },
+                "description": "Driver daily check-out"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Driver Dashboard",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/driver/dashboard",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "description": "Get driver dashboard statistics and information"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Shipment Management",
+          "item": [
+            {
+              "name": "Get Active Shipments",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/driver/shipments/active",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "description": "Get all active shipments assigned to driver"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Assigned Shipments",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/driver/shipments/assigned",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "description": "Get all assigned shipments (including upcoming)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Shipment History",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/driver/shipments/history?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["driver", "shipments", "history"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "description": "Get history of completed deliveries"
+              },
+              "response": []
+            },
+            {
+              "name": "Start Delivery",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/driver/shipments/{{shipmentId}}/start",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"notes\": \"Starting delivery on time\",\n    \"startOdometer\": 42500\n}"
+                },
+                "description": "Start the delivery process for a shipment"
+              },
+              "response": []
+            },
+            {
+              "name": "Update Shipment Status",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/driver/shipments/{{shipmentId}}/status",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"status\": \"IN_TRANSIT\",\n    \"note\": \"Left origin, en route to destination\"\n}"
+                },
+                "description": "Update the status of a shipment during delivery"
+              },
+              "response": []
+            },
+            {
+              "name": "Complete Delivery",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/driver/shipments/{{shipmentId}}/complete",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"notes\": \"Delivery completed successfully\",\n    \"endOdometer\": 42650,\n    \"recipientName\": \"John Recipient\",\n    \"recipientSignature\": \"data:image/png;base64,...\"\n}"
+                },
+                "description": "Mark a delivery as completed"
+              },
+              "response": []
+            },
+            {
+              "name": "Report Issue",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/driver/shipments/{{shipmentId}}/issues",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"issueType\": \"DELAY\",\n    \"description\": \"Traffic jam causing 1 hour delay\",\n    \"latitude\": 34.0522,\n    \"longitude\": -118.2437\n}"
+                },
+                "description": "Report an issue during delivery"
+              },
+              "response": []
+            },
+            {
+              "name": "Upload Proof of Delivery",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/driver/shipments/{{shipmentId}}/proof",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "proof",
+                      "type": "file",
+                      "src": "/path/to/delivery_proof.jpg"
+                    },
+                    {
+                      "key": "type",
+                      "value": "PHOTO",
+                      "type": "text"
+                    },
+                    {
+                      "key": "notes",
+                      "value": "Delivered to front desk",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "description": "Upload proof of delivery (photo, document, etc.)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Delivery Route",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/driver/route/{{shipmentId}}",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}"
+                  }
+                ],
+                "description": "Get the optimized route for a delivery"
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Document Management",
+      "item": [
+        {
+          "name": "Upload Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data?._id || jsonData.data?.id || jsonData._id || jsonData.id) {",
+                  "    pm.collectionVariables.set(\"documentId\", jsonData.data?._id || jsonData.data?.id || jsonData._id || jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/documents/upload",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": "/path/to/document.pdf"
+                },
+                {
+                  "key": "name",
+                  "value": "Truck Registration",
+                  "type": "text"
+                },
+                {
+                  "key": "documentType",
+                  "value": "REGISTRATION",
+                  "type": "text"
+                },
+                {
+                  "key": "entityType",
+                  "value": "Truck",
+                  "type": "text"
+                },
+                {
+                  "key": "entityId",
+                  "value": "{{truckId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "expiryDate",
+                  "value": "2024-12-31",
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "Upload a document"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Multiple Documents",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/documents/upload-multiple",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "src": ["/path/to/document1.pdf", "/path/to/document2.pdf"]
+                },
+                {
+                  "key": "entityType",
+                  "value": "Truck",
+                  "type": "text"
+                },
+                {
+                  "key": "entityId",
+                  "value": "{{truckId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "documentTypes",
+                  "value": "[\"REGISTRATION\", \"INSURANCE\"]",
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "Upload multiple documents at once"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/documents/{{documentId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Get document metadata by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Download Document",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/documents/{{documentId}}/download",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Download the document file"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Documents by Entity",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/documents/entity/Truck/{{truckId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Get all documents related to a specific entity"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Document",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/documents/{{documentId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Truck Registration\",\n    \"expiryDate\": \"2025-12-31\"\n}"
+            },
+            "description": "Update document metadata"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/documents/{{documentId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "description": "Delete a document"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+} 

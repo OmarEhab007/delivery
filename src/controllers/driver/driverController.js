@@ -390,7 +390,7 @@ const reportIssue = asyncHandler(async (req, res, next) => {
  */
 const uploadProofOfDelivery = asyncHandler(async (req, res, next) => {
   // Multer middleware for single file upload
-  const uploadMiddleware = upload.single('image');
+  const uploadMiddleware = upload.single('proof');
 
   uploadMiddleware(req, res, async (err) => {
     if (err) {
@@ -402,7 +402,7 @@ const uploadProofOfDelivery = asyncHandler(async (req, res, next) => {
     }
 
     const { shipmentId } = req.params;
-    const { proofType, notes } = req.body;
+    const { type, notes } = req.body;
 
     const shipment = await Shipment.findOne({
       _id: shipmentId,
@@ -417,7 +417,7 @@ const uploadProofOfDelivery = asyncHandler(async (req, res, next) => {
 
     // Create proof document object
     const proofDocument = {
-      type: proofType || 'PHOTO',
+      type: type || 'PHOTO',
       filePath: req.file.path,
       fileName: req.file.filename,
       mimeType: req.file.mimetype,
@@ -435,7 +435,7 @@ const uploadProofOfDelivery = asyncHandler(async (req, res, next) => {
     // Add timeline entry
     const timelineEntry = {
       status: shipment.status,
-      note: `Delivery proof uploaded: ${proofType || 'PHOTO'}`,
+      note: `Delivery proof uploaded: ${type || 'PHOTO'}`,
       location: req.user.currentLocation
     };
     
