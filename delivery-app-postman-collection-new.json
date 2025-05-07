@@ -1,13 +1,13 @@
 {
   "info": {
     "name": "Delivery App API Collection",
-    "description": "Complete API collection for the Delivery App platform",
+    "description": "Complete API collection for the Delivery App platform\n\n## CSRF Protection\n\nThis API implements CSRF protection for all non-GET requests to protected endpoints.\n\n### How to use protected endpoints:\n\n1. First run the **Get CSRF Token** request in the **CSRF Protection** folder\n2. The CSRF token will be automatically saved to the `{{csrfToken}}` variable\n3. All protected requests are set up to include:\n   - The CSRF token in the `X-CSRF-Token` header\n   - `withCredentials: true` to send cookies with the request\n\n### Protected endpoints requiring CSRF tokens:\n\n- All shipment creation (`POST /api/shipments`)\n- Shipment updates (`PATCH /api/shipments/:id`)\n- Shipment cancellation (`PATCH /api/shipments/:id/cancel`)\n- Timeline entries (`POST /api/shipments/:id/timeline`)\n\n### Troubleshooting CSRF errors:\n\n- Make sure cookies are enabled in Postman\n- Make sure to get a fresh CSRF token before making protected requests\n- Verify the CSRF cookie is received when getting the token",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000/api",
+      "value": "http://localhost:5001/api",
       "type": "string"
     },
     {
@@ -59,17 +59,88 @@
       "key": "driverId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "csrfToken",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
     {
       "name": "Health Check",
-      "request": {
-        "method": "GET",
-        "url": "http://localhost:3000/health",
-        "description": "Check if the server is running"
-      },
-      "response": []
+      "item": [
+        {
+          "name": "Basic Health Check",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/health",
+            "description": "Basic health check endpoint (no authentication required)"
+          },
+          "response": []
+        },
+        {
+          "name": "System Health Check",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/health/system",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "description": "System resources health check including CPU, memory, and process information (admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Storage Health Check",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/health/storage",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "description": "Storage health check including disk space and directory information (admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Database Health Check",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/health/database",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "description": "Database connection health check with performance metrics (admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Comprehensive Health Check",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/health/comprehensive",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "description": "Complete system status check that includes all components - system, storage, database, and external APIs (admin only)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Health check endpoints to monitor system status"
     },
     {
       "name": "Authentication",
@@ -348,13 +419,126 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{merchantToken}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"currentPassword\": \"password123\",\n    \"newPassword\": \"newpassword123\"\n}"
             },
-            "description": "Update password for logged in user"
+            "description": "Update password for logged in user",
+            "options": {
+              "withCredentials": true
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CSRF Protection",
+      "description": "Essential requests for handling CSRF protection. Run the Get Token request before making any protected POST/PUT/PATCH operations. The server is running on port 5001, so make sure all endpoints use this port. All protected endpoints have been configured with the CSRF token header and withCredentials: true.",
+      "item": [
+        {
+          "name": "Get CSRF Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract CSRF token from response headers and save it",
+                  "const csrfToken = pm.response.headers.get('X-CSRF-Token');",
+                  "if (csrfToken) {",
+                  "    pm.collectionVariables.set('csrfToken', csrfToken);",
+                  "    console.log('CSRF token saved:', csrfToken);",
+                  "    pm.test('CSRF token received', function() {",
+                  "        pm.expect(csrfToken).to.not.be.empty;",
+                  "    });",
+                  "} else {",
+                  "    console.error('No CSRF token found in response headers');",
+                  "    pm.test('CSRF token received', function() {",
+                  "        pm.expect.fail('No CSRF token found in response headers');",
+                  "    });",
+                  "}",
+                  "",
+                  "// Also check if we received the CSRF cookie",
+                  "const cookies = pm.cookies.all();",
+                  "console.log('Cookies received:', cookies);",
+                  "const csrfCookie = cookies.find(cookie => cookie.name.includes('csrf'));",
+                  "if (csrfCookie) {",
+                  "    console.log('CSRF cookie found:', csrfCookie.name);",
+                  "    pm.test('CSRF cookie received', function() {",
+                  "        pm.expect(csrfCookie).to.not.be.undefined;",
+                  "    });",
+                  "} else {",
+                  "    console.warn('No CSRF cookie found in response');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/api/auth/csrf-token",
+            "header": [],
+            "description": "Get a CSRF token for protected operations. Run this request before any POST/PUT/PATCH operations that require CSRF protection.",
+            "options": {
+              "withCredentials": true
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test CSRF Token Generation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract CSRF token from response headers and save it",
+                  "const csrfToken = pm.response.headers.get('X-CSRF-Token');",
+                  "if (csrfToken) {",
+                  "    pm.collectionVariables.set('csrfToken', csrfToken);",
+                  "    console.log('CSRF token saved:', csrfToken);",
+                  "    pm.test('CSRF token received', function() {",
+                  "        pm.expect(csrfToken).to.not.be.empty;",
+                  "    });",
+                  "} else {",
+                  "    console.error('No CSRF token found in response headers');",
+                  "    pm.test('CSRF token received', function() {",
+                  "        pm.expect.fail('No CSRF token found in response headers');",
+                  "    });",
+                  "}",
+                  "",
+                  "// Also check if we received the CSRF cookie",
+                  "const cookies = pm.cookies.all();",
+                  "console.log('Cookies received:', cookies);",
+                  "const csrfCookie = cookies.find(cookie => cookie.name.includes('csrf'));",
+                  "if (csrfCookie) {",
+                  "    console.log('CSRF cookie found:', csrfCookie.name);",
+                  "    pm.test('CSRF cookie received', function() {",
+                  "        pm.expect(csrfCookie).to.not.be.undefined;",
+                  "    });",
+                  "} else {",
+                  "    console.warn('No CSRF cookie found in response');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/api/test-csrf",
+            "header": [],
+            "description": "Test endpoint specifically for CSRF token generation. Use this if the regular endpoint isn't working.",
+            "options": {
+              "withCredentials": true
+            }
           },
           "response": []
         }
@@ -639,6 +823,26 @@
     },
     {
       "name": "Shipments (Merchant)",
+      "description": "API endpoints for merchant shipment management. All POST, PATCH, and PUT requests in this folder require a CSRF token. Please run the 'Get CSRF Token' request in the CSRF Protection folder before using these endpoints.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Check if we have a CSRF token for non-GET requests",
+              "if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) {",
+              "    const csrfToken = pm.collectionVariables.get('csrfToken');",
+              "    if (!csrfToken) {",
+              "        console.warn('⚠️ WARNING: No CSRF token found. Protected requests will likely fail. Please run the \"Get CSRF Token\" request first.');",
+              "    } else {",
+              "        console.log('✅ CSRF token available for request:', pm.request.url);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "item": [
         {
           "name": "Create Shipment",
@@ -667,13 +871,20 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{merchantToken}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"origin\": {\n        \"address\": \"123 Start St, New York, NY\"\n    },\n    \"destination\": {\n        \"address\": \"456 End Ave, Los Angeles, CA\"\n    },\n    \"cargoDetails\": {\n        \"description\": \"Electronics\",\n        \"weight\": 500,\n        \"volume\": 10,\n        \"category\": \"Consumer Goods\",\n        \"hazardous\": false,\n        \"specialInstructions\": \"Handle with care\"\n    }\n}"
             },
-            "description": "Create a new shipment (Merchant only)"
+            "description": "Create a new shipment (Merchant only)",
+            "options": {
+              "withCredentials": true
+            }
           },
           "response": []
         },
@@ -767,13 +978,20 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{merchantToken}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"cargoDetails\": {\n        \"description\": \"Updated Electronics Description\",\n        \"specialInstructions\": \"Updated handling instructions\"\n    }\n}"
             },
-            "description": "Update a shipment (only if status is REQUESTED)"
+            "description": "Update a shipment (only if status is REQUESTED)",
+            "options": {
+              "withCredentials": true
+            }
           },
           "response": []
         },
@@ -790,13 +1008,20 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{merchantToken}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"reason\": \"Changed shipping plans\"\n}"
             },
-            "description": "Cancel a shipment (if not already in transit)"
+            "description": "Cancel a shipment (if not already in transit)",
+            "options": {
+              "withCredentials": true
+            }
           },
           "response": []
         },
@@ -828,13 +1053,20 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{merchantToken}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"status\": \"ISSUE_REPORTED\",\n    \"note\": \"Customer requested schedule change\"\n}"
             },
-            "description": "Add a timeline entry to the shipment (TruckOwner or Driver)"
+            "description": "Add a timeline entry to the shipment (TruckOwner or Driver)",
+            "options": {
+              "withCredentials": true
+            }
           },
           "response": []
         }
@@ -870,13 +1102,20 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{truckOwnerToken}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"shipmentId\": \"{{shipmentId}}\",\n    \"truckId\": \"{{truckId}}\",\n    \"driverId\": \"{{driverId}}\",\n    \"bidDetails\": {\n        \"price\": 1500,\n        \"currency\": \"USD\",\n        \"notes\": \"Available for immediate pickup\",\n        \"validUntil\": \"2023-12-31T23:59:59Z\"\n    }\n}"
             },
-            "description": "Submit an application for a shipment (TruckOwner only)"
+            "description": "Submit an application for a shipment (TruckOwner only)",
+            "options": {
+              "withCredentials": true
+            }
           },
           "response": []
         },
@@ -933,13 +1172,20 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{merchantToken}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"note\": \"Accepted based on competitive pricing and good ratings\"\n}"
             },
-            "description": "Accept an application (Merchant only)"
+            "description": "Accept an application (Merchant only)",
+            "options": {
+              "withCredentials": true
+            }
           },
           "response": []
         },
@@ -956,13 +1202,20 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{merchantToken}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"reason\": \"Price is too high compared to other offers\"\n}"
             },
-            "description": "Reject an application (Merchant only)"
+            "description": "Reject an application (Merchant only)",
+            "options": {
+              "withCredentials": true
+            }
           },
           "response": []
         },
@@ -1021,13 +1274,20 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{truckOwnerToken}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"plateNumber\": \"XYZ12345\",\n    \"model\": \"Volvo FH16\",\n    \"capacity\": 30,\n    \"year\": 2020,\n    \"dimensions\": {\n        \"length\": 16.5,\n        \"width\": 2.5,\n        \"height\": 4.0\n    },\n    \"features\": [\"GPS\", \"Refrigeration\", \"Tail Lift\"]\n}"
             },
-            "description": "Register a new truck (TruckOwner only)"
+            "description": "Register a new truck (TruckOwner only)",
+            "options": {
+              "withCredentials": true
+            }
           },
           "response": []
         },
@@ -1595,6 +1855,10 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{truckOwnerToken}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
               }
             ],
             "body": {
@@ -1632,7 +1896,10 @@
                 }
               ]
             },
-            "description": "Upload a document"
+            "description": "Upload a document",
+            "options": {
+              "withCredentials": true
+            }
           },
           "response": []
         },
@@ -1760,6 +2027,95 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Monitoring & Observability",
+      "item": [
+        {
+          "name": "Get Prometheus Metrics",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/api/metrics",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "description": "Get all Prometheus metrics in the standard Prometheus format (admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Status Counts",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/api/metrics/status-counts",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "description": "Get current counts of shipments and trucks by status (admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Error Statistics",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/api/metrics/errors",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "description": "Get error tracking statistics including recent errors and counts (admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Database Metrics",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:5001/api/metrics/database",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "description": "Get detailed MongoDB performance metrics and statistics (admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Log Level",
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:5001/api/metrics/log-level",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"level\": \"debug\"\n}"
+            },
+            "description": "Change the application logging level at runtime. Available levels: error, warn, info, debug, silly (admin only)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for monitoring system health, performance metrics, and error tracking"
     }
   ]
 } 

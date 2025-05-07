@@ -15,71 +15,102 @@ class ApiError extends Error {
 }
 
 /**
- * Global error handling middleware
+ * Global error handler middleware
+ * Formats and returns error responses, logs errors appropriately
  */
 const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
-
-  // Log error details
-  logger.error(`${err.statusCode} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
-  logger.error(err.stack);
-
-  // MongoDB duplicate key error
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    const value = err.keyValue[field];
-    const message = `Duplicate field value: ${value} for field ${field}. Please use another value.`;
-    
-    return res.status(400).json({
-      status: 'fail',
-      message
-    });
-  }
-
-  // MongoDB validation error
-  if (err.name === 'ValidationError') {
-    const errors = Object.values(err.errors).map(val => val.message);
-    const message = `Invalid input data: ${errors.join(', ')}`;
-    
-    return res.status(400).json({
-      status: 'fail',
-      message
-    });
-  }
-
-  // JWT errors
-  if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      status: 'fail',
-      message: 'Invalid token. Please log in again.'
-    });
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      status: 'fail',
-      message: 'Your token has expired. Please log in again.'
-    });
-  }
-
-  // Send error response
-  if (err.isOperational) {
-    return res.status(err.statusCode).json({
-      status: err.status,
-      message: err.message
-    });
+  // Get request ID if available
+  const requestId = req.requestId || 'unknown-req';
+  
+  // Default error values
+  let error = { ...err };
+  error.message = err.message || 'Server Error';
+  error.statusCode = err.statusCode || 500;
+  
+  // Log the error with details
+  const errorLog = {
+    requestId,
+    method: req.method,
+    url: req.originalUrl || req.url,
+    ip: req.ip || req.connection.remoteAddress,
+    statusCode: error.statusCode,
+    errorName: err.name,
+    errorMessage: error.message,
+    stack: err.stack,
+    errorDetails: error.errors || err.details || null,
+    user: req.user ? { id: req.user.id, role: req.user.role } : null
+  };
+  
+  // Different log levels based on status code
+  if (error.statusCode >= 500) {
+    logger.error(`${error.statusCode} - ${error.message} - ${req.originalUrl || req.url} - ${req.method} - ${req.ip}`, errorLog);
+  } else if (error.statusCode >= 400) {
+    logger.warn(`${error.statusCode} - ${error.message} - ${req.originalUrl || req.url} - ${req.method} - ${req.ip}`, errorLog);
+  } else {
+    logger.info(`${error.statusCode} - ${error.message} - ${req.originalUrl || req.url} - ${req.method} - ${req.ip}`, errorLog);
   }
   
-  // If not operational (programming or unknown error), don't leak error details
-  console.error('ERROR 💥', err);
-  return res.status(500).json({
-    status: 'error',
-    message: 'Something went wrong'
+  // Handle Mongoose validation errors
+  if (err.name === 'ValidationError') {
+    error.message = Object.values(err.errors)
+      .map(val => val.message)
+      .join(', ');
+    error.statusCode = 400;
+  }
+  
+  // Handle Mongoose duplicate key error
+  if (err.code === 11000) {
+    const keyField = Object.keys(err.keyValue || {})[0] || 'field';
+    error.message = `Duplicate value entered for ${keyField}`;
+    error.statusCode = 400;
+  }
+  
+  // Handle Mongoose CastError (invalid IDs)
+  if (err.name === 'CastError') {
+    error.message = `Invalid ${err.path}: ${err.value}`;
+    error.statusCode = 400;
+  }
+  
+  // Handle JWT errors
+  if (err.name === 'JsonWebTokenError') {
+    error.message = 'Invalid token. Please log in again.';
+    error.statusCode = 401;
+  }
+  
+  // Handle JWT expiration
+  if (err.name === 'TokenExpiredError') {
+    error.message = 'Your token has expired. Please log in again.';
+    error.statusCode = 401;
+  }
+  
+  // Determine the status text
+  const statusText = error.statusCode >= 500 ? 'error' : 'fail';
+  
+  // Send response
+  res.status(error.statusCode).json({
+    success: false,
+    status: statusText,
+    message: error.message,
+    requestId,
+    // Include stack trace in development but not in production
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
+};
+
+/**
+ * Helper function to create custom errors with status codes
+ * @param {string} message - Error message
+ * @param {number} statusCode - HTTP status code
+ * @returns {Error} Error with status code set
+ */
+const createCustomError = (message, statusCode) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
 };
 
 module.exports = {
   ApiError,
-  errorHandler
+  errorHandler,
+  createCustomError
 };

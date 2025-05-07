@@ -219,7 +219,7 @@ const getDashboardStats = asyncHandler(async (req, res, next) => {
     .sort({ createdAt: -1 })
     .limit(5)
     .populate('merchantId', 'name email')
-    .populate('truckId');
+    .populate('assignedTruckId');
   
   // Get shipment status distribution for pie chart
   const statusDistribution = [

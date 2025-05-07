@@ -21,7 +21,7 @@ exports.createApplication = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const { shipmentId, truckId, driverId, bidDetails } = req.body;
+    const { shipmentId, assignedTruckId, driverId, bidDetails } = req.body;
     
     // Set ownerId to current user id
     const ownerId = req.user.id;
@@ -37,8 +37,8 @@ exports.createApplication = async (req, res, next) => {
       return next(new ApiError(`Cannot apply for shipment with status: ${shipment.status}`, 400));
     }
     
-    // Check if truck belongs to the truck owner
-    const truck = await Truck.findById(truckId);
+    // Check if truck exists and belongs to the truck owner
+    const truck = await Truck.findById(assignedTruckId);
     
     if (!truck) {
       return next(new ApiError('Truck not found', 404));
@@ -82,7 +82,7 @@ exports.createApplication = async (req, res, next) => {
     const application = await Application.create({
       shipmentId,
       ownerId,
-      truckId,
+      assignedTruckId,
       driverId,
       bidDetails,
       status: ApplicationStatus.PENDING
@@ -118,7 +118,7 @@ exports.getMyApplications = async (req, res, next) => {
     
     const applications = await Application.find(query)
       .populate('shipmentId')
-      .populate('truckId')
+      .populate('assignedTruckId')
       .populate('driverId');
     
     res.status(200).json({
@@ -158,7 +158,7 @@ exports.getShipmentApplications = async (req, res, next) => {
       shipmentId
     })
     .populate('ownerId', 'name email phone companyName')
-    .populate('truckId')
+    .populate('assignedTruckId')
     .populate('driverId', 'name email phone licenseNumber');
     
     res.status(200).json({
@@ -183,7 +183,7 @@ exports.getApplication = async (req, res, next) => {
     const application = await Application.findById(req.params.id)
       .populate('shipmentId')
       .populate('ownerId', 'name email phone companyName')
-      .populate('truckId')
+      .populate('assignedTruckId')
       .populate('driverId', 'name email phone licenseNumber');
     
     if (!application) {
@@ -249,8 +249,8 @@ exports.updateApplication = async (req, res, next) => {
     }
     
     // If truck or driver is being updated, validate them
-    if (req.body.truckId) {
-      const truck = await Truck.findById(req.body.truckId);
+    if (req.body.assignedTruckId) {
+      const truck = await Truck.findById(req.body.assignedTruckId);
       
       if (!truck) {
         return next(new ApiError('Truck not found', 404));
@@ -264,7 +264,7 @@ exports.updateApplication = async (req, res, next) => {
         return next(new ApiError('The selected truck is not available', 400));
       }
       
-      application.truckId = req.body.truckId;
+      application.assignedTruckId = req.body.assignedTruckId;
     }
     
     if (req.body.driverId) {
@@ -346,7 +346,7 @@ exports.acceptApplication = async (req, res, next) => {
     // Find application
     const application = await Application.findById(req.params.id)
       .populate('shipmentId')
-      .populate('truckId')
+      .populate('assignedTruckId')
       .populate('driverId');
     
     if (!application) {
@@ -371,7 +371,7 @@ exports.acceptApplication = async (req, res, next) => {
     }
     
     // Check if truck and driver are still available
-    const truck = application.truckId;
+    const truck = application.assignedTruckId;
     if (!truck || !truck.available) {
       return next(new ApiError('The truck in this application is no longer available', 400));
     }
@@ -422,23 +422,21 @@ const acceptWithTransaction = async (application, shipment, res, next) => {
     await Application.rejectOthers(shipment._id, application._id, shipment.merchantId);
     
     // Mark the truck as unavailable
-    const truck = await Truck.findById(application.truckId).session(session);
-    if (truck) {
-      truck.available = false;
-      truck.status = 'IN_SERVICE';
-      
-      // Assign driver if provided
-      if (application.driverId) {
-        truck.driverId = application.driverId;
-      }
-      
-      await truck.save({ session });
+    const truckToUpdate = await Truck.findById(application.assignedTruckId).session(session);
+    if (!truckToUpdate) {
+      await session.abortTransaction();
+      return next(new ApiError('Truck not found', 404));
     }
+    
+    truckToUpdate.available = false;
+    truckToUpdate.status = 'IN_SERVICE';
+    
+    await truckToUpdate.save({ session });
     
     // Update the shipment with the assigned truck and driver from the application
     shipment.status = ShipmentStatus.ASSIGNED; // Changed from CONFIRMED to ASSIGNED to reflect driver and truck assignment
     shipment.selectedApplicationId = application._id;
-    shipment.assignedTruckId = application.truckId;
+    shipment.assignedTruckId = application.assignedTruckId;
     shipment.assignedDriverId = application.driverId;
     
     // Add timeline entry
@@ -509,15 +507,17 @@ const acceptWithoutTransaction = async (application, shipment, res, next) => {
     );
     
     // Mark the truck as unavailable
-    const truck = await Truck.findById(application.truckId);
-    if (truck) {
-      await truck.assignToShipment(application.driverId);
+    const truckToAssign = await Truck.findById(application.assignedTruckId);
+    if (!truckToAssign) {
+      return next(new ApiError('Truck not found', 404));
     }
+    
+    await truckToAssign.assignToShipment(application.driverId);
     
     // Update the shipment with the assigned truck and driver from the application
     shipment.status = ShipmentStatus.ASSIGNED; // Changed from CONFIRMED to ASSIGNED to reflect driver and truck assignment
     shipment.selectedApplicationId = application._id;
-    shipment.assignedTruckId = application.truckId;
+    shipment.assignedTruckId = application.assignedTruckId;
     shipment.assignedDriverId = application.driverId;
     
     // Add timeline entry

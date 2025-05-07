@@ -68,6 +68,7 @@ const getTruckById = asyncHandler(async (req, res, next) => {
 const updateTruck = asyncHandler(async (req, res, next) => {
   const {
     licensePlate,
+    plateNumber,
     truckType,
     capacity,
     status,
@@ -83,8 +84,18 @@ const updateTruck = asyncHandler(async (req, res, next) => {
     return next(new ApiError('Truck not found', 404));
   }
   
+  // Check for duplicate plate number if being updated
+  const newPlateNumber = plateNumber || licensePlate;
+  if (newPlateNumber && newPlateNumber !== truck.plateNumber) {
+    const existingTruck = await Truck.findOne({ plateNumber: newPlateNumber });
+    if (existingTruck && existingTruck._id.toString() !== req.params.id) {
+      return next(new ApiError(`A truck with plate number ${newPlateNumber} already exists`, 400));
+    }
+  }
+  
   // Update fields if provided
-  if (licensePlate) truck.licensePlate = licensePlate;
+  if (plateNumber) truck.plateNumber = plateNumber;
+  if (licensePlate && !plateNumber) truck.plateNumber = licensePlate;
   if (truckType) truck.truckType = truckType;
   if (capacity) truck.capacity = capacity;
   if (status) truck.status = status;
@@ -142,6 +153,7 @@ const deleteTruck = asyncHandler(async (req, res, next) => {
 const createTruck = asyncHandler(async (req, res, next) => {
   const {
     licensePlate,
+    plateNumber,
     truckType,
     capacity,
     ownerId,
@@ -149,6 +161,15 @@ const createTruck = asyncHandler(async (req, res, next) => {
     specifications,
     documents
   } = req.body;
+  
+  // Check if a truck with the same plate number already exists
+  const plateToCheck = plateNumber || licensePlate;
+  if (plateToCheck) {
+    const existingTruck = await Truck.findOne({ plateNumber: plateToCheck });
+    if (existingTruck) {
+      return next(new ApiError(`A truck with plate number ${plateToCheck} already exists`, 400));
+    }
+  }
   
   // Validate truck owner
   const owner = await User.findOne({ _id: ownerId, role: 'TruckOwner' });
@@ -166,6 +187,7 @@ const createTruck = asyncHandler(async (req, res, next) => {
   
   // Create truck
   const truck = await Truck.create({
+    plateNumber: plateToCheck,
     licensePlate,
     truckType,
     capacity,

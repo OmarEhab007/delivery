@@ -18,7 +18,7 @@ const getAllApplications = asyncHandler(async (req, res, next) => {
   
   if (req.query.status) filter.status = req.query.status;
   if (req.query.truckOwnerId) filter.truckOwnerId = req.query.truckOwnerId;
-  if (req.query.truckId) filter.truckId = req.query.truckId;
+  if (req.query.assignedTruckId) filter.assignedTruckId = req.query.assignedTruckId;
   
   // Date range filtering
   if (req.query.startDate || req.query.endDate) {
@@ -29,7 +29,7 @@ const getAllApplications = asyncHandler(async (req, res, next) => {
   
   const applications = await Application.find(filter)
     .populate('truckOwnerId', 'name email phone companyName')
-    .populate('truckId')
+    .populate('assignedTruckId')
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 });
@@ -55,7 +55,7 @@ const getAllApplications = asyncHandler(async (req, res, next) => {
 const getApplicationById = asyncHandler(async (req, res, next) => {
   const application = await Application.findById(req.params.id)
     .populate('truckOwnerId', 'name email phone companyName companyAddress')
-    .populate('truckId');
+    .populate('assignedTruckId');
   
   if (!application) {
     return next(new ApiError('Application not found', 404));
@@ -145,7 +145,7 @@ const getApplicationStats = asyncHandler(async (req, res, next) => {
   })
     .sort({ createdAt: -1 })
     .populate('truckOwnerId', 'name email')
-    .populate('truckId');
+    .populate('assignedTruckId');
   
   return ApiSuccess(res, {
     counts: {

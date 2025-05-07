@@ -20,7 +20,7 @@ const applicationSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Application must be from a truck owner']
     },
-    truckId: {
+    assignedTruckId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Truck',
       required: [true, 'Application must specify a truck']

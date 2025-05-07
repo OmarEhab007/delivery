@@ -429,5 +429,75 @@ const registerAdmin = asyncHandler(async (req, res, next) => {
   );
 });
 
+/**
+ * Register an admin (for testing purposes only)
+ * @route POST /api/auth/register/testadmin
+ * @access Public
+ */
+exports.registerTestAdmin = async (req, res, next) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, email, password, phone } = req.body;
+
+    // Check if user already exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return next(new ApiError('User already exists', 400));
+    }
+
+    // Create admin user
+    const user = await User.create({
+      name,
+      email,
+      password,
+      phone,
+      role: 'Admin'
+    });
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      status: 'success',
+      token,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Generate a CSRF token for the client
+ * @route GET /api/auth/csrf-token
+ * @access Public
+ */
+exports.getCsrfToken = (req, res) => {
+  // The csrfToken() function is added to the request object by the csurf middleware
+  const token = req.csrfToken();
+  
+  // Set the token in the response header
+  res.set('X-CSRF-Token', token);
+  
+  // Send a 200 OK response
+  res.status(200).json({
+    success: true,
+    message: 'CSRF token generated'
+  });
+};
+
 // Export all controller functions
 exports.registerAdmin = registerAdmin;

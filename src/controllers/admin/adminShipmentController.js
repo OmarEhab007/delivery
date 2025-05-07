@@ -18,8 +18,8 @@ const getAllShipments = asyncHandler(async (req, res, next) => {
   
   if (req.query.status) filter.status = req.query.status;
   if (req.query.merchantId) filter.merchantId = req.query.merchantId;
-  if (req.query.truckId) filter.truckId = req.query.truckId;
-  if (req.query.driverId) filter.driverId = req.query.driverId;
+  if (req.query.assignedTruckId) filter.assignedTruckId = req.query.assignedTruckId;
+  if (req.query.assignedDriverId) filter.assignedDriverId = req.query.assignedDriverId;
   
   // Date range filtering
   if (req.query.startDate || req.query.endDate) {
@@ -30,8 +30,8 @@ const getAllShipments = asyncHandler(async (req, res, next) => {
   
   const shipments = await Shipment.find(filter)
     .populate('merchantId', 'name email')
-    .populate('truckId')
-    .populate('driverId', 'name email phone')
+    .populate('assignedTruckId')
+    .populate('assignedDriverId', 'name email phone')
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 });
@@ -57,8 +57,8 @@ const getAllShipments = asyncHandler(async (req, res, next) => {
 const getShipmentById = asyncHandler(async (req, res, next) => {
   const shipment = await Shipment.findById(req.params.id)
     .populate('merchantId', 'name email phone')
-    .populate('truckId')
-    .populate('driverId', 'name email phone');
+    .populate('assignedTruckId')
+    .populate('assignedDriverId', 'name email phone');
   
   if (!shipment) {
     return next(new ApiError('Shipment not found', 404));
@@ -81,8 +81,8 @@ const updateShipment = asyncHandler(async (req, res, next) => {
     price,
     notes,
     merchantId,
-    truckId,
-    driverId
+    assignedTruckId,
+    assignedDriverId
   } = req.body;
   
   const shipment = await Shipment.findById(req.params.id);
@@ -99,8 +99,8 @@ const updateShipment = asyncHandler(async (req, res, next) => {
   if (price) shipment.price = price;
   if (notes) shipment.notes = notes;
   if (merchantId) shipment.merchantId = merchantId;
-  if (truckId) shipment.truckId = truckId;
-  if (driverId) shipment.driverId = driverId;
+  if (assignedTruckId) shipment.assignedTruckId = assignedTruckId;
+  if (assignedDriverId) shipment.assignedDriverId = assignedDriverId;
   
   await shipment.save();
   
@@ -173,7 +173,7 @@ const changeShipmentStatus = asyncHandler(async (req, res, next) => {
  * @access Private (Admin only)
  */
 const assignShipmentToDriver = asyncHandler(async (req, res, next) => {
-  const { driverId, truckId } = req.body;
+  const { driverId, assignedTruckId } = req.body;
   
   if (!driverId) {
     return next(new ApiError('Driver ID is required', 400));
@@ -210,9 +210,9 @@ const assignShipmentToDriver = asyncHandler(async (req, res, next) => {
   }
   
   // If truck ID is provided, verify it exists
-  if (truckId) {
+  if (assignedTruckId) {
     const Truck = require('../../models/Truck');
-    const truck = await Truck.findById(truckId);
+    const truck = await Truck.findById(assignedTruckId);
     
     if (!truck) {
       return next(new ApiError('Truck not found', 404));
@@ -224,7 +224,7 @@ const assignShipmentToDriver = asyncHandler(async (req, res, next) => {
     }
     
     // Set the assigned truck ID
-    shipment.assignedTruckId = truckId;
+    shipment.assignedTruckId = assignedTruckId;
   }
   
   // Assign the driver and update the shipment status

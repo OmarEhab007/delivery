@@ -17,6 +17,15 @@ exports.createTruck = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
     
+    // Check if a truck with the same plate number already exists
+    const existingTruck = await Truck.findOne({ plateNumber: req.body.plateNumber });
+    if (existingTruck) {
+      return res.status(400).json({
+        status: 'error',
+        message: `A truck with plate number ${req.body.plateNumber} already exists`
+      });
+    }
+    
     // Set ownerId to the current user's id
     req.body.ownerId = req.user.id;
     
@@ -111,6 +120,17 @@ exports.updateTruck = async (req, res, next) => {
     // Check if truck belongs to the current user
     if (truck.ownerId.toString() !== req.user.id) {
       return next(new ApiError('You do not have permission to update this truck', 403));
+    }
+    
+    // If plateNumber is being updated, check for duplicates
+    if (req.body.plateNumber && req.body.plateNumber !== truck.plateNumber) {
+      const existingTruck = await Truck.findOne({ plateNumber: req.body.plateNumber });
+      if (existingTruck) {
+        return res.status(400).json({
+          status: 'error',
+          message: `A truck with plate number ${req.body.plateNumber} already exists`
+        });
+      }
     }
     
     // Update truck

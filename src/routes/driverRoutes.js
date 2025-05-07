@@ -8,19 +8,148 @@ const driverController = require('../controllers/driver/driverController');
 router.use(protect);
 router.use(restrictTo('Driver'));
 
-// Get driver profile
+/**
+ * @swagger
+ * /api/driver/profile:
+ *   get:
+ *     summary: Get driver profile
+ *     tags: [Driver]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Driver profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Not authorized as a driver
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 router.get('/profile', driverController.getProfile);
 
-// Get current truck assignment
+/**
+ * @swagger
+ * /api/driver/truck:
+ *   get:
+ *     summary: Get driver's current truck assignment
+ *     tags: [Driver]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current truck assignment retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Truck'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: No current truck assignment found
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 router.get('/truck', driverController.getCurrentTruck);
 
 // Shipment routes - organized by type
+/**
+ * @swagger
+ * /api/driver/shipments/active:
+ *   get:
+ *     summary: Get driver's active shipments
+ *     tags: [Driver]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Active shipments retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Shipment'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 router.get('/shipments', driverController.getActiveShipments); // Legacy route - keep for backward compatibility
 router.get('/shipments/active', driverController.getActiveShipments);
 router.get('/shipments/assigned', driverController.getAssignedShipments);
 router.get('/shipments/history', driverController.getShipmentHistory);
 
-// Start delivery
+/**
+ * @swagger
+ * /api/driver/shipments/{shipmentId}/start:
+ *   post:
+ *     summary: Start a delivery
+ *     tags: [Driver]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: shipmentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the shipment to start delivery for
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - startOdometer
+ *             properties:
+ *               startOdometer:
+ *                 type: number
+ *                 description: Odometer reading at start of delivery
+ *               notes:
+ *                 type: string
+ *                 description: Optional notes about the delivery
+ *     responses:
+ *       200:
+ *         description: Delivery started successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Shipment'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Shipment not found
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 router.post(
   '/shipments/:shipmentId/start',
   [
@@ -30,7 +159,64 @@ router.post(
   driverController.startDelivery
 );
 
-// Complete delivery
+/**
+ * @swagger
+ * /api/driver/shipments/{shipmentId}/complete:
+ *   post:
+ *     summary: Complete a delivery
+ *     tags: [Driver]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: shipmentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the shipment to complete
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - endOdometer
+ *               - recipientName
+ *             properties:
+ *               endOdometer:
+ *                 type: number
+ *                 description: Odometer reading at end of delivery
+ *               recipientName:
+ *                 type: string
+ *                 description: Name of the person who received the shipment
+ *               recipientSignature:
+ *                 type: string
+ *                 description: Base64 encoded signature image
+ *               notes:
+ *                 type: string
+ *                 description: Optional notes about the delivery
+ *     responses:
+ *       200:
+ *         description: Delivery completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Shipment'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Shipment not found
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 router.post(
   '/shipments/:shipmentId/complete',
   [
@@ -54,7 +240,57 @@ router.post(
   driverController.reportIssue
 );
 
-// Upload proof of delivery
+/**
+ * @swagger
+ * /api/driver/shipments/{shipmentId}/proof:
+ *   post:
+ *     summary: Upload proof of delivery
+ *     tags: [Driver]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: shipmentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the shipment
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               proof:
+ *                 type: string
+ *                 format: binary
+ *                 description: Image file as proof of delivery
+ *     responses:
+ *       200:
+ *         description: Proof of delivery uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     url:
+ *                       type: string
+ *                       description: URL of the uploaded proof
+ *       400:
+ *         description: File upload error
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         description: Shipment not found
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 router.post(
   '/shipments/:shipmentId/proof',
   driverController.uploadProofOfDelivery
@@ -123,6 +359,53 @@ router.patch(
   driverController.updateDriverStatus
 );
 
+/**
+ * @swagger
+ * /api/driver/location:
+ *   patch:
+ *     summary: Update driver's current location
+ *     tags: [Driver]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - latitude
+ *               - longitude
+ *             properties:
+ *               latitude:
+ *                 type: number
+ *                 minimum: -90
+ *                 maximum: 90
+ *                 description: Current latitude
+ *               longitude:
+ *                 type: number
+ *                 minimum: -180
+ *                 maximum: 180
+ *                 description: Current longitude
+ *     responses:
+ *       200:
+ *         description: Location updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 // Update location - support both PATCH and POST methods
 const locationValidation = [
   body('latitude')

@@ -68,6 +68,9 @@ const getSubdirectory = (entityType) => {
 // Save file to storage and create document record
 const saveDocument = async (file, documentData) => {
   try {
+    console.log('Starting saveDocument with file:', file ? 'File exists' : 'No file provided');
+    console.log('Document data:', JSON.stringify(documentData, null, 2));
+    
     await initializeStorage();
     
     const {
@@ -87,22 +90,42 @@ const saveDocument = async (file, documentData) => {
     
     // Generate secure filename
     const secureFilename = generateSecureFilename(file.originalname);
+    console.log('Generated secure filename:', secureFilename);
     
     // Determine storage path
     const subdir = getSubdirectory(entityType);
     const entityDir = path.join(UPLOAD_DIR, subdir, entityId.toString());
+    console.log('Entity directory:', entityDir);
     
     // Create entity directory if it doesn't exist
     if (!fs.existsSync(entityDir)) {
+      console.log('Creating entity directory:', entityDir);
       await mkdir(entityDir, { recursive: true });
     }
     
     // Complete file path
     const filePath = path.join(entityDir, secureFilename);
     const relativeFilePath = path.join(subdir, entityId.toString(), secureFilename);
+    console.log('Absolute file path:', filePath);
+    console.log('Relative file path:', relativeFilePath);
     
     // Write file to disk
-    await writeFile(filePath, file.buffer);
+    try {
+      console.log('Writing file buffer of size:', file.buffer.length);
+      await writeFile(filePath, file.buffer);
+      console.log('File successfully written to disk');
+      
+      // Verify file was created
+      if (fs.existsSync(filePath)) {
+        const stats = await stat(filePath);
+        console.log('File stats:', stats.size, 'bytes');
+      } else {
+        console.error('File not found after writing!');
+      }
+    } catch (writeError) {
+      console.error('Error writing file to disk:', writeError);
+      throw writeError;
+    }
     
     // Create document record in database
     const document = new Document({
@@ -126,6 +149,7 @@ const saveDocument = async (file, documentData) => {
     logger.info(`Document saved: ${document._id} at ${filePath}`);
     return document;
   } catch (error) {
+    console.error('Error in saveDocument function:', error);
     logger.error(`Error saving document: ${error.message}`);
     throw error;
   }

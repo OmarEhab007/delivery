@@ -309,13 +309,11 @@ const Users = () => {
   // Submit user form handler
   const handleUserSubmit = async (userData) => {
     try {
-      let response;
-      
       if (isEditing) {
-        response = await users.update(selectedUser._id, userData);
+        await users.update(selectedUser._id, userData);
         enqueueSnackbar('User updated successfully', { variant: 'success' });
       } else {
-        response = await users.create(userData);
+        await users.create(userData);
         enqueueSnackbar('User created successfully', { variant: 'success' });
       }
       

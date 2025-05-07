@@ -3,6 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/auth/authController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
+const { csrfProtection } = require('../middleware/csrfProtection');
 
 // Validation middleware for registration
 const registerValidation = [
@@ -14,7 +15,59 @@ const registerValidation = [
   body('phone').notEmpty().withMessage('Phone number is required')
 ];
 
-// Admin registration (by Admin only)
+/**
+ * @swagger
+ * /api/auth/register/admin:
+ *   post:
+ *     summary: Register a new admin user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *               - phone
+ *               - role
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 format: password
+ *               phone:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [Admin]
+ *     responses:
+ *       201:
+ *         description: Admin user created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 router.post(
   '/register/admin',
   protect,
@@ -26,7 +79,55 @@ router.post(
   authController.registerAdmin
 );
 
-// Merchant registration
+/**
+ * @swagger
+ * /api/auth/register/merchant:
+ *   post:
+ *     summary: Register a new merchant user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *               - phone
+ *               - role
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 format: password
+ *               phone:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [Merchant]
+ *     responses:
+ *       201:
+ *         description: Merchant user created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 router.post(
   '/register/merchant',
   [
@@ -61,7 +162,70 @@ router.post(
   authController.registerDriver
 );
 
-// Login for all user types
+// Test admin registration (for testing purposes only)
+router.post(
+  '/register/testadmin',
+  [
+    ...registerValidation,
+    body('role').optional().equals('Admin').withMessage('Role must be Admin')
+  ],
+  authController.registerTestAdmin
+);
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login a user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 format: password
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 token:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   default: false
+ *                 message:
+ *                   type: string
+ *                   default: "Invalid credentials"
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 router.post(
   '/login',
   [
@@ -71,7 +235,31 @@ router.post(
   authController.login
 );
 
-// Get current user
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
 router.get('/me', protect, authController.getCurrentUser);
 
 // Forgot Password
@@ -106,5 +294,8 @@ router.patch(
   ],
   authController.updatePassword
 );
+
+// Generate CSRF token
+router.get('/csrf-token', csrfProtection, authController.getCsrfToken);
 
 module.exports = router;

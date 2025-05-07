@@ -49,7 +49,18 @@ const restrictTo = (...roles) => {
   };
 };
 
+// Add an alias for authorizeRoles for backward compatibility
+const authorizeRoles = (roles) => {
+  // Convert array to rest parameters if an array is passed
+  return restrictTo(...(Array.isArray(roles) ? roles : [roles]));
+};
+
+// Alias for authenticateToken for backward compatibility
+const authenticateToken = protect;
+
 module.exports = {
   protect,
-  restrictTo
+  restrictTo,
+  authenticateToken,  // Alias for protect
+  authorizeRoles      // Alias for restrictTo
 };
