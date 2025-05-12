@@ -1,6 +1,8 @@
 const express = require('express');
+
 const router = express.Router();
 const { body } = require('express-validator');
+
 const shipmentController = require('../controllers/shipment/shipmentController');
 const applicationController = require('../controllers/application/applicationController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
@@ -109,7 +111,7 @@ router.post(
     body('origin.address').notEmpty().withMessage('Origin address is required'),
     body('destination.address').notEmpty().withMessage('Destination address is required'),
     body('cargoDetails.description').notEmpty().withMessage('Cargo description is required'),
-    body('cargoDetails.weight').isNumeric().withMessage('Cargo weight must be a number')
+    body('cargoDetails.weight').isNumeric().withMessage('Cargo weight must be a number'),
   ],
   shipmentController.createShipment
 );
@@ -253,7 +255,11 @@ router.get('/search', restrictTo('Merchant'), shipmentController.searchShipments
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.get('/:shipmentId/applications', restrictTo('Merchant'), applicationController.getShipmentApplications);
+router.get(
+  '/:shipmentId/applications',
+  restrictTo('Merchant'),
+  applicationController.getShipmentApplications
+);
 
 /**
  * @swagger
@@ -380,9 +386,15 @@ router.patch(
   restrictTo('Merchant'),
   [
     body('origin.address').optional().notEmpty().withMessage('Origin address cannot be empty'),
-    body('destination.address').optional().notEmpty().withMessage('Destination address cannot be empty'),
-    body('cargoDetails.description').optional().notEmpty().withMessage('Cargo description cannot be empty'),
-    body('cargoDetails.weight').optional().isNumeric().withMessage('Cargo weight must be a number')
+    body('destination.address')
+      .optional()
+      .notEmpty()
+      .withMessage('Destination address cannot be empty'),
+    body('cargoDetails.description')
+      .optional()
+      .notEmpty()
+      .withMessage('Cargo description cannot be empty'),
+    body('cargoDetails.weight').optional().isNumeric().withMessage('Cargo weight must be a number'),
   ],
   shipmentController.updateShipment
 );
@@ -443,9 +455,7 @@ router.patch(
 router.patch(
   '/:id/cancel',
   restrictTo('Merchant'),
-  [
-    body('reason').optional().notEmpty().withMessage('Reason cannot be empty')
-  ],
+  [body('reason').optional().notEmpty().withMessage('Reason cannot be empty')],
   shipmentController.cancelShipment
 );
 
@@ -532,9 +542,9 @@ router.post(
   '/:id/timeline',
   [
     body('status').notEmpty().withMessage('Status is required'),
-    body('note').optional().notEmpty().withMessage('Note cannot be empty')
+    body('note').optional().notEmpty().withMessage('Note cannot be empty'),
   ],
   shipmentController.addTimelineEntry
 );
 
-module.exports = router; 
+module.exports = router;

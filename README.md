@@ -147,3 +147,34 @@ This allows monitoring of third-party services that your application depends on.
 ## Development Workflow
 
 See [TASKS.md](./TASKS.md) for the development roadmap and progress tracking.
+
+## Linting and Formatting
+
+This project uses ESLint and Prettier for code quality and consistent formatting:
+
+### Available Commands
+
+- `npm run lint` - Run ESLint to check for code issues
+- `npm run lint:fix` - Run ESLint and automatically fix issues when possible
+- `npm run format` - Run Prettier to format all files
+- `npm run lint:format` - Run both ESLint fix and Prettier format
+- `npm run lint:check` - Run both ESLint and Prettier in check mode (no fixes)
+
+### Pre-commit Hooks
+
+The project uses Husky to run linting and formatting checks before commits. This ensures that all committed code follows the project's style guidelines.
+
+### Configuration
+
+- ESLint configuration is in `.eslintrc.json`
+- Prettier configuration is in `.prettierrc`
+- Files to ignore during linting are specified in `.eslintignore`
+- Files to ignore during formatting are specified in `.prettierignore`
+
+If you need to temporarily bypass pre-commit hooks, you can use the `--no-verify` flag:
+
+```bash
+git commit -m "Your commit message" --no-verify
+```
+
+However, it's generally better to fix the linting issues rather than bypassing the checks.

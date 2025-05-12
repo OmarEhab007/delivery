@@ -29,7 +29,8 @@ import {
   Menu as MenuIcon,
   Logout as LogoutIcon,
   Person as ProfileIcon,
-  ChevronLeft as ChevronLeftIcon
+  ChevronLeft as ChevronLeftIcon,
+  BarChart as ReportsIcon
 } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -42,6 +43,7 @@ const menuItems = [
   { text: 'Shipments', icon: <ShipmentsIcon />, path: '/shipments' },
   { text: 'Trucks', icon: <TrucksIcon />, path: '/trucks' },
   { text: 'Applications', icon: <ApplicationsIcon />, path: '/applications' },
+  { text: 'Reports', icon: <ReportsIcon />, path: '/reports', role: 'Admin' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];
 
@@ -93,7 +95,9 @@ const DashboardLayout = () => {
       </Toolbar>
       <Divider />
       <List>
-        {menuItems.map((item) => (
+        {menuItems
+          .filter(item => !item.role || item.role === currentUser?.role)
+          .map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton 
               component={Link} 

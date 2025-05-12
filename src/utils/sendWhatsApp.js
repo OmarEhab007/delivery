@@ -2,13 +2,11 @@
  * Utility for sending WhatsApp messages via Twilio
  */
 const twilio = require('twilio');
+
 const logger = require('./logger');
 
 // Initialize Twilio client
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 /**
  * Send a WhatsApp message using Twilio
@@ -21,22 +19,22 @@ const sendWhatsAppMessage = async (to, body, mediaUrls = []) => {
   try {
     // Format phone number for WhatsApp
     const formattedTo = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
-    
+
     // Create message payload
     const messagePayload = {
       from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
       to: formattedTo,
-      body
+      body,
     };
-    
+
     // Add media URLs if provided
     if (mediaUrls && mediaUrls.length > 0) {
       messagePayload.mediaUrl = mediaUrls;
     }
-    
+
     // Send the message
     const message = await client.messages.create(messagePayload);
-    
+
     logger.info(`WhatsApp message sent to ${to}, SID: ${message.sid}`);
     return message;
   } catch (error) {
@@ -56,16 +54,16 @@ const sendTemplateMessage = async (to, templateName, parameters = []) => {
   try {
     // Format variables for the template
     const formattedTo = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
-    
+
     // Create the message
     const message = await client.messages.create({
       from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
       to: formattedTo,
       body: templateName, // This will be replaced by the template
       contentSid: templateName,
-      contentVariables: JSON.stringify(parameters)
+      contentVariables: JSON.stringify(parameters),
     });
-    
+
     logger.info(`WhatsApp template message sent to ${to}, SID: ${message.sid}`);
     return message;
   } catch (error) {
@@ -76,5 +74,5 @@ const sendTemplateMessage = async (to, templateName, parameters = []) => {
 
 module.exports = {
   sendWhatsAppMessage,
-  sendTemplateMessage
+  sendTemplateMessage,
 };

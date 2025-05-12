@@ -4,6 +4,7 @@
  */
 
 const helmet = require('helmet');
+
 const logger = require('../utils/logger');
 
 /**
@@ -36,7 +37,7 @@ const configureSecurityHeaders = (options = {}) => {
 
   // Clean up null values in directives for production
   if (process.env.NODE_ENV === 'production') {
-    Object.keys(cspDirectives).forEach(key => {
+    Object.keys(cspDirectives).forEach((key) => {
       if (cspDirectives[key] === null) {
         delete cspDirectives[key];
       }
@@ -51,70 +52,76 @@ const configureSecurityHeaders = (options = {}) => {
     },
     // Strict transport security (HSTS) configuration
     // Only enable in production to avoid HTTPS requirement during development
-    hsts: process.env.NODE_ENV === 'production' ? {
-      maxAge: 31536000, // 1 year
-      includeSubDomains: true,
-      preload: true
-    } : false,
+    hsts:
+      process.env.NODE_ENV === 'production'
+        ? {
+            maxAge: 31536000, // 1 year
+            includeSubDomains: true,
+            preload: true,
+          }
+        : false,
     // X-Content-Type-Options to prevent MIME type sniffing
     noSniff: true,
     // X-XSS-Protection header, although modern browsers use CSP instead
     xssFilter: true,
     // Disable browser's DNS prefetching
     dnsPrefetchControl: {
-      allow: false
+      allow: false,
     },
     // Add this setting to prevent Helmet from clearing/overriding our cache headers
-    noCache: false
+    noCache: false,
   };
 
   // Create custom middleware to log CSP violations if reporting is enabled
   return [
     // Apply Helmet middleware with enhanced configuration
     helmet(helmetConfig),
-    
+
     // Add CSP violation reporting if enabled
     (req, res, next) => {
       // Skip for non-HTML responses and when not in report mode
-      if (!process.env.CSP_REPORT_URI || req.path.match(/\.(js|css|png|jpg|jpeg|svg|gif|woff|woff2|ttf|eot)$/)) {
+      if (
+        !process.env.CSP_REPORT_URI ||
+        req.path.match(/\.(js|css|png|jpg|jpeg|svg|gif|woff|woff2|ttf|eot)$/)
+      ) {
         return next();
       }
-      
+
       // Add CSP reporting URI for violation reports
       res.setHeader(
         'Content-Security-Policy-Report-Only',
         `report-uri ${process.env.CSP_REPORT_URI}`
       );
-      
+
       next();
     },
-    
+
     // Add security headers logging in development
     (req, res, next) => {
       if (process.env.NODE_ENV === 'development' && options.logHeaders) {
         const originalEnd = res.end;
-        
-        res.end = function(chunk, encoding) {
+
+        res.end = function (chunk, encoding) {
           // Log relevant security headers
           const securityHeaders = {
             'content-security-policy': res.getHeader('Content-Security-Policy'),
             'strict-transport-security': res.getHeader('Strict-Transport-Security'),
             'x-content-type-options': res.getHeader('X-Content-Type-Options'),
             'x-frame-options': res.getHeader('X-Frame-Options'),
-            'x-xss-protection': res.getHeader('X-XSS-Protection')
+            'x-xss-protection': res.getHeader('X-XSS-Protection'),
           };
-          
+
           logger.debug('Security headers set', {
             path: req.originalUrl || req.url,
-            headers: securityHeaders
+            headers: securityHeaders,
           });
-          
+
           return originalEnd.apply(this, arguments);
         };
       }
-      
+
       next();
-    }
+    },
   ];
 };
 
@@ -126,17 +133,17 @@ const handleCSPReports = () => {
   return (req, res) => {
     if (req.body && req.body['csp-report']) {
       const report = req.body['csp-report'];
-      
+
       logger.warn('CSP violation', {
         documentUri: report['document-uri'],
         blockedUri: report['blocked-uri'],
         violatedDirective: report['violated-directive'],
         originalPolicy: report['original-policy'],
-        referrer: report['referrer'],
-        userAgent: req.headers['user-agent']
+        referrer: report.referrer,
+        userAgent: req.headers['user-agent'],
       });
     }
-    
+
     res.status(204).end();
   };
 };
@@ -144,5 +151,5 @@ const handleCSPReports = () => {
 module.exports = {
   configureSecurityHeaders,
   handleCSPReports,
-  defaultCSPDirectives
-}; 
+  defaultCSPDirectives,
+};

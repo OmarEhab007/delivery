@@ -1,6 +1,8 @@
 const express = require('express');
+
 const router = express.Router();
 const { body } = require('express-validator');
+
 const truckOwnerController = require('../controllers/truck/truckOwnerController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
@@ -122,9 +124,7 @@ router.get('/shipments/available', truckOwnerController.getAvailableShipments);
  */
 router.patch(
   '/shipments/:shipmentId/assign',
-  [
-    body('driverId').notEmpty().withMessage('Driver ID is required')
-  ],
+  [body('driverId').notEmpty().withMessage('Driver ID is required')],
   truckOwnerController.assignShipmentToDriver
 );
 
@@ -290,9 +290,9 @@ router.patch(
     body('isAvailable').optional().isBoolean().withMessage('isAvailable must be a boolean'),
     body('driverStatus').optional().isString().withMessage('driverStatus must be a string'),
     body('phone').optional().isString().withMessage('Phone must be a string'),
-    body('licenseNumber').optional().isString().withMessage('License number must be a string')
+    body('licenseNumber').optional().isString().withMessage('License number must be a string'),
   ],
   truckOwnerController.updateDriver
 );
 
-module.exports = router; 
+module.exports = router;

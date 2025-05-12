@@ -1,6 +1,8 @@
 const express = require('express');
+
 const router = express.Router();
 const { body } = require('express-validator');
+
 const applicationController = require('../controllers/application/applicationController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
@@ -106,7 +108,10 @@ router.post(
     body('bidDetails.price').isNumeric().withMessage('Bid price must be a number'),
     body('bidDetails.currency').optional().isString().withMessage('Currency must be a string'),
     body('bidDetails.notes').optional().isString().withMessage('Notes must be a string'),
-    body('bidDetails.validUntil').optional().isISO8601().withMessage('Valid until date must be a valid date')
+    body('bidDetails.validUntil')
+      .optional()
+      .isISO8601()
+      .withMessage('Valid until date must be a valid date'),
   ],
   applicationController.createApplication
 );
@@ -377,7 +382,10 @@ router.patch(
     body('bidDetails.price').optional().isNumeric().withMessage('Bid price must be a number'),
     body('bidDetails.currency').optional().isString().withMessage('Currency must be a string'),
     body('bidDetails.notes').optional().isString().withMessage('Notes must be a string'),
-    body('bidDetails.validUntil').optional().isISO8601().withMessage('Valid until date must be a valid date')
+    body('bidDetails.validUntil')
+      .optional()
+      .isISO8601()
+      .withMessage('Valid until date must be a valid date'),
   ],
   applicationController.updateApplication
 );
@@ -424,11 +432,7 @@ router.patch(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.patch(
-  '/:id/cancel',
-  restrictTo('TruckOwner'),
-  applicationController.cancelApplication
-);
+router.patch('/:id/cancel', restrictTo('TruckOwner'), applicationController.cancelApplication);
 
 /**
  * @swagger
@@ -475,11 +479,7 @@ router.patch(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.patch(
-  '/:id/accept',
-  restrictTo('Merchant'),
-  applicationController.acceptApplication
-);
+router.patch('/:id/accept', restrictTo('Merchant'), applicationController.acceptApplication);
 
 /**
  * @swagger
@@ -537,10 +537,8 @@ router.patch(
 router.patch(
   '/:id/reject',
   restrictTo('Merchant'),
-  [
-    body('reason').optional().notEmpty().withMessage('Reason cannot be empty')
-  ],
+  [body('reason').optional().notEmpty().withMessage('Reason cannot be empty')],
   applicationController.rejectApplication
 );
 
-module.exports = router; 
+module.exports = router;

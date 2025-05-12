@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /**
  * Utility script for viewing and managing logs
  * Usage: node src/scripts/log-utils.js [action] [options]
@@ -55,37 +53,37 @@ async function main() {
   try {
     const args = process.argv.slice(2);
     const action = args[0] || ACTIONS.HELP;
-    
+
     // Make sure logs directory exists
     if (!fs.existsSync(LOG_DIR)) {
       fs.mkdirSync(LOG_DIR, { recursive: true });
       console.log(`Created logs directory: ${LOG_DIR}`);
     }
-    
+
     switch (action) {
       case ACTIONS.LIST:
         await listLogs();
         break;
-      
+
       case ACTIONS.TAIL:
         const logFile = args[1];
         const lines = parseInt(args[2]) || 10;
         await tailLog(logFile, lines);
         break;
-      
+
       case ACTIONS.CLEAN:
         const days = parseInt(args[1]) || 30;
         await cleanLogs(days);
         break;
-      
+
       case ACTIONS.ROTATE:
         await forceRotate();
         break;
-      
+
       case ACTIONS.ARCHIVE:
         await archiveLogs();
         break;
-      
+
       case ACTIONS.HELP:
       default:
         console.log(helpText);
@@ -103,7 +101,7 @@ async function main() {
 async function listLogs() {
   try {
     const files = await readdir(LOG_DIR);
-    
+
     // Get file stats
     const fileStats = await Promise.all(
       files.map(async (file) => {
@@ -117,24 +115,24 @@ async function listLogs() {
         };
       })
     );
-    
+
     // Filter out audit files and sort by modified date (newest first)
     const sortedFiles = fileStats
-      .filter(file => !file.isAudit)
+      .filter((file) => !file.isAudit)
       .sort((a, b) => new Date(b.modified) - new Date(a.modified));
-    
+
     // Print table
     console.log('\nLog Files:');
     console.log('=========================================================');
     console.log('Filename                       Size       Last Modified');
     console.log('=========================================================');
-    
+
     sortedFiles.forEach((file) => {
       const name = file.name.padEnd(30);
       const size = file.size.padEnd(10);
       console.log(`${name} ${size} ${file.modified}`);
     });
-    
+
     console.log('=========================================================');
     console.log(`Total: ${sortedFiles.length} log files\n`);
   } catch (error) {
@@ -155,16 +153,16 @@ async function tailLog(file, lines = 10) {
     await listLogs();
     return;
   }
-  
+
   const logFile = path.join(LOG_DIR, file);
-  
+
   if (!fs.existsSync(logFile)) {
     console.error(`Error: Log file not found: ${file}`);
     console.log('Available log files:');
     await listLogs();
     return;
   }
-  
+
   try {
     // Using tail command on Unix-based systems
     if (process.platform !== 'win32') {
@@ -176,12 +174,12 @@ async function tailLog(file, lines = 10) {
       console.log('=========================================================');
       return;
     }
-    
+
     // Fallback for Windows
     const content = fs.readFileSync(logFile, 'utf8');
     const allLines = content.split('\n');
     const lastLines = allLines.slice(-lines);
-    
+
     console.log(`\nLast ${lines} lines of ${file}:`);
     console.log('=========================================================');
     console.log(lastLines.join('\n'));
@@ -202,33 +200,33 @@ async function cleanLogs(days = 30) {
       console.error('Error: Days must be positive');
       return;
     }
-    
+
     console.log(`Cleaning log files older than ${days} days...`);
-    
+
     const files = await readdir(LOG_DIR);
     const now = new Date();
     const cutoff = new Date(now.setDate(now.getDate() - days));
-    
+
     let deleted = 0;
     let skipped = 0;
-    
+
     for (const file of files) {
       // Skip audit files and non-dated log files
       if (file.startsWith('.') || !file.match(/\d{4}-\d{2}-\d{2}/)) {
         skipped++;
         continue;
       }
-      
+
       const filePath = path.join(LOG_DIR, file);
       const stats = await stat(filePath);
-      
+
       if (stats.mtime < cutoff) {
         await unlink(filePath);
         deleted++;
         console.log(`Deleted: ${file}`);
       }
     }
-    
+
     console.log(`\nResults: ${deleted} files deleted, ${skipped} files skipped`);
   } catch (error) {
     console.error(`Failed to clean logs: ${error.message}`);
@@ -259,15 +257,15 @@ async function archiveLogs() {
  */
 function formatBytes(bytes, decimals = 2) {
   if (bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  
+
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+
+  return `${parseFloat((bytes / k ** i).toFixed(dm))} ${sizes[i]}`;
 }
 
 // Run the script
-main(); 
+main();

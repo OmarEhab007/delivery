@@ -1,4 +1,5 @@
 const express = require('express');
+
 const router = express.Router();
 const { swaggerSpec } = require('../config/swagger');
 
@@ -8,4 +9,4 @@ router.get('/json', (req, res) => {
   res.send(swaggerSpec);
 });
 
-module.exports = router; 
+module.exports = router;

@@ -10,66 +10,66 @@ const swaggerDefinition = {
     description: 'API documentation for the Delivery App',
     contact: {
       name: 'API Support',
-      email: 'support@deliveryapp.com'
+      email: 'support@deliveryapp.com',
     },
     license: {
       name: 'MIT',
-      url: 'https://opensource.org/licenses/MIT'
-    }
+      url: 'https://opensource.org/licenses/MIT',
+    },
   },
   servers: [
     {
       url: process.env.API_URL || 'http://localhost:3000',
-      description: 'Development server'
-    }
+      description: 'Development server',
+    },
   ],
   tags: [
     {
       name: 'Auth',
-      description: 'Authentication and authorization operations'
+      description: 'Authentication and authorization operations',
     },
     {
       name: 'Users',
-      description: 'User management operations'
+      description: 'User management operations',
     },
     {
       name: 'Trucks',
-      description: 'Truck management operations'
+      description: 'Truck management operations',
     },
     {
       name: 'Shipments',
-      description: 'Shipment management operations'
+      description: 'Shipment management operations',
     },
     {
       name: 'Applications',
-      description: 'Driver application operations'
+      description: 'Driver application operations',
     },
     {
       name: 'Documents',
-      description: 'Document management operations'
+      description: 'Document management operations',
     },
     {
       name: 'Admin',
-      description: 'Admin operations'
+      description: 'Admin operations',
     },
     {
       name: 'Driver',
-      description: 'Driver operations for managing deliveries and location updates'
+      description: 'Driver operations for managing deliveries and location updates',
     },
     {
       name: 'TruckOwner',
-      description: 'Truck owner operations for managing trucks and drivers'
-    }
+      description: 'Truck owner operations for managing trucks and drivers',
+    },
   ],
   components: {
     securitySchemes: {
       bearerAuth: {
         type: 'http',
         scheme: 'bearer',
-        bearerFormat: 'JWT'
-      }
-    }
-  }
+        bearerFormat: 'JWT',
+      },
+    },
+  },
 };
 
 // Options for the swagger docs
@@ -81,7 +81,7 @@ const options = {
     './src/models/*.js',
     './src/controllers/**/*.js',
     './src/docs/*.js', // Optional path for dedicated Swagger documentation files
-  ]
+  ],
 };
 
 // Initialize swagger-jsdoc
@@ -95,8 +95,8 @@ module.exports = {
     swaggerOptions: {
       docExpansion: 'none',
       filter: true,
-      showRequestHeaders: true
-    }
+      showRequestHeaders: true,
+    },
   }),
-  swaggerSpec
-}; 
+  swaggerSpec,
+};

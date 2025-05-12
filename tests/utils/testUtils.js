@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+
 const User = require('../../src/models/User');
 const Truck = require('../../src/models/Truck');
 const { Shipment } = require('../../src/models/Shipment');
 const { Application } = require('../../src/models/Application');
-const mongoose = require('mongoose');
 
 /**
  * Create a test user with specified role
@@ -13,22 +14,22 @@ const mongoose = require('mongoose');
  */
 const createTestUser = async (role = 'Merchant') => {
   const hashedPassword = await bcrypt.hash('password123', 10);
-  
+
   const userData = {
     name: `Test ${role}`,
     email: `test${role}${Date.now()}@example.com`,
     password: hashedPassword,
     phone: '+1234567890',
-    role: role,
-    isVerified: true
+    role,
+    isVerified: true,
   };
-  
+
   // Add role-specific required fields
   if (role === 'TruckOwner') {
     userData.companyName = 'Test Company';
     userData.companyAddress = 'Test Address';
   }
-  
+
   if (role === 'Driver') {
     // We can't create a driver without an owner, so we'll create a dummy truck owner first
     if (!userData.ownerId) {
@@ -37,9 +38,9 @@ const createTestUser = async (role = 'Merchant') => {
     }
     userData.licenseNumber = `DL-${Date.now()}`;
   }
-  
+
   const user = new User(userData);
-  
+
   await user.save();
   return user;
 };
@@ -50,11 +51,7 @@ const createTestUser = async (role = 'Merchant') => {
  * @returns {String} JWT token
  */
 const generateToken = (user) => {
-  return jwt.sign(
-    { id: user._id },
-    process.env.JWT_SECRET || 'testsecret',
-    { expiresIn: '1h' }
-  );
+  return jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'testsecret', { expiresIn: '1h' });
 };
 
 /**
@@ -73,18 +70,18 @@ const createTestTruck = async (ownerId, overrides = {}) => {
       length: 20,
       width: 8,
       height: 8,
-      unit: 'ft'
+      unit: 'ft',
     },
     truckType: 'Flatbed',
     features: ['GPS', 'Refrigeration'],
-    ownerId: ownerId,
+    ownerId,
     available: true,
     location: {
-      coordinates: [77.216721, 28.644800],
-      address: 'Test Location'
-    }
+      coordinates: [77.216721, 28.6448],
+      address: 'Test Location',
+    },
   };
-  
+
   const truckData = { ...defaultTruck, ...overrides };
   return await Truck.create(truckData);
 };
@@ -97,20 +94,20 @@ const createTestTruck = async (ownerId, overrides = {}) => {
  */
 const createTestShipment = async (merchantId, overrides = {}) => {
   const defaultShipment = {
-    merchantId: merchantId,
+    merchantId,
     origin: {
       address: '123 Pickup St, Test City',
       coordinates: {
-        lat: 28.644800,
-        lng: 77.216721
-      }
+        lat: 28.6448,
+        lng: 77.216721,
+      },
     },
     destination: {
       address: '456 Delivery St, Test City',
       coordinates: {
         lat: 28.535517,
-        lng: 77.391029
-      }
+        lng: 77.391029,
+      },
     },
     cargoDetails: {
       description: 'Test Cargo',
@@ -119,33 +116,37 @@ const createTestShipment = async (merchantId, overrides = {}) => {
         length: 10,
         width: 5,
         height: 5,
-        unit: 'ft'
+        unit: 'ft',
       },
       category: 'general',
-      specialHandling: ['none']
+      specialHandling: ['none'],
     },
     scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
     expectedDeliveryDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
     paymentMethod: 'CARD',
     status: 'REQUESTED',
-    timeline: [{
-      status: 'REQUESTED',
-      note: 'Shipment created',
-      timestamp: new Date()
-    }]
+    timeline: [
+      {
+        status: 'REQUESTED',
+        note: 'Shipment created',
+        timestamp: new Date(),
+      },
+    ],
   };
-  
+
   const shipmentData = { ...defaultShipment, ...overrides };
-  
+
   // If status override was provided, make sure the timeline matches
   if (overrides.status && (!overrides.timeline || !overrides.timeline.length)) {
-    shipmentData.timeline = [{
-      status: overrides.status,
-      note: `Shipment ${overrides.status.toLowerCase()}`,
-      timestamp: new Date()
-    }];
+    shipmentData.timeline = [
+      {
+        status: overrides.status,
+        note: `Shipment ${overrides.status.toLowerCase()}`,
+        timestamp: new Date(),
+      },
+    ];
   }
-  
+
   return await Shipment.create(shipmentData);
 };
 
@@ -159,18 +160,18 @@ const createTestShipment = async (merchantId, overrides = {}) => {
  */
 const createTestApplication = async (shipmentId, truckOwnerId, truckId, overrides = {}) => {
   const defaultApplication = {
-    shipmentId: shipmentId,
+    shipmentId,
     ownerId: truckOwnerId,
-    truckId: truckId,
+    truckId,
     driverId: mongoose.Types.ObjectId(),
     bidDetails: {
       price: 5000,
       currency: 'USD',
-      notes: 'Test application'
+      notes: 'Test application',
     },
-    status: 'PENDING'
+    status: 'PENDING',
   };
-  
+
   const applicationData = { ...defaultApplication, ...overrides };
   return await Application.create(applicationData);
 };
@@ -180,5 +181,5 @@ module.exports = {
   generateToken,
   createTestTruck,
   createTestShipment,
-  createTestApplication
-}; 
+  createTestApplication,
+};

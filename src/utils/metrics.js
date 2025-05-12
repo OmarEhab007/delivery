@@ -1,5 +1,7 @@
-const promClient = require('prom-client');
 const os = require('os');
+
+const promClient = require('prom-client');
+
 const logger = require('./logger');
 
 // Initialize the Prometheus registry
@@ -13,55 +15,55 @@ const httpRequestDurationMicroseconds = new promClient.Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'route', 'status_code'],
-  buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10]
+  buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10],
 });
 
 const httpRequestCounter = new promClient.Counter({
   name: 'http_requests_total',
   help: 'Total number of HTTP requests',
-  labelNames: ['method', 'route', 'status_code']
+  labelNames: ['method', 'route', 'status_code'],
 });
 
 const databaseOperationsCounter = new promClient.Counter({
   name: 'database_operations_total',
   help: 'Total number of database operations',
-  labelNames: ['operation', 'collection']
+  labelNames: ['operation', 'collection'],
 });
 
 const databaseOperationDuration = new promClient.Histogram({
   name: 'database_operation_duration_seconds',
   help: 'Duration of database operations in seconds',
   labelNames: ['operation', 'collection'],
-  buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1]
+  buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1],
 });
 
 const activeConnections = new promClient.Gauge({
   name: 'http_connections_active',
-  help: 'Number of active HTTP connections'
+  help: 'Number of active HTTP connections',
 });
 
 const shipmentStatusGauge = new promClient.Gauge({
   name: 'shipments_by_status',
   help: 'Number of shipments by status',
-  labelNames: ['status']
+  labelNames: ['status'],
 });
 
 const trucksStatusGauge = new promClient.Gauge({
   name: 'trucks_by_status',
   help: 'Number of trucks by status',
-  labelNames: ['status']
+  labelNames: ['status'],
 });
 
 const jobQueueSizeGauge = new promClient.Gauge({
   name: 'job_queue_size',
   help: 'Number of jobs in processing queues',
-  labelNames: ['queue_name']
+  labelNames: ['queue_name'],
 });
 
 const errorCounter = new promClient.Counter({
   name: 'application_errors_total',
   help: 'Total number of application errors',
-  labelNames: ['type', 'route']
+  labelNames: ['type', 'route'],
 });
 
 // Register custom metrics
@@ -82,16 +84,16 @@ register.registerMetric(errorCounter);
  * @returns {function} A function that stops the timer and records the duration
  */
 const startDbTimer = (operation, collection) => {
-  const endTimer = databaseOperationDuration.startTimer({ 
-    operation, 
-    collection 
+  const endTimer = databaseOperationDuration.startTimer({
+    operation,
+    collection,
   });
-  
+
   databaseOperationsCounter.inc({
     operation,
-    collection
+    collection,
   });
-  
+
   return endTimer;
 };
 
@@ -163,12 +165,12 @@ const metricsMiddleware = (req, res, next) => {
         // Record metrics
         const duration = end();
         const statusCode = res.statusCode.toString();
-        const method = req.method;
+        const { method } = req;
 
-        httpRequestCounter.inc({ 
-          method, 
-          route, 
-          status_code: statusCode
+        httpRequestCounter.inc({
+          method,
+          route,
+          status_code: statusCode,
         });
 
         // Decrement the connections gauge
@@ -181,7 +183,7 @@ const metricsMiddleware = (req, res, next) => {
             route,
             statusCode,
             durationMs: duration * 1000,
-            userAgent: req.headers['user-agent']
+            userAgent: req.headers['user-agent'],
           });
         }
       } catch (err) {
@@ -207,5 +209,15 @@ module.exports = {
   updateShipmentStatusMetrics,
   updateTruckStatusMetrics,
   updateJobQueueMetric,
-  recordError
-}; 
+  recordError,
+  // Export the metric objects for direct use
+  httpRequestDurationMicroseconds,
+  httpRequestCounter,
+  databaseOperationsCounter,
+  databaseOperationDuration,
+  activeConnections,
+  shipmentStatusGauge,
+  trucksStatusGauge,
+  jobQueueSizeGauge,
+  errorCounter
+};

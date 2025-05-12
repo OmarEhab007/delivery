@@ -1,6 +1,8 @@
 const express = require('express');
+
 const router = express.Router();
 const { body } = require('express-validator');
+
 const truckController = require('../controllers/truck/truckController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
@@ -69,7 +71,7 @@ router.post(
     body('plateNumber').notEmpty().withMessage('Plate number is required'),
     body('model').notEmpty().withMessage('Truck model is required'),
     body('capacity').isNumeric().withMessage('Capacity must be a number'),
-    body('year').isNumeric().withMessage('Year must be a number')
+    body('year').isNumeric().withMessage('Year must be a number'),
   ],
   truckController.createTruck
 );
@@ -253,7 +255,7 @@ router.patch(
     body('plateNumber').optional().notEmpty().withMessage('Plate number cannot be empty'),
     body('model').optional().notEmpty().withMessage('Truck model cannot be empty'),
     body('capacity').optional().isNumeric().withMessage('Capacity must be a number'),
-    body('year').optional().isNumeric().withMessage('Year must be a number')
+    body('year').optional().isNumeric().withMessage('Year must be a number'),
   ],
   truckController.updateTruck
 );
@@ -336,4 +338,4 @@ router.delete('/:id', truckController.deleteTruck);
  */
 router.patch('/:truckId/assign/:driverId', truckController.assignDriver);
 
-module.exports = router; 
+module.exports = router;

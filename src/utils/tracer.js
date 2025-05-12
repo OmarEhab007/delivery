@@ -1,5 +1,7 @@
-const { v4: uuidv4 } = require('uuid');
 const { AsyncLocalStorage } = require('async_hooks');
+
+const { v4: uuidv4 } = require('uuid');
+
 const logger = require('./logger');
 
 // Create a new async local storage instance
@@ -48,40 +50,40 @@ const tracingMiddleware = () => {
     // Check for existing trace ID from headers or generate a new one
     const traceId = req.headers['x-trace-id'] || generateTraceId();
     const parentSpanId = req.headers['x-span-id'];
-    
+
     // Generate a new span ID for this service
     const spanId = generateTraceId();
-    
+
     // Create a trace context
     const traceContext = {
       traceId,
       spanId,
       parentSpanId,
-      startTime: Date.now()
+      startTime: Date.now(),
     };
-    
+
     // Add trace context to the request object
     req.traceContext = traceContext;
-    
+
     // Set response headers for trace propagation
     res.set('X-Trace-ID', traceId);
     res.set('X-Span-ID', spanId);
-    
+
     // Log the incoming request with trace context
     logger.info(`Request received: ${req.method} ${req.originalUrl}`, {
       type: 'TRACE',
       traceId,
       spanId,
       parentSpanId,
-      requestId: req.requestId || null
+      requestId: req.requestId || null,
     });
-    
+
     // Run the request handler in the trace context
     traceStorage.run(traceContext, () => {
       // Capture response finish event for tracing
       res.on('finish', () => {
         const duration = Date.now() - traceContext.startTime;
-        
+
         // Log the response with trace context and duration
         logger.info(`Request completed: ${req.method} ${req.originalUrl}`, {
           type: 'TRACE',
@@ -90,10 +92,10 @@ const tracingMiddleware = () => {
           parentSpanId,
           duration,
           statusCode: res.statusCode,
-          requestId: req.requestId || null
+          requestId: req.requestId || null,
         });
       });
-      
+
       next();
     });
   };
@@ -107,17 +109,17 @@ const tracingMiddleware = () => {
  */
 const createChildSpan = (name, attributes = {}) => {
   const parentContext = getTraceContext();
-  
+
   if (!parentContext) {
     return {
       end: () => {},
-      addAttribute: () => {}
+      addAttribute: () => {},
     };
   }
-  
+
   const spanId = generateTraceId();
   const startTime = Date.now();
-  
+
   // Log span start
   logger.debug(`Span started: ${name}`, {
     type: 'TRACE',
@@ -126,9 +128,9 @@ const createChildSpan = (name, attributes = {}) => {
     traceId: parentContext.traceId,
     spanId,
     parentSpanId: parentContext.spanId,
-    attributes
+    attributes,
   });
-  
+
   return {
     spanId,
     traceId: parentContext.traceId,
@@ -136,16 +138,16 @@ const createChildSpan = (name, attributes = {}) => {
     name,
     attributes,
     startTime,
-    
+
     // Method to add attributes to the span
     addAttribute: (key, value) => {
       attributes[key] = value;
     },
-    
+
     // Method to end the span
     end: (error) => {
       const duration = Date.now() - startTime;
-      
+
       // Create span data object
       const spanData = {
         type: 'TRACE',
@@ -155,21 +157,21 @@ const createChildSpan = (name, attributes = {}) => {
         spanId,
         parentSpanId: parentContext.spanId,
         duration,
-        attributes
+        attributes,
       };
-      
+
       // Add error information if provided
       if (error) {
         spanData.error = true;
         spanData.errorMessage = error.message;
         spanData.errorType = error.name;
         spanData.errorStack = error.stack;
-        
+
         logger.error(`Span ended with error: ${name}`, spanData);
       } else {
         logger.debug(`Span ended successfully: ${name}`, spanData);
       }
-    }
+    },
   };
 };
 
@@ -202,5 +204,5 @@ module.exports = {
   getTraceContext,
   tracingMiddleware,
   createChildSpan,
-  traceFunction
-}; 
+  traceFunction,
+};

@@ -1,13 +1,14 @@
 /**
  * Test script to verify rate limiting functionality
- * 
- * Usage: 
+ *
+ * Usage:
  * - Start the server in one terminal: npm run dev
  * - Run this script in another terminal: node tests/utils/test-rate-limit.js
  */
 
-const axios = require('axios');
 const { performance } = require('perf_hooks');
+
+const axios = require('axios');
 
 // Configuration
 const API_BASE_URL = 'http://localhost:3000/api';
@@ -18,7 +19,7 @@ const NUM_REQUESTS = 15; // Number of requests to send to each endpoint
 // Test data
 const loginData = {
   email: 'test@example.com',
-  password: 'password123'
+  password: 'password123',
 };
 
 /**
@@ -41,7 +42,7 @@ async function sendRequest(endpoint, data = null) {
       success: false,
       status: error.response?.status,
       message: error.response?.data?.message || error.message,
-      headers: error.response?.headers
+      headers: error.response?.headers,
     };
   }
 }
@@ -56,31 +57,33 @@ async function testRateLimit(endpoint, data, testName) {
   console.log(`\n==== Testing ${testName} ====`);
   console.log(`Endpoint: ${endpoint}`);
   console.log(`Sending ${NUM_REQUESTS} requests...\n`);
-  
+
   const startTime = performance.now();
   const results = [];
-  
+
   for (let i = 0; i < NUM_REQUESTS; i++) {
     const result = await sendRequest(endpoint, data);
     const status = result.success ? 'SUCCESS' : 'FAILED';
     const rateLimitRemaining = result.headers?.['ratelimit-remaining'];
     const statusCode = result.status;
-    
-    console.log(`Request ${i + 1}: ${status} (${statusCode}) - Remaining: ${rateLimitRemaining || 'N/A'}`);
+
+    console.log(
+      `Request ${i + 1}: ${status} (${statusCode}) - Remaining: ${rateLimitRemaining || 'N/A'}`
+    );
     results.push(result);
-    
+
     // Short delay to avoid overwhelming the server
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  
+
   const endTime = performance.now();
   const duration = ((endTime - startTime) / 1000).toFixed(2);
-  
+
   // Calculate statistics
-  const successfulRequests = results.filter(r => r.success).length;
-  const failedRequests = results.filter(r => !r.success).length;
-  const rateLimitedRequests = results.filter(r => r.status === 429).length;
-  
+  const successfulRequests = results.filter((r) => r.success).length;
+  const failedRequests = results.filter((r) => !r.success).length;
+  const rateLimitedRequests = results.filter((r) => r.status === 429).length;
+
   console.log(`\n==== Test Results for ${testName} ====`);
   console.log(`Duration: ${duration} seconds`);
   console.log(`Total Requests: ${NUM_REQUESTS}`);
@@ -97,13 +100,13 @@ async function runTests() {
     console.log('==============================================');
     console.log('RATE LIMITING TEST SCRIPT');
     console.log('==============================================');
-    
+
     // Test 1: Regular API endpoint (general rate limiter)
     await testRateLimit(REGULAR_ENDPOINT, null, 'General API Rate Limiter');
-    
+
     // Test 2: Authentication endpoint (stricter rate limiter)
     await testRateLimit(AUTH_ENDPOINT, loginData, 'Authentication Rate Limiter');
-    
+
     console.log('\n==============================================');
     console.log('ALL TESTS COMPLETED');
     console.log('==============================================');
@@ -113,4 +116,4 @@ async function runTests() {
 }
 
 // Run the tests
-runTests(); 
+runTests();

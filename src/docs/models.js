@@ -115,7 +115,7 @@
  *         isActive: true
  *         createdAt: 2023-01-01T00:00:00.000Z
  *         updatedAt: 2023-01-01T00:00:00.000Z
- * 
+ *
  *     Truck:
  *       type: object
  *       required:
@@ -270,7 +270,7 @@
  *         currentFuelLevel: 75
  *         createdAt: 2023-01-01T00:00:00.000Z
  *         updatedAt: 2023-01-01T00:00:00.000Z
- * 
+ *
  *     Shipment:
  *       type: object
  *       required:
@@ -479,7 +479,7 @@
  *         merchantId: "60d21b4667d0d8992e610c85"
  *         origin:
  *           address: "123 Main St, New York, NY"
- *           coordinates: 
+ *           coordinates:
  *             lat: 40.7484
  *             lng: -73.9857
  *           country: "USA"
@@ -756,4 +756,4 @@
  *               message:
  *                 type: string
  *                 default: "Resource not found"
- */ 
+ */

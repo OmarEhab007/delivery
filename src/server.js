@@ -1,11 +1,13 @@
+const { createServer } = require('http');
+const fs = require('fs');
+const path = require('path');
+
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
-const { createServer } = require('http');
 const { Server } = require('socket.io');
-const fs = require('fs');
-const path = require('path');
+
 require('dotenv').config();
 
 const connectDB = require('./config/database');
@@ -42,6 +44,7 @@ const documentRoutes = require('./routes/documentRoutes');
 const truckOwnerRoutes = require('./routes/truckOwnerRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const metricsRoutes = require('./routes/metricsRoutes');
+const reportingRoutes = require('./routes/reportingRoutes');
 const swaggerRoutes = require('./routes/swaggerRoutes');
 // Add other route imports as they are developed
 
@@ -63,55 +66,63 @@ if (process.env.NODE_ENV !== 'test') {
     .then(() => {
       logger.info('Log directory verified and ready');
       // Create Morgan access log stream
-      const accessLogStream = fs.createWriteStream(
-        path.join(process.cwd(), 'logs', 'access.log'),
-        { flags: 'a' }
-      );
-      
+      const accessLogStream = fs.createWriteStream(path.join(process.cwd(), 'logs', 'access.log'), {
+        flags: 'a',
+      });
+
       // Set up Morgan with the log stream
       app.use(morgan('combined', { stream: accessLogStream }));
-      
+
       // Connect to MongoDB and initialize
       return connectDB();
     })
     .then(async () => {
       // Initialize admin user
       await initializeAdminUser();
-      
+
       // Initialize document storage directory
       await documentService.initializeStorage();
-      
+
       // Initialize database monitoring
       await dbMonitor.initDbMonitoring();
-      
+
       // Initialize metric schedulers
       metricScheduler.initMetricSchedulers();
-      
+
       logger.info('Application startup complete with monitoring enabled');
     })
-    .catch(err => {
+    .catch((err) => {
       console.error('Startup error:', err);
       logger.error(`Startup error: ${err.message}`, { error: err });
     });
 }
 
 // Configure security headers with enhanced CSP
-const securityHeadersMiddleware = configureSecurityHeaders({
-  logHeaders: process.env.NODE_ENV === 'development',
-  cspDirectives: {
-    // Customize CSP directives here if needed, or use defaults from the middleware
-  }
-});
+// const securityHeadersMiddleware = configureSecurityHeaders({
+//   logHeaders: process.env.NODE_ENV === 'development',
+//   cspDirectives: {
+//     // Customize CSP directives here if needed, or use defaults from the middleware
+//   },
+// });
 
 // Middleware
-app.use(securityHeadersMiddleware);
-app.use(cors());
+// app.use(securityHeadersMiddleware);
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL // Use environment variable in production
+    : 'http://localhost:3001', // Use hardcoded localhost in development
+  credentials: true, // Allow cookies and other credentials
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
+}));
 
 // Compression middleware with logging
-app.use(compressionWithLogging({
-  level: process.env.COMPRESSION_LEVEL ? parseInt(process.env.COMPRESSION_LEVEL) : 6,
-  threshold: process.env.COMPRESSION_THRESHOLD ? parseInt(process.env.COMPRESSION_THRESHOLD) : 0
-}));
+app.use(
+  compressionWithLogging({
+    level: process.env.COMPRESSION_LEVEL ? parseInt(process.env.COMPRESSION_LEVEL) : 6,
+    threshold: process.env.COMPRESSION_THRESHOLD ? parseInt(process.env.COMPRESSION_THRESHOLD) : 0,
+  })
+);
 
 // Body parsing middleware
 app.use(express.json());
@@ -142,9 +153,13 @@ app.use(requestLogger);
 app.use(handleCSRFError);
 
 // CSP violation reporting endpoint
-app.post('/api/csp-report', express.json({
-  type: 'application/csp-report'
-}), handleCSPReports());
+// app.post(
+//   '/api/csp-report',
+//   express.json({
+//     type: 'application/csp-report',
+//   }),
+//   handleCSPReports()
+// );
 
 // Comment out these lines to disable auth rate limiting during development
 // app.use('/api/auth/login', authLimiter);
@@ -163,7 +178,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // Make sure helmet doesn't override our cache headers
 app.use((req, res, next) => {
   const originalSetHeader = res.setHeader;
-  res.setHeader = function(name, value) {
+  res.setHeader = function (name, value) {
     if (name.toLowerCase() === 'cache-control') {
       // Log that we're setting a cache-control header
       console.log(`Setting Cache-Control: ${value} for ${req.path}`);
@@ -196,7 +211,7 @@ app.get('/api/test-csrf', csrfProtection, (req, res) => {
   res.set('X-CSRF-Token', req.csrfToken());
   res.status(200).json({
     success: true,
-    message: 'CSRF token generated successfully'
+    message: 'CSRF token generated successfully',
   });
 });
 
@@ -212,11 +227,11 @@ const csrfProtectedPaths = [
   '/api/trucks',
   '/api/trucks/:id',
   '/api/auth/change-password',
-  '/api/documents'
+  '/api/documents',
 ];
 
 // Apply CSRF protection to routes that modify data
-csrfProtectedPaths.forEach(path => {
+csrfProtectedPaths.forEach((path) => {
   app.all(path, csrfProtection);
 });
 
@@ -237,6 +252,8 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/truck-owner', truckOwnerRoutes);
 // Add metrics routes
 app.use('/api/metrics', metricsRoutes);
+// Add reporting routes
+app.use('/api/reports', reportingRoutes);
 // Add other routes as they are developed
 
 // Health check routes
@@ -249,30 +266,30 @@ app.get('/debug-models', (req, res) => {
     Shipment: typeof Shipment !== 'undefined',
     Application: typeof Application !== 'undefined',
     Truck: typeof Truck !== 'undefined',
-    User: typeof User !== 'undefined'
+    User: typeof User !== 'undefined',
   };
-  
+
   const methods = {
     Document: typeof Document?.findById === 'function',
     Shipment: typeof Shipment?.findById === 'function',
     Application: typeof Application?.findById === 'function',
     Truck: typeof Truck?.findById === 'function',
-    User: typeof User?.findById === 'function'
+    User: typeof User?.findById === 'function',
   };
-  
+
   res.status(200).json({
     success: true,
     models,
-    methods
+    methods,
   });
 });
 
 // Socket.io setup for real-time tracking
 io.on('connection', (socket) => {
   logger.info(`User connected: ${socket.id}`);
-  
+
   // Add socket event handlers here as they are developed
-  
+
   socket.on('disconnect', () => {
     logger.info(`User disconnected: ${socket.id}`);
   });
@@ -291,46 +308,50 @@ app.use((req, res) => {
 if (process.env.NODE_ENV !== 'test') {
   // Read port from environment variables with fallbacks
   const PORT = process.env.PORT || process.env.API_PORT || 5001;
-  
+
   // Check if port is already in use before starting
   const http = require('http');
   const testServer = http.createServer();
-  
+
   testServer.once('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       logger.error(`Port ${PORT} is already in use. Please use a different port.`);
-      console.error(`❌ Error: Port ${PORT} is already in use. Please use a different port or stop the process using it.`);
+      console.error(
+        `❌ Error: Port ${PORT} is already in use. Please use a different port or stop the process using it.`
+      );
       process.exit(1);
     } else {
       logger.error(`Error checking port availability: ${err.message}`, { error: err });
       console.error(`❌ Error checking port availability: ${err.message}`);
     }
   });
-  
+
   testServer.once('listening', () => {
     // Port is available, close test server and start actual server
     testServer.close(() => {
-      httpServer.listen(PORT, () => {
-        logger.info(`✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-        console.log(`✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-        console.log(`📊 Metrics available at: http://localhost:${PORT}/api/metrics`);
-      }).on('error', (err) => {
-        logger.error(`Error starting server: ${err.message}`, { error: err });
-        console.error(`❌ Error starting server: ${err.message}`);
-      });
+      httpServer
+        .listen(PORT, () => {
+          logger.info(`✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+          console.log(`✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+          console.log(`📊 Metrics available at: http://localhost:${PORT}/api/metrics`);
+        })
+        .on('error', (err) => {
+          logger.error(`Error starting server: ${err.message}`, { error: err });
+          console.error(`❌ Error starting server: ${err.message}`);
+        });
     });
   });
-  
+
   // Test if port is available
   testServer.listen(PORT);
-  
+
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (err) => {
     logger.error(`Unhandled Rejection: ${err.message}`, { error: err });
     console.error(`❌ Unhandled Promise Rejection: ${err.message}`);
     // Don't exit the process automatically, just log the error
   });
-  
+
   // Handle uncaught exceptions
   process.on('uncaughtException', (err) => {
     logger.error(`Uncaught Exception: ${err.message}`, { error: err });

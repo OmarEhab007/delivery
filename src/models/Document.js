@@ -12,19 +12,19 @@ const DocumentType = {
   HAZARDOUS_MATERIALS_CERT: 'HAZARDOUS_MATERIALS_CERT',
   PAYMENT_RECEIPT: 'PAYMENT_RECEIPT',
   REGISTRATION: 'REGISTRATION',
-  OTHER: 'OTHER'
+  OTHER: 'OTHER',
 };
 
 const documentSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Document name is required']
+      required: [true, 'Document name is required'],
     },
     description: String,
     filePath: {
       type: String,
-      required: [true, 'File path is required']
+      required: [true, 'File path is required'],
     },
     fileSize: Number,
     mimeType: String,
@@ -33,47 +33,47 @@ const documentSchema = new mongoose.Schema(
     documentType: {
       type: String,
       enum: Object.values(DocumentType),
-      required: [true, 'Document type is required']
+      required: [true, 'Document type is required'],
     },
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Document must have an uploader']
+      required: [true, 'Document must have an uploader'],
     },
     // References to entities this document is linked to
     entityType: {
       type: String,
       enum: ['Shipment', 'Application', 'Truck', 'User'],
-      required: [true, 'Entity type is required']
+      required: [true, 'Entity type is required'],
     },
     entityId: {
       type: mongoose.Schema.Types.ObjectId,
-      required: [true, 'Entity ID is required']
+      required: [true, 'Entity ID is required'],
     },
     isVerified: {
       type: Boolean,
-      default: false
+      default: false,
     },
     verifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'User',
     },
     verificationDate: Date,
     verificationNotes: String,
     expiryDate: Date,
     metadata: {
       type: Map,
-      of: String
+      of: String,
     },
     isActive: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
   {
     timestamps: true,
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toObject: { virtuals: true },
   }
 );
 
@@ -86,14 +86,14 @@ documentSchema.index({ createdAt: -1 });
 
 // Virtual properties
 documentSchema.virtual('entity', {
-  ref: doc => doc.entityType,
+  ref: (doc) => doc.entityType,
   localField: 'entityId',
   foreignField: '_id',
-  justOne: true
+  justOne: true,
 });
 
 // Methods
-documentSchema.methods.verify = function(verifierId, notes) {
+documentSchema.methods.verify = function (verifierId, notes) {
   this.isVerified = true;
   this.verifiedBy = verifierId;
   this.verificationDate = new Date();
@@ -103,7 +103,7 @@ documentSchema.methods.verify = function(verifierId, notes) {
   return this.save();
 };
 
-documentSchema.methods.deactivate = function() {
+documentSchema.methods.deactivate = function () {
   this.isActive = false;
   return this.save();
 };
@@ -112,5 +112,5 @@ const Document = mongoose.model('Document', documentSchema);
 
 module.exports = {
   Document,
-  DocumentType
-}; 
+  DocumentType,
+};

@@ -4,6 +4,7 @@
  */
 
 const rateLimit = require('express-rate-limit');
+
 const logger = require('../utils/logger');
 
 // Default values if environment variables are not set
@@ -32,10 +33,10 @@ const apiLimiter = rateLimit({
       url: req.originalUrl || req.url,
       method: req.method,
       ip: req.ip,
-      requestId: req.requestId
+      requestId: req.requestId,
     });
     res.status(options.statusCode).json(options.message);
-  }
+  },
 });
 
 /**
@@ -55,10 +56,10 @@ const authLimiter = rateLimit({
       method: req.method,
       ip: req.ip,
       requestId: req.requestId,
-      email: req.body.email // Log the email being used for failed attempts
+      email: req.body.email, // Log the email being used for failed attempts
     });
     res.status(options.statusCode).json(options.message);
-  }
+  },
 });
 
 /**
@@ -67,7 +68,8 @@ const authLimiter = rateLimit({
  */
 const sensitiveOpLimiter = rateLimit({
   windowMs: parseInt(process.env.SENSITIVE_OPS_RATE_LIMIT_WINDOW_MS) || DEFAULT_SENSITIVE_WINDOW_MS,
-  max: parseInt(process.env.SENSITIVE_OPS_RATE_LIMIT_MAX_REQUESTS) || DEFAULT_SENSITIVE_MAX_REQUESTS,
+  max:
+    parseInt(process.env.SENSITIVE_OPS_RATE_LIMIT_MAX_REQUESTS) || DEFAULT_SENSITIVE_MAX_REQUESTS,
   message: {
     status: 'error',
     message: 'Too many attempts for sensitive operations, please try again later.',
@@ -78,14 +80,14 @@ const sensitiveOpLimiter = rateLimit({
       method: req.method,
       ip: req.ip,
       requestId: req.requestId,
-      userId: req.user?.id // Log user ID if authenticated
+      userId: req.user?.id, // Log user ID if authenticated
     });
     res.status(options.statusCode).json(options.message);
-  }
+  },
 });
 
 module.exports = {
   apiLimiter,
   authLimiter,
-  sensitiveOpLimiter
-}; 
+  sensitiveOpLimiter,
+};

@@ -1,10 +1,12 @@
+const crypto = require('crypto');
+
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
-const crypto = require('crypto');
+const asyncHandler = require('express-async-handler');
+
 const User = require('../../models/User');
 const { ApiError } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
-const asyncHandler = require('express-async-handler');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
 
 /**
@@ -14,7 +16,7 @@ const { ApiSuccess } = require('../../middleware/apiSuccess');
  */
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d' // Use a valid expiration time (30 days)
+    expiresIn: '30d', // Use a valid expiration time (30 days)
   });
 };
 
@@ -45,7 +47,7 @@ exports.registerMerchant = async (req, res, next) => {
       email,
       password,
       phone,
-      role: 'Merchant'
+      role: 'Merchant',
     });
 
     // Generate token
@@ -60,9 +62,9 @@ exports.registerMerchant = async (req, res, next) => {
           name: user.name,
           email: user.email,
           phone: user.phone,
-          role: user.role
-        }
-      }
+          role: user.role,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -98,7 +100,7 @@ exports.registerTruckOwner = async (req, res, next) => {
       phone,
       role: 'TruckOwner',
       companyName,
-      companyAddress
+      companyAddress,
     });
 
     // Generate token
@@ -115,9 +117,9 @@ exports.registerTruckOwner = async (req, res, next) => {
           phone: user.phone,
           role: user.role,
           companyName: user.companyName,
-          companyAddress: user.companyAddress
-        }
-      }
+          companyAddress: user.companyAddress,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -153,7 +155,7 @@ exports.registerDriver = async (req, res, next) => {
       phone,
       role: 'Driver',
       ownerId: req.user._id, // This comes from the protect middleware
-      licenseNumber
+      licenseNumber,
     });
 
     res.status(201).json({
@@ -166,9 +168,9 @@ exports.registerDriver = async (req, res, next) => {
           phone: driver.phone,
           role: driver.role,
           licenseNumber: driver.licenseNumber,
-          ownerId: driver.ownerId
-        }
-      }
+          ownerId: driver.ownerId,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -212,8 +214,8 @@ exports.login = async (req, res, next) => {
       status: 'success',
       token,
       data: {
-        user
-      }
+        user,
+      },
     });
   } catch (error) {
     next(error);
@@ -228,13 +230,13 @@ exports.login = async (req, res, next) => {
 exports.getCurrentUser = async (req, res, next) => {
   try {
     // User is already available in req (from protect middleware)
-    const user = req.user;
+    const { user } = req;
 
     res.status(200).json({
       status: 'success',
       data: {
-        user
-      }
+        user,
+      },
     });
   } catch (error) {
     next(error);
@@ -253,39 +255,36 @@ exports.forgotPassword = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { email } = req.body;
-    
+
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
       return next(new ApiError('There is no user with that email address', 404));
     }
-    
+
     // Generate random reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
-    
+
     // Hash token before saving to database
-    const hashedToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
-      
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
     // Save to database with expiry time (10 minutes)
     user.passwordResetToken = hashedToken;
     user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
     await user.save({ validateBeforeSave: false });
-    
+
     // TODO: Send email with reset token (implement email service)
     // For now, returning token in response (only for development)
-    
+
     logger.info(`Password reset token generated for user: ${user.email}`);
-    
+
     res.status(200).json({
       status: 'success',
       message: 'Token sent to email',
       // Remove in production:
-      resetToken
+      resetToken,
     });
   } catch (error) {
     next(error);
@@ -304,39 +303,36 @@ exports.resetPassword = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { token } = req.params;
     const { password } = req.body;
-    
+
     // Hash the provided token
-    const hashedToken = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
-      
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
     // Find user with this token that hasn't expired
     const user = await User.findOne({
       passwordResetToken: hashedToken,
-      passwordResetExpires: { $gt: Date.now() }
+      passwordResetExpires: { $gt: Date.now() },
     });
-    
+
     if (!user) {
       return next(new ApiError('Token is invalid or has expired', 400));
     }
-    
+
     // Update password and clear reset fields
     user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
-    
+
     // Generate new JWT token
     const newToken = generateToken(user._id);
-    
+
     res.status(200).json({
       status: 'success',
       token: newToken,
-      message: 'Password has been reset successfully'
+      message: 'Password has been reset successfully',
     });
   } catch (error) {
     next(error);
@@ -355,29 +351,29 @@ exports.updatePassword = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { currentPassword, newPassword } = req.body;
-    
+
     // Get current user with password
     const user = await User.findById(req.user._id).select('+password');
-    
+
     // Check if current password is correct
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return next(new ApiError('Current password is incorrect', 401));
     }
-    
+
     // Update password
     user.password = newPassword;
     await user.save();
-    
+
     // Generate new token
     const token = generateToken(user._id);
-    
+
     res.status(200).json({
       status: 'success',
       token,
-      message: 'Password updated successfully'
+      message: 'Password updated successfully',
     });
   } catch (error) {
     next(error);
@@ -391,13 +387,13 @@ exports.updatePassword = async (req, res, next) => {
  */
 const registerAdmin = asyncHandler(async (req, res, next) => {
   const { name, email, password, phone, adminPermissions } = req.body;
-  
+
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return next(new ApiError('User with this email already exists', 400));
   }
-  
+
   // Create a new admin user
   const admin = await User.create({
     name,
@@ -405,12 +401,12 @@ const registerAdmin = asyncHandler(async (req, res, next) => {
     password,
     phone,
     role: 'Admin',
-    adminPermissions: adminPermissions || ['FULL_ACCESS']
+    adminPermissions: adminPermissions || ['FULL_ACCESS'],
   });
-  
+
   // Generate JWT token
   const token = generateToken(admin._id);
-  
+
   // Return success response with token
   return ApiSuccess(
     res,
@@ -421,9 +417,9 @@ const registerAdmin = asyncHandler(async (req, res, next) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
-        adminPermissions: admin.adminPermissions
+        adminPermissions: admin.adminPermissions,
       },
-      token
+      token,
     },
     201
   );
@@ -456,7 +452,7 @@ exports.registerTestAdmin = async (req, res, next) => {
       email,
       password,
       phone,
-      role: 'Admin'
+      role: 'Admin',
     });
 
     // Generate token
@@ -471,9 +467,9 @@ exports.registerTestAdmin = async (req, res, next) => {
           name: user.name,
           email: user.email,
           phone: user.phone,
-          role: user.role
-        }
-      }
+          role: user.role,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -488,14 +484,14 @@ exports.registerTestAdmin = async (req, res, next) => {
 exports.getCsrfToken = (req, res) => {
   // The csrfToken() function is added to the request object by the csurf middleware
   const token = req.csrfToken();
-  
+
   // Set the token in the response header
   res.set('X-CSRF-Token', token);
-  
+
   // Send a 200 OK response
   res.status(200).json({
     success: true,
-    message: 'CSRF token generated'
+    message: 'CSRF token generated',
   });
 };
 

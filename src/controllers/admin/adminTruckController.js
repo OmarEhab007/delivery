@@ -13,33 +13,34 @@ const getAllTrucks = asyncHandler(async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
   const skip = (page - 1) * limit;
-  
+
   // Build filter object from query params
   const filter = {};
-  
+
   if (req.query.status) filter.status = req.query.status;
   if (req.query.ownerId) filter.ownerId = req.query.ownerId;
   if (req.query.driverId) filter.driverId = req.query.driverId;
   if (req.query.truckType) filter.truckType = req.query.truckType;
-  if (req.query.licensePlate) filter.licensePlate = { $regex: req.query.licensePlate, $options: 'i' };
-  
+  if (req.query.licensePlate)
+    filter.licensePlate = { $regex: req.query.licensePlate, $options: 'i' };
+
   const trucks = await Truck.find(filter)
     .populate('ownerId', 'name email phone companyName')
     .populate('driverId', 'name email phone')
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 });
-  
+
   const total = await Truck.countDocuments(filter);
-  
+
   return ApiSuccess(res, {
     trucks,
     pagination: {
       total,
       page,
       pages: Math.ceil(total / limit),
-      limit
-    }
+      limit,
+    },
   });
 });
 
@@ -52,11 +53,11 @@ const getTruckById = asyncHandler(async (req, res, next) => {
   const truck = await Truck.findById(req.params.id)
     .populate('ownerId', 'name email phone companyName companyAddress')
     .populate('driverId', 'name email phone licenseNumber');
-  
+
   if (!truck) {
     return next(new ApiError('Truck not found', 404));
   }
-  
+
   return ApiSuccess(res, { truck });
 });
 
@@ -75,15 +76,15 @@ const updateTruck = asyncHandler(async (req, res, next) => {
     driverId,
     ownerId,
     specifications,
-    documents
+    documents,
   } = req.body;
-  
+
   const truck = await Truck.findById(req.params.id);
-  
+
   if (!truck) {
     return next(new ApiError('Truck not found', 404));
   }
-  
+
   // Check for duplicate plate number if being updated
   const newPlateNumber = plateNumber || licensePlate;
   if (newPlateNumber && newPlateNumber !== truck.plateNumber) {
@@ -92,7 +93,7 @@ const updateTruck = asyncHandler(async (req, res, next) => {
       return next(new ApiError(`A truck with plate number ${newPlateNumber} already exists`, 400));
     }
   }
-  
+
   // Update fields if provided
   if (plateNumber) truck.plateNumber = plateNumber;
   if (licensePlate && !plateNumber) truck.plateNumber = licensePlate;
@@ -101,7 +102,7 @@ const updateTruck = asyncHandler(async (req, res, next) => {
   if (status) truck.status = status;
   if (specifications) truck.specifications = specifications;
   if (documents) truck.documents = documents;
-  
+
   // Validate ownerId
   if (ownerId) {
     const owner = await User.findOne({ _id: ownerId, role: 'TruckOwner' });
@@ -110,7 +111,7 @@ const updateTruck = asyncHandler(async (req, res, next) => {
     }
     truck.ownerId = ownerId;
   }
-  
+
   // Validate driverId
   if (driverId) {
     const driver = await User.findOne({ _id: driverId, role: 'Driver' });
@@ -119,12 +120,12 @@ const updateTruck = asyncHandler(async (req, res, next) => {
     }
     truck.driverId = driverId;
   }
-  
+
   await truck.save();
-  
-  return ApiSuccess(res, { 
-    message: 'Truck updated successfully', 
-    truck
+
+  return ApiSuccess(res, {
+    message: 'Truck updated successfully',
+    truck,
   });
 });
 
@@ -135,13 +136,13 @@ const updateTruck = asyncHandler(async (req, res, next) => {
  */
 const deleteTruck = asyncHandler(async (req, res, next) => {
   const truck = await Truck.findById(req.params.id);
-  
+
   if (!truck) {
     return next(new ApiError('Truck not found', 404));
   }
-  
+
   await truck.deleteOne();
-  
+
   return ApiSuccess(res, { message: 'Truck deleted successfully' });
 });
 
@@ -159,9 +160,9 @@ const createTruck = asyncHandler(async (req, res, next) => {
     ownerId,
     driverId,
     specifications,
-    documents
+    documents,
   } = req.body;
-  
+
   // Check if a truck with the same plate number already exists
   const plateToCheck = plateNumber || licensePlate;
   if (plateToCheck) {
@@ -170,13 +171,13 @@ const createTruck = asyncHandler(async (req, res, next) => {
       return next(new ApiError(`A truck with plate number ${plateToCheck} already exists`, 400));
     }
   }
-  
+
   // Validate truck owner
   const owner = await User.findOne({ _id: ownerId, role: 'TruckOwner' });
   if (!owner) {
     return next(new ApiError('Invalid truck owner ID', 400));
   }
-  
+
   // Validate driver if provided
   if (driverId) {
     const driver = await User.findOne({ _id: driverId, role: 'Driver' });
@@ -184,7 +185,7 @@ const createTruck = asyncHandler(async (req, res, next) => {
       return next(new ApiError('Invalid driver ID', 400));
     }
   }
-  
+
   // Create truck
   const truck = await Truck.create({
     plateNumber: plateToCheck,
@@ -195,13 +196,17 @@ const createTruck = asyncHandler(async (req, res, next) => {
     driverId,
     specifications,
     documents,
-    status: 'Available'
+    status: 'Available',
   });
-  
-  return ApiSuccess(res, { 
-    message: 'Truck created successfully', 
-    truck
-  }, 201);
+
+  return ApiSuccess(
+    res,
+    {
+      message: 'Truck created successfully',
+      truck,
+    },
+    201
+  );
 });
 
 /**
@@ -211,28 +216,28 @@ const createTruck = asyncHandler(async (req, res, next) => {
  */
 const changeTruckStatus = asyncHandler(async (req, res, next) => {
   const { status } = req.body;
-  
+
   if (!status) {
     return next(new ApiError('Status is required', 400));
   }
-  
+
   const validStatuses = ['Available', 'Unavailable', 'InMaintenance', 'OnRoute'];
   if (!validStatuses.includes(status)) {
     return next(new ApiError('Invalid status', 400));
   }
-  
+
   const truck = await Truck.findById(req.params.id);
-  
+
   if (!truck) {
     return next(new ApiError('Truck not found', 404));
   }
-  
+
   truck.status = status;
   await truck.save();
-  
-  return ApiSuccess(res, { 
-    message: 'Truck status updated successfully', 
-    truck
+
+  return ApiSuccess(res, {
+    message: 'Truck status updated successfully',
+    truck,
   });
 });
 
@@ -242,5 +247,5 @@ module.exports = {
   updateTruck,
   deleteTruck,
   createTruck,
-  changeTruckStatus
-}; 
+  changeTruckStatus,
+};

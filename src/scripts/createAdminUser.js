@@ -1,8 +1,10 @@
 const path = require('path');
+
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const mongoose = require('mongoose');
-const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+
+const User = require('../models/User');
 
 const createAdminUser = async () => {
   try {
@@ -23,7 +25,7 @@ const createAdminUser = async () => {
       password: process.env.ADMIN_PASSWORD || 'admin123456',
       phone: '1234567890',
       role: 'Admin',
-      adminPermissions: ['FULL_ACCESS']
+      adminPermissions: ['FULL_ACCESS'],
     });
 
     console.log('Admin user created successfully:', adminUser.email);
@@ -35,4 +37,4 @@ const createAdminUser = async () => {
   }
 };
 
-createAdminUser(); 
+createAdminUser();

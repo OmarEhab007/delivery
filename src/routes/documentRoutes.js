@@ -1,9 +1,11 @@
+const path = require('path');
+const fs = require('fs');
+
 const express = require('express');
+
 const documentController = require('../controllers/documentController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { singleUpload, multiUpload } = require('../middleware/uploadMiddleware');
-const path = require('path');
-const fs = require('fs');
 const { Document } = require('../models/Document');
 
 const router = express.Router();
@@ -80,13 +82,13 @@ debugRouter.get('/debug-file/:id', async (req, res) => {
     if (!document) {
       return res.status(404).json({ success: false, message: 'Document not found' });
     }
-    
+
     const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
     const fullPath = path.join(uploadDir, document.filePath);
-    
+
     // Check if file exists
     const fileExists = fs.existsSync(fullPath);
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -94,9 +96,9 @@ debugRouter.get('/debug-file/:id', async (req, res) => {
         filePath: {
           relative: document.filePath,
           absolute: fullPath,
-          exists: fileExists
-        }
-      }
+          exists: fileExists,
+        },
+      },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -184,11 +186,7 @@ router.use(protect);
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.post(
-  '/upload', 
-  singleUpload('document'),
-  documentController.uploadDocument
-);
+router.post('/upload', singleUpload('document'), documentController.uploadDocument);
 
 /**
  * @swagger
@@ -317,10 +315,7 @@ router.post(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.get(
-  '/:id',
-  documentController.getDocument
-);
+router.get('/:id', documentController.getDocument);
 
 /**
  * @swagger
@@ -352,10 +347,7 @@ router.get(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.get(
-  '/:id/download',
-  documentController.downloadDocument
-);
+router.get('/:id/download', documentController.downloadDocument);
 
 /**
  * @swagger
@@ -410,10 +402,7 @@ router.get(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.get(
-  '/entity/:entityType/:entityId',
-  documentController.getDocumentsByEntity
-);
+router.get('/entity/:entityType/:entityId', documentController.getDocumentsByEntity);
 
 /**
  * @swagger
@@ -449,10 +438,7 @@ router.get(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.delete(
-  '/:id',
-  documentController.deleteDocument
-);
+router.delete('/:id', documentController.deleteDocument);
 
 /**
  * @swagger
@@ -501,11 +487,7 @@ router.delete(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.patch(
-  '/:id/verify',
-  restrictTo('admin', 'manager'),
-  documentController.verifyDocument
-);
+router.patch('/:id/verify', restrictTo('admin', 'manager'), documentController.verifyDocument);
 
 /**
  * @swagger
@@ -562,10 +544,7 @@ router.patch(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.patch(
-  '/:id',
-  documentController.updateDocument
-);
+router.patch('/:id', documentController.updateDocument);
 
 // Combine routers
 const combinedRouter = express.Router();
@@ -573,4 +552,4 @@ combinedRouter.use('/', debugRouter);
 combinedRouter.use('/', router);
 
 // Export combined router
-module.exports = combinedRouter; 
+module.exports = combinedRouter;

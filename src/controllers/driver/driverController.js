@@ -1,26 +1,28 @@
+const path = require('path');
+const fs = require('fs');
+
 const { validationResult } = require('express-validator');
+const multer = require('multer');
+
 const User = require('../../models/User');
 const Truck = require('../../models/Truck');
 const { Shipment, ShipmentStatus } = require('../../models/Shipment');
 const { ApiError } = require('../../middleware/errorHandler');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
 const { asyncHandler } = require('../../middleware/asyncHandler');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
+  destination(req, file, cb) {
     const dir = 'uploads/delivery-proof';
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
     cb(null, dir);
   },
-  filename: function(req, file, cb) {
+  filename(req, file, cb) {
     cb(null, `${Date.now()}-${file.originalname}`);
-  }
+  },
 });
 
 const fileFilter = (req, file, cb) => {
@@ -35,7 +37,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter
+  fileFilter,
 });
 
 /**
@@ -57,8 +59,10 @@ const getProfile = asyncHandler(async (req, res, next) => {
  * @access Private (Driver only)
  */
 const getCurrentTruck = asyncHandler(async (req, res, next) => {
-  const truck = await Truck.findOne({ driverId: req.user.id })
-    .populate('ownerId', 'name companyName email phone');
+  const truck = await Truck.findOne({ driverId: req.user.id }).populate(
+    'ownerId',
+    'name companyName email phone'
+  );
 
   if (!truck) {
     return next(new ApiError('No truck currently assigned', 404));
@@ -75,12 +79,12 @@ const getCurrentTruck = asyncHandler(async (req, res, next) => {
 const getActiveShipments = asyncHandler(async (req, res, next) => {
   const shipments = await Shipment.find({
     assignedDriverId: req.user.id,
-    status: { $in: ['ASSIGNED', 'IN_TRANSIT', 'LOADING', 'UNLOADING'] }
+    status: { $in: ['ASSIGNED', 'IN_TRANSIT', 'LOADING', 'UNLOADING'] },
   }).populate('merchantId', 'name email phone');
 
-  return ApiSuccess(res, { 
+  return ApiSuccess(res, {
     results: shipments.length,
-    shipments 
+    shipments,
   });
 });
 
@@ -100,9 +104,9 @@ const updateAvailability = asyncHandler(async (req, res, next) => {
   driver.isAvailable = isAvailable;
   await driver.save();
 
-  return ApiSuccess(res, { 
+  return ApiSuccess(res, {
     message: `Availability status updated to ${isAvailable ? 'available' : 'unavailable'}`,
-    driver 
+    driver,
   });
 });
 
@@ -115,17 +119,17 @@ const getAssignedShipments = asyncHandler(async (req, res, next) => {
   // Find all shipments assigned to this driver that are not completed or cancelled
   const shipments = await Shipment.find({
     assignedDriverId: req.user.id,
-    status: { 
-      $nin: ['COMPLETED', 'CANCELLED', 'DELIVERED'] 
-    }
+    status: {
+      $nin: ['COMPLETED', 'CANCELLED', 'DELIVERED'],
+    },
   })
-  .populate('merchantId', 'name email phone')
-  .populate('assignedTruckId')
-  .sort({ createdAt: -1 });
+    .populate('merchantId', 'name email phone')
+    .populate('assignedTruckId')
+    .sort({ createdAt: -1 });
 
   return ApiSuccess(res, {
     count: shipments.length,
-    shipments
+    shipments,
   });
 });
 
@@ -138,15 +142,15 @@ const getShipmentHistory = asyncHandler(async (req, res, next) => {
   // Find all completed or delivered shipments for this driver
   const shipments = await Shipment.find({
     assignedDriverId: req.user.id,
-    status: { $in: ['COMPLETED', 'DELIVERED'] }
+    status: { $in: ['COMPLETED', 'DELIVERED'] },
   })
-  .populate('merchantId', 'name email phone')
-  .populate('assignedTruckId')
-  .sort({ createdAt: -1 });
+    .populate('merchantId', 'name email phone')
+    .populate('assignedTruckId')
+    .sort({ createdAt: -1 });
 
   return ApiSuccess(res, {
     count: shipments.length,
-    shipments
+    shipments,
   });
 });
 
@@ -165,13 +169,13 @@ const updateLocation = asyncHandler(async (req, res, next) => {
   const driver = await User.findById(req.user.id);
   driver.currentLocation = {
     type: 'Point',
-    coordinates: [longitude, latitude]
+    coordinates: [longitude, latitude],
   };
   await driver.save();
 
-  return ApiSuccess(res, { 
+  return ApiSuccess(res, {
     message: 'Location updated successfully',
-    location: driver.currentLocation 
+    location: driver.currentLocation,
   });
 });
 
@@ -196,34 +200,34 @@ const updateShipmentStatus = asyncHandler(async (req, res, next) => {
   // Find the shipment that belongs to this driver
   const shipment = await Shipment.findOne({
     _id: shipmentId,
-    assignedDriverId: req.user.id
+    assignedDriverId: req.user.id,
   });
 
   if (!shipment) {
     return next(new ApiError('Shipment not found or not assigned to you', 404));
   }
-  
+
   // Add timeline entry with the new status
   const timelineEntry = {
     status,
     note: notes || `Status updated to ${status}`,
-    location: req.body.location
+    location: req.body.location,
   };
-  
+
   await shipment.addTimelineEntry(timelineEntry);
-  
+
   // Update specific fields based on status
   if (status === ShipmentStatus.IN_TRANSIT) {
     shipment.actualPickupDate = new Date();
   } else if (status === ShipmentStatus.DELIVERED) {
     shipment.actualDeliveryDate = new Date();
   }
-  
+
   await shipment.save();
 
-  return ApiSuccess(res, { 
+  return ApiSuccess(res, {
     message: `Shipment status updated to ${status}`,
-    shipment
+    shipment,
   });
 });
 
@@ -238,7 +242,7 @@ const startDelivery = asyncHandler(async (req, res, next) => {
 
   const shipment = await Shipment.findOne({
     _id: shipmentId,
-    assignedDriverId: req.user.id
+    assignedDriverId: req.user.id,
   });
 
   if (!shipment) {
@@ -246,27 +250,29 @@ const startDelivery = asyncHandler(async (req, res, next) => {
   }
 
   if (shipment.status !== ShipmentStatus.ASSIGNED && shipment.status !== ShipmentStatus.LOADING) {
-    return next(new ApiError(`Cannot start delivery for shipment with status: ${shipment.status}`, 400));
+    return next(
+      new ApiError(`Cannot start delivery for shipment with status: ${shipment.status}`, 400)
+    );
   }
 
   // Update shipment
   shipment.status = ShipmentStatus.IN_TRANSIT;
   shipment.startOdometer = startOdometer;
   shipment.actualPickupDate = new Date();
-  
+
   // Add timeline entry
   const timelineEntry = {
     status: ShipmentStatus.IN_TRANSIT,
     note: notes || 'Delivery started, cargo picked up from origin',
-    location: req.user.currentLocation
+    location: req.user.currentLocation,
   };
-  
+
   await shipment.addTimelineEntry(timelineEntry);
   await shipment.save();
 
   return ApiSuccess(res, {
     message: 'Delivery started successfully',
-    shipment
+    shipment,
   });
 });
 
@@ -281,15 +287,20 @@ const completeDelivery = asyncHandler(async (req, res, next) => {
 
   const shipment = await Shipment.findOne({
     _id: shipmentId,
-    assignedDriverId: req.user.id
+    assignedDriverId: req.user.id,
   });
 
   if (!shipment) {
     return next(new ApiError('Shipment not found or not assigned to you', 404));
   }
 
-  if (shipment.status !== ShipmentStatus.IN_TRANSIT && shipment.status !== ShipmentStatus.UNLOADING) {
-    return next(new ApiError(`Cannot complete delivery for shipment with status: ${shipment.status}`, 400));
+  if (
+    shipment.status !== ShipmentStatus.IN_TRANSIT &&
+    shipment.status !== ShipmentStatus.UNLOADING
+  ) {
+    return next(
+      new ApiError(`Cannot complete delivery for shipment with status: ${shipment.status}`, 400)
+    );
   }
 
   // Update shipment
@@ -298,27 +309,27 @@ const completeDelivery = asyncHandler(async (req, res, next) => {
   shipment.actualDeliveryDate = new Date();
   shipment.recipient = {
     name: recipientName,
-    signature: recipientSignature || null
+    signature: recipientSignature || null,
   };
-  
+
   // Calculate distance if start and end odometer readings are available
   if (shipment.startOdometer && endOdometer) {
     shipment.distanceTraveled = endOdometer - shipment.startOdometer;
   }
-  
+
   // Add timeline entry
   const timelineEntry = {
     status: ShipmentStatus.DELIVERED,
     note: notes || `Delivery completed, received by ${recipientName}`,
-    location: req.user.currentLocation
+    location: req.user.currentLocation,
   };
-  
+
   await shipment.addTimelineEntry(timelineEntry);
   await shipment.save();
 
   return ApiSuccess(res, {
     message: 'Delivery completed successfully',
-    shipment
+    shipment,
   });
 });
 
@@ -333,7 +344,7 @@ const reportIssue = asyncHandler(async (req, res, next) => {
 
   const shipment = await Shipment.findOne({
     _id: shipmentId,
-    assignedDriverId: req.user.id
+    assignedDriverId: req.user.id,
   });
 
   if (!shipment) {
@@ -348,10 +359,12 @@ const reportIssue = asyncHandler(async (req, res, next) => {
     reportedAt: new Date(),
     location: {
       type: 'Point',
-      coordinates: [longitude || req.user.currentLocation?.coordinates[0], 
-                   latitude || req.user.currentLocation?.coordinates[1]]
+      coordinates: [
+        longitude || req.user.currentLocation?.coordinates[0],
+        latitude || req.user.currentLocation?.coordinates[1],
+      ],
     },
-    status: 'OPEN'
+    status: 'OPEN',
   };
 
   // Add issue to shipment
@@ -359,27 +372,27 @@ const reportIssue = asyncHandler(async (req, res, next) => {
     shipment.issues = [];
   }
   shipment.issues.push(issue);
-  
+
   // Add timeline entry
   const timelineEntry = {
     status: 'ISSUE_REPORTED',
     note: `Issue reported: ${issueType} - ${description}`,
-    location: issue.location
+    location: issue.location,
   };
-  
+
   await shipment.addTimelineEntry(timelineEntry);
-  
+
   // If issue is severe, update shipment status
   if (['ACCIDENT', 'CARGO_DAMAGED', 'VEHICLE_BREAKDOWN'].includes(issueType)) {
     shipment.status = 'DELAYED';
   }
-  
+
   await shipment.save();
 
   return ApiSuccess(res, {
     message: 'Issue reported successfully',
     issue: shipment.issues[shipment.issues.length - 1],
-    shipment
+    shipment,
   });
 });
 
@@ -406,7 +419,7 @@ const uploadProofOfDelivery = asyncHandler(async (req, res, next) => {
 
     const shipment = await Shipment.findOne({
       _id: shipmentId,
-      assignedDriverId: req.user.id
+      assignedDriverId: req.user.id,
     });
 
     if (!shipment) {
@@ -423,7 +436,7 @@ const uploadProofOfDelivery = asyncHandler(async (req, res, next) => {
       mimeType: req.file.mimetype,
       uploadedBy: req.user.id,
       uploadedAt: new Date(),
-      notes: notes || 'Proof of delivery'
+      notes: notes || 'Proof of delivery',
     };
 
     // Add proof to shipment
@@ -431,21 +444,21 @@ const uploadProofOfDelivery = asyncHandler(async (req, res, next) => {
       shipment.deliveryProofs = [];
     }
     shipment.deliveryProofs.push(proofDocument);
-    
+
     // Add timeline entry
     const timelineEntry = {
       status: shipment.status,
       note: `Delivery proof uploaded: ${type || 'PHOTO'}`,
-      location: req.user.currentLocation
+      location: req.user.currentLocation,
     };
-    
+
     await shipment.addTimelineEntry(timelineEntry);
     await shipment.save();
 
     return ApiSuccess(res, {
       message: 'Proof of delivery uploaded successfully',
       proof: proofDocument,
-      shipment
+      shipment,
     });
   });
 });
@@ -460,7 +473,7 @@ const getDeliveryRoute = asyncHandler(async (req, res, next) => {
 
   const shipment = await Shipment.findOne({
     _id: shipmentId,
-    assignedDriverId: req.user.id
+    assignedDriverId: req.user.id,
   });
 
   if (!shipment) {
@@ -477,11 +490,11 @@ const getDeliveryRoute = asyncHandler(async (req, res, next) => {
     waypoints: [],
     estimatedDistance: 'N/A',
     estimatedDuration: 'N/A',
-    routePolyline: null
+    routePolyline: null,
   };
 
   return ApiSuccess(res, {
-    route
+    route,
   });
 });
 
@@ -505,30 +518,30 @@ const updateDriverStatus = asyncHandler(async (req, res, next) => {
 
   const driver = await User.findById(req.user.id);
   driver.driverStatus = status;
-  
+
   // Update availability based on status
   if (status === 'ACTIVE') {
     driver.isAvailable = true;
   } else {
     driver.isAvailable = false;
   }
-  
+
   // Log status change in history
   if (!driver.statusHistory) {
     driver.statusHistory = [];
   }
-  
+
   driver.statusHistory.push({
     status,
     reason: reason || `Status changed to ${status}`,
-    timestamp: new Date()
+    timestamp: new Date(),
   });
-  
+
   await driver.save();
 
   return ApiSuccess(res, {
     message: `Driver status updated to ${status}`,
-    driver
+    driver,
   });
 });
 
@@ -553,31 +566,31 @@ const driverCheckin = asyncHandler(async (req, res, next) => {
     timestamp: new Date(),
     location: {
       type: 'Point',
-      coordinates: [longitude, latitude]
+      coordinates: [longitude, latitude],
     },
     truckCondition,
     fuelLevel,
     notes: notes || 'Daily check-in',
-    type: 'CHECK_IN'
+    type: 'CHECK_IN',
   };
-  
+
   // Update driver status
   const driver = await User.findById(req.user.id);
   driver.driverStatus = 'ACTIVE';
   driver.isAvailable = true;
   driver.currentLocation = checkin.location;
-  
+
   // Add to driver logs if the field exists
   if (!driver.driverLogs) {
     driver.driverLogs = [];
   }
   driver.driverLogs.push(checkin);
-  
+
   // Update truck status
   truck.status = 'IN_SERVICE';
   truck.currentFuelLevel = fuelLevel;
   truck.lastCheckin = new Date();
-  
+
   await driver.save();
   await truck.save();
 
@@ -585,7 +598,7 @@ const driverCheckin = asyncHandler(async (req, res, next) => {
     message: 'Driver checked in successfully',
     checkin,
     driver,
-    truck
+    truck,
   });
 });
 
@@ -610,31 +623,31 @@ const driverCheckout = asyncHandler(async (req, res, next) => {
     timestamp: new Date(),
     location: {
       type: 'Point',
-      coordinates: [longitude, latitude]
+      coordinates: [longitude, latitude],
     },
     totalMiles,
     fuelLevel,
     notes: notes || 'Daily check-out',
-    type: 'CHECK_OUT'
+    type: 'CHECK_OUT',
   };
-  
+
   // Update driver status
   const driver = await User.findById(req.user.id);
   driver.driverStatus = 'OFF_DUTY';
   driver.isAvailable = false;
   driver.currentLocation = checkout.location;
-  
+
   // Add to driver logs
   if (!driver.driverLogs) {
     driver.driverLogs = [];
   }
   driver.driverLogs.push(checkout);
-  
+
   // Update truck
   truck.currentFuelLevel = fuelLevel;
   truck.lastCheckout = new Date();
   truck.odometer = (truck.odometer || 0) + totalMiles;
-  
+
   await driver.save();
   await truck.save();
 
@@ -642,7 +655,7 @@ const driverCheckout = asyncHandler(async (req, res, next) => {
     message: 'Driver checked out successfully',
     checkout,
     driver,
-    truck
+    truck,
   });
 });
 
@@ -662,13 +675,13 @@ const getDriverDashboard = asyncHandler(async (req, res, next) => {
   // Get active shipments
   const activeShipments = await Shipment.find({
     assignedDriverId: req.user.id,
-    status: { $in: ['ASSIGNED', 'IN_TRANSIT', 'LOADING', 'UNLOADING'] }
+    status: { $in: ['ASSIGNED', 'IN_TRANSIT', 'LOADING', 'UNLOADING'] },
   }).populate('merchantId', 'name email phone');
 
   // Get completed shipments count
   const completedCount = await Shipment.countDocuments({
     assignedDriverId: req.user.id,
-    status: 'DELIVERED'
+    status: 'DELIVERED',
   });
 
   // Get today's completed shipments
@@ -677,34 +690,36 @@ const getDriverDashboard = asyncHandler(async (req, res, next) => {
   const todayCompletedCount = await Shipment.countDocuments({
     assignedDriverId: req.user.id,
     status: 'DELIVERED',
-    actualDeliveryDate: { $gte: today }
+    actualDeliveryDate: { $gte: today },
   });
 
   // Get issues that need attention
   const openIssues = await Shipment.find({
     assignedDriverId: req.user.id,
-    'issues.status': 'OPEN'
+    'issues.status': 'OPEN',
   }).select('_id origin destination issues');
 
   // Calculate efficiency metrics if available
-  let metrics = {
+  const metrics = {
     totalDeliveriesCompleted: completedCount,
     todayDeliveriesCompleted: todayCompletedCount,
     activeShipmentCount: activeShipments.length,
-    openIssuesCount: openIssues.length
+    openIssuesCount: openIssues.length,
   };
 
   // Get next delivery
-  const nextDelivery = activeShipments.length > 0 ? 
-    activeShipments.sort((a, b) => {
-      // Sort by status priority first (ASSIGNED before IN_TRANSIT)
-      const statusOrder = { 'ASSIGNED': 1, 'LOADING': 2, 'IN_TRANSIT': 3, 'UNLOADING': 4 };
-      if (statusOrder[a.status] !== statusOrder[b.status]) {
-        return statusOrder[a.status] - statusOrder[b.status];
-      }
-      // Then sort by expected delivery date
-      return a.expectedDeliveryDate - b.expectedDeliveryDate;
-    })[0] : null;
+  const nextDelivery =
+    activeShipments.length > 0
+      ? activeShipments.sort((a, b) => {
+          // Sort by status priority first (ASSIGNED before IN_TRANSIT)
+          const statusOrder = { ASSIGNED: 1, LOADING: 2, IN_TRANSIT: 3, UNLOADING: 4 };
+          if (statusOrder[a.status] !== statusOrder[b.status]) {
+            return statusOrder[a.status] - statusOrder[b.status];
+          }
+          // Then sort by expected delivery date
+          return a.expectedDeliveryDate - b.expectedDeliveryDate;
+        })[0]
+      : null;
 
   return ApiSuccess(res, {
     driver,
@@ -712,7 +727,7 @@ const getDriverDashboard = asyncHandler(async (req, res, next) => {
     activeShipments,
     nextDelivery,
     metrics,
-    openIssues
+    openIssues,
   });
 });
 
@@ -733,5 +748,5 @@ module.exports = {
   updateDriverStatus,
   driverCheckin,
   driverCheckout,
-  getDriverDashboard
-}; 
+  getDriverDashboard,
+};

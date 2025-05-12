@@ -1,6 +1,8 @@
 const express = require('express');
+
 const router = express.Router();
 const { body } = require('express-validator');
+
 const userController = require('../controllers/user/userController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
@@ -68,7 +70,7 @@ router.patch(
     body('companyName').optional().notEmpty().withMessage('Company name cannot be empty'),
     body('companyAddress').optional().notEmpty().withMessage('Company address cannot be empty'),
     // Driver specific validations
-    body('licenseNumber').optional().notEmpty().withMessage('License number cannot be empty')
+    body('licenseNumber').optional().notEmpty().withMessage('License number cannot be empty'),
   ],
   userController.updateMe
 );
@@ -190,4 +192,4 @@ router.get('/', protect, userController.getAllUsers);
  */
 router.get('/myDrivers', protect, restrictTo('TruckOwner'), userController.getMyDrivers);
 
-module.exports = router; 
+module.exports = router;

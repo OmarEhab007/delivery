@@ -28,12 +28,12 @@ const formatErrorResponse = (message, statusCode, data = null) => {
     error: {
       message,
       statusCode,
-      ...(data && { data })
-    }
+      ...(data && { data }),
+    },
   };
 };
 
 module.exports = {
   createCustomError,
-  formatErrorResponse
-}; 
+  formatErrorResponse,
+};

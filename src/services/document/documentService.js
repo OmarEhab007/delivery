@@ -2,16 +2,18 @@
  * Document Service
  * Handles document upload, storage, and retrieval
  */
-const AWS = require('aws-sdk');
 const path = require('path');
 const crypto = require('crypto');
+
+const AWS = require('aws-sdk');
+
 const logger = require('../../utils/logger');
 
 // Initialize AWS S3
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION
+  region: process.env.AWS_REGION,
 });
 
 // Document types
@@ -22,7 +24,7 @@ const DocumentTypes = {
   BILL_OF_LADING: 'BILL_OF_LADING',
   DELIVERY_CONFIRMATION: 'DELIVERY_CONFIRMATION',
   INVOICE: 'INVOICE',
-  OTHER: 'OTHER'
+  OTHER: 'OTHER',
 };
 
 /**
@@ -34,7 +36,7 @@ const generateUniqueFilename = (originalFilename) => {
   const timestamp = Date.now();
   const randomString = crypto.randomBytes(8).toString('hex');
   const extension = path.extname(originalFilename);
-  
+
   return `${timestamp}-${randomString}${extension}`;
 };
 
@@ -48,11 +50,18 @@ const generateUniqueFilename = (originalFilename) => {
  * @param {string} userId - ID of the uploading user
  * @returns {Promise<Object>} - Document metadata
  */
-const uploadDocument = async (fileBuffer, originalFilename, contentType, documentType, shipmentId, userId) => {
+const uploadDocument = async (
+  fileBuffer,
+  originalFilename,
+  contentType,
+  documentType,
+  shipmentId,
+  userId
+) => {
   try {
     const filename = generateUniqueFilename(originalFilename);
     const key = `shipments/${shipmentId}/${documentType.toLowerCase()}/${filename}`;
-    
+
     // Upload to S3
     const uploadParams = {
       Bucket: process.env.AWS_S3_BUCKET,
@@ -63,14 +72,14 @@ const uploadDocument = async (fileBuffer, originalFilename, contentType, documen
       Metadata: {
         'shipment-id': shipmentId,
         'document-type': documentType,
-        'uploaded-by': userId
-      }
+        'uploaded-by': userId,
+      },
     };
-    
+
     const result = await s3.upload(uploadParams).promise();
-    
+
     logger.info(`Document uploaded to S3: ${result.Location}`);
-    
+
     // Return document metadata
     return {
       filename: originalFilename,
@@ -80,7 +89,7 @@ const uploadDocument = async (fileBuffer, originalFilename, contentType, documen
       documentType,
       shipmentId,
       uploadedBy: userId,
-      uploadedAt: new Date()
+      uploadedAt: new Date(),
     };
   } catch (error) {
     logger.error(`Error uploading document to S3: ${error.message}`);
@@ -97,16 +106,16 @@ const getDocument = async (key) => {
   try {
     const params = {
       Bucket: process.env.AWS_S3_BUCKET,
-      Key: key
+      Key: key,
     };
-    
+
     const data = await s3.getObject(params).promise();
-    
+
     return {
       data: data.Body,
       contentType: data.ContentType,
       metadata: data.Metadata,
-      lastModified: data.LastModified
+      lastModified: data.LastModified,
     };
   } catch (error) {
     logger.error(`Error retrieving document from S3: ${error.message}`);
@@ -124,9 +133,9 @@ const getPresignedUrl = (key, expirySeconds = 3600) => {
   const params = {
     Bucket: process.env.AWS_S3_BUCKET,
     Key: key,
-    Expires: expirySeconds
+    Expires: expirySeconds,
   };
-  
+
   return s3.getSignedUrl('getObject', params);
 };
 
@@ -139,11 +148,11 @@ const deleteDocument = async (key) => {
   try {
     const params = {
       Bucket: process.env.AWS_S3_BUCKET,
-      Key: key
+      Key: key,
     };
-    
+
     const result = await s3.deleteObject(params).promise();
-    
+
     logger.info(`Document deleted from S3: ${key}`);
     return result;
   } catch (error) {
@@ -161,16 +170,16 @@ const listShipmentDocuments = async (shipmentId) => {
   try {
     const params = {
       Bucket: process.env.AWS_S3_BUCKET,
-      Prefix: `shipments/${shipmentId}/`
+      Prefix: `shipments/${shipmentId}/`,
     };
-    
+
     const data = await s3.listObjectsV2(params).promise();
-    
-    return data.Contents.map(item => ({
+
+    return data.Contents.map((item) => ({
       key: item.Key,
       size: item.Size,
       lastModified: item.LastModified,
-      url: getPresignedUrl(item.Key)
+      url: getPresignedUrl(item.Key),
     }));
   } catch (error) {
     logger.error(`Error listing documents for shipment ${shipmentId}: ${error.message}`);
@@ -191,13 +200,13 @@ const validateDocument = (filename, contentType, fileSize, documentType) => {
   if (!Object.values(DocumentTypes).includes(documentType)) {
     return false;
   }
-  
+
   // Check file size (10MB max)
   const maxSize = 10 * 1024 * 1024; // 10MB
   if (fileSize > maxSize) {
     return false;
   }
-  
+
   // Check file type (allow only images, PDFs, and common document formats)
   const allowedTypes = [
     'image/jpeg',
@@ -205,13 +214,13 @@ const validateDocument = (filename, contentType, fileSize, documentType) => {
     'image/gif',
     'application/pdf',
     'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ];
-  
+
   if (!allowedTypes.includes(contentType)) {
     return false;
   }
-  
+
   return true;
 };
 
@@ -222,5 +231,5 @@ module.exports = {
   getPresignedUrl,
   deleteDocument,
   listShipmentDocuments,
-  validateDocument
+  validateDocument,
 };

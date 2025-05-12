@@ -1,6 +1,8 @@
 const path = require('path');
+
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const mongoose = require('mongoose');
+
 const User = require('../models/User');
 
 const makeUserAdmin = async (email, createIfNotExist = false) => {
@@ -11,7 +13,7 @@ const makeUserAdmin = async (email, createIfNotExist = false) => {
 
     // Find user by email
     let user = await User.findOne({ email });
-    
+
     if (user) {
       // Update user to admin if found
       user.role = 'Admin';
@@ -27,7 +29,7 @@ const makeUserAdmin = async (email, createIfNotExist = false) => {
         password: newPassword,
         phone: '1234567890',
         role: 'Admin',
-        adminPermissions: ['FULL_ACCESS']
+        adminPermissions: ['FULL_ACCESS'],
       });
       console.log(`New admin user created with email: ${email} and password: ${newPassword}`);
       console.log('Please change the default password after first login!');
@@ -44,7 +46,7 @@ const makeUserAdmin = async (email, createIfNotExist = false) => {
 
 // Handle command line arguments
 const args = process.argv.slice(2);
-const emailArg = args.find(arg => !arg.startsWith('--'));
+const emailArg = args.find((arg) => !arg.startsWith('--'));
 const shouldCreate = args.includes('--create');
 
 if (!emailArg) {
@@ -53,4 +55,4 @@ if (!emailArg) {
   process.exit(1);
 }
 
-makeUserAdmin(emailArg, shouldCreate); 
+makeUserAdmin(emailArg, shouldCreate);

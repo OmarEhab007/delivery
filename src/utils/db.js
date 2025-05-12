@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
-const logger = require('./logger');
+
 const config = require('../config/config');
+
+const logger = require('./logger');
 
 // Cache for transaction support check
 let transactionsSupportedCache = null;
@@ -15,18 +17,18 @@ exports.supportsTransactions = async (forceCheck = false) => {
   if (transactionsSupportedCache !== null && !forceCheck) {
     return transactionsSupportedCache;
   }
-  
+
   // If transactions are disabled in config, return false immediately
   if (config.database && config.database.useTransactions === false) {
     logger.info('MongoDB transactions disabled by configuration.');
     transactionsSupportedCache = false;
     return false;
   }
-  
+
   try {
     // Try to start a session
     const session = await mongoose.startSession();
-    
+
     // Check if we can start a transaction
     try {
       session.startTransaction();
@@ -46,4 +48,4 @@ exports.supportsTransactions = async (forceCheck = false) => {
     transactionsSupportedCache = false;
     return false;
   }
-}; 
+};

@@ -1,7 +1,9 @@
 const express = require('express');
+
 const router = express.Router();
-const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { body } = require('express-validator');
+
+const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 // Import admin controllers
 const adminController = require('../controllers/admin/adminController');
@@ -167,15 +169,21 @@ router.get('/dashboard', adminController.getDashboardStats);
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.route('/users')
+router
+  .route('/users')
   .get(adminController.getAllUsers)
-  .post([
-    body('name').notEmpty().withMessage('Name is required'),
-    body('email').isEmail().withMessage('Please provide a valid email'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('phone').notEmpty().withMessage('Phone number is required'),
-    body('role').isIn(['Admin', 'Merchant', 'TruckOwner', 'Driver']).withMessage('Invalid user role')
-  ], adminController.createUser);
+  .post(
+    [
+      body('name').notEmpty().withMessage('Name is required'),
+      body('email').isEmail().withMessage('Please provide a valid email'),
+      body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+      body('phone').notEmpty().withMessage('Phone number is required'),
+      body('role')
+        .isIn(['Admin', 'Merchant', 'TruckOwner', 'Driver'])
+        .withMessage('Invalid user role'),
+    ],
+    adminController.createUser
+  );
 
 /**
  * @swagger
@@ -298,7 +306,8 @@ router.route('/users')
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.route('/users/:id')
+router
+  .route('/users/:id')
   .get(adminController.getUserById)
   .put(adminController.updateUser)
   .delete(adminController.deleteUser);
@@ -363,8 +372,7 @@ router.route('/users/:id')
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.route('/shipments')
-  .get(adminShipmentController.getAllShipments);
+router.route('/shipments').get(adminShipmentController.getAllShipments);
 
 /**
  * @swagger
@@ -474,7 +482,8 @@ router.route('/shipments')
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.route('/shipments/:id')
+router
+  .route('/shipments/:id')
   .get(adminShipmentController.getShipmentById)
   .put(adminShipmentController.updateShipment)
   .delete(adminShipmentController.deleteShipment);
@@ -530,10 +539,9 @@ router.route('/shipments/:id')
  *         $ref: '#/components/responses/Error'
  */
 // Assign shipment to driver
-router.patch('/shipments/:id/assign',
-  [
-    body('driverId').notEmpty().withMessage('Driver ID is required')
-  ],
+router.patch(
+  '/shipments/:id/assign',
+  [body('driverId').notEmpty().withMessage('Driver ID is required')],
   adminShipmentController.assignShipmentToDriver
 );
 
@@ -587,10 +595,20 @@ router.patch('/shipments/:id/assign',
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.patch('/shipments/:id/status', 
+router.patch(
+  '/shipments/:id/status',
   [
-    body('status').isIn(['REQUESTED', 'CONFIRMED', 'IN_TRANSIT', 'AT_BORDER', 'DELIVERED', 'COMPLETED', 'CANCELLED'])
-      .withMessage('Invalid shipment status')
+    body('status')
+      .isIn([
+        'REQUESTED',
+        'CONFIRMED',
+        'IN_TRANSIT',
+        'AT_BORDER',
+        'DELIVERED',
+        'COMPLETED',
+        'CANCELLED',
+      ])
+      .withMessage('Invalid shipment status'),
   ],
   adminShipmentController.changeShipmentStatus
 );
@@ -632,8 +650,7 @@ router.patch('/shipments/:id/status',
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.route('/applications')
-  .get(adminApplicationController.getAllApplications);
+router.route('/applications').get(adminApplicationController.getAllApplications);
 
 /**
  * @swagger
@@ -685,10 +702,12 @@ router.route('/applications')
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.patch('/applications/:id/status',
+router.patch(
+  '/applications/:id/status',
   [
-    body('status').isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED'])
-      .withMessage('Invalid application status')
+    body('status')
+      .isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED'])
+      .withMessage('Invalid application status'),
   ],
   adminApplicationController.updateApplicationStatus
 );
@@ -763,31 +782,39 @@ router.get('/applications/stats', adminApplicationController.getApplicationStats
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.route('/applications/:id')
+router
+  .route('/applications/:id')
   .get(adminApplicationController.getApplicationById)
   .delete(adminApplicationController.deleteApplication);
 
 // Truck management routes
-router.route('/trucks')
+router
+  .route('/trucks')
   .get(adminTruckController.getAllTrucks)
-  .post([
-    body('licensePlate').notEmpty().withMessage('License plate is required'),
-    body('truckType').notEmpty().withMessage('Truck type is required'),
-    body('capacity').notEmpty().withMessage('Capacity is required'),
-    body('ownerId').notEmpty().withMessage('Owner ID is required')
-  ], adminTruckController.createTruck);
+  .post(
+    [
+      body('licensePlate').notEmpty().withMessage('License plate is required'),
+      body('truckType').notEmpty().withMessage('Truck type is required'),
+      body('capacity').notEmpty().withMessage('Capacity is required'),
+      body('ownerId').notEmpty().withMessage('Owner ID is required'),
+    ],
+    adminTruckController.createTruck
+  );
 
-router.route('/trucks/:id')
+router
+  .route('/trucks/:id')
   .get(adminTruckController.getTruckById)
   .put(adminTruckController.updateTruck)
   .delete(adminTruckController.deleteTruck);
 
-router.patch('/trucks/:id/status',
+router.patch(
+  '/trucks/:id/status',
   [
-    body('status').isIn(['Available', 'Unavailable', 'InMaintenance', 'OnRoute'])
-      .withMessage('Invalid truck status')
+    body('status')
+      .isIn(['Available', 'Unavailable', 'InMaintenance', 'OnRoute'])
+      .withMessage('Invalid truck status'),
   ],
   adminTruckController.changeTruckStatus
 );
 
-module.exports = router; 
+module.exports = router;

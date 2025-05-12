@@ -1,6 +1,8 @@
-const winston = require('winston');
 const path = require('path');
+
+const winston = require('winston');
 require('winston-daily-rotate-file');
+
 const { format } = winston;
 
 // Define log directory
@@ -9,7 +11,7 @@ const LOG_DIR = path.join(process.cwd(), 'logs');
 // Create custom format
 const customFormat = format.combine(
   format.timestamp({
-    format: 'YYYY-MM-DD HH:mm:ss.SSS'
+    format: 'YYYY-MM-DD HH:mm:ss.SSS',
   }),
   format.errors({ stack: true }),
   format.splat(),
@@ -22,11 +24,11 @@ const customFormat = format.combine(
           message: value.message,
           stack: value.stack,
           code: value.code,
-          statusCode: value.statusCode
+          statusCode: value.statusCode,
         };
       }
       return value;
-    }
+    },
   })
 );
 
@@ -34,10 +36,11 @@ const customFormat = format.combine(
 const consoleFormat = format.combine(
   format.colorize(),
   format.timestamp({
-    format: 'YYYY-MM-DD HH:mm:ss'
+    format: 'YYYY-MM-DD HH:mm:ss',
   }),
   format.printf(
-    info => `${info.timestamp} ${info.level}: ${info.message}${info.stack ? '\n' + info.stack : ''}`
+    (info) =>
+      `${info.timestamp} ${info.level}: ${info.message}${info.stack ? `\n${info.stack}` : ''}`
   )
 );
 
@@ -47,7 +50,7 @@ const fileRotateTransport = new winston.transports.DailyRotateFile({
   datePattern: 'YYYY-MM-DD',
   maxSize: '20m',
   maxFiles: '14d',
-  format: customFormat
+  format: customFormat,
 });
 
 // Create error file transport with rotation
@@ -57,7 +60,7 @@ const errorFileRotateTransport = new winston.transports.DailyRotateFile({
   level: 'error',
   maxSize: '20m',
   maxFiles: '14d',
-  format: customFormat
+  format: customFormat,
 });
 
 // Configure the logger
@@ -66,40 +69,42 @@ const logger = winston.createLogger({
   defaultMeta: { service: 'delivery-app' },
   transports: [
     // Keep the old transports for backward compatibility
-    new winston.transports.File({ 
-      filename: path.join(LOG_DIR, 'error.log'), 
+    new winston.transports.File({
+      filename: path.join(LOG_DIR, 'error.log'),
       level: 'error',
-      format: customFormat 
+      format: customFormat,
     }),
-    new winston.transports.File({ 
+    new winston.transports.File({
       filename: path.join(LOG_DIR, 'combined.log'),
-      format: customFormat 
+      format: customFormat,
     }),
     // Add the new rotating file transports
     fileRotateTransport,
-    errorFileRotateTransport
+    errorFileRotateTransport,
   ],
   // Handle uncaught exceptions
   exceptionHandlers: [
-    new winston.transports.File({ 
+    new winston.transports.File({
       filename: path.join(LOG_DIR, 'exceptions.log'),
-      format: customFormat
+      format: customFormat,
     }),
     new winston.transports.DailyRotateFile({
       filename: path.join(LOG_DIR, 'exception-%DATE%.log'),
       datePattern: 'YYYY-MM-DD',
       maxFiles: '30d',
-      format: customFormat
-    })
-  ]
+      format: customFormat,
+    }),
+  ],
 });
 
 // If we're not in production, also log to the console with colorized output
 if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: consoleFormat,
-    handleExceptions: true
-  }));
+  logger.add(
+    new winston.transports.Console({
+      format: consoleFormat,
+      handleExceptions: true,
+    })
+  );
 }
 
 // Add convenience methods for structured logging
@@ -108,9 +113,8 @@ logger.apiRequest = (message, details) => {
 };
 
 logger.apiResponse = (message, details) => {
-  const level = details.statusCode >= 500 ? 'error' : 
-               details.statusCode >= 400 ? 'warn' : 'info';
-  
+  const level = details.statusCode >= 500 ? 'error' : details.statusCode >= 400 ? 'warn' : 'info';
+
   logger[level](message, { type: 'API_RESPONSE', ...details });
 };
 

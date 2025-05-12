@@ -13,7 +13,7 @@ const EventTypes = {
   APPLICATION_REJECTED: 'APPLICATION_REJECTED',
   SHIPMENT_STATUS_UPDATED: 'SHIPMENT_STATUS_UPDATED',
   SHIPMENT_DELIVERED: 'SHIPMENT_DELIVERED',
-  PAYMENT_UPLOADED: 'PAYMENT_UPLOADED'
+  PAYMENT_UPLOADED: 'PAYMENT_UPLOADED',
 };
 
 /**
@@ -26,30 +26,26 @@ const EventTypes = {
 const sendNotification = async (eventType, data, recipients) => {
   try {
     const results = [];
-    
+
     // Process each recipient
     for (const recipient of Object.values(recipients)) {
       if (!recipient.phone) {
         logger.warn(`No phone number for recipient: ${recipient.name || 'Unknown'}`);
         continue;
       }
-      
+
       // Create the notification content based on event type
       const content = createNotificationContent(eventType, data, recipient);
-      
+
       // Skip if no content was generated
       if (!content) continue;
-      
+
       // Send WhatsApp message
-      const result = await sendWhatsAppMessage(
-        recipient.phone,
-        content.message,
-        content.mediaUrls
-      );
-      
+      const result = await sendWhatsAppMessage(recipient.phone, content.message, content.mediaUrls);
+
       results.push(result);
     }
-    
+
     return results;
   } catch (error) {
     logger.error(`Error sending notification for ${eventType}: ${error.message}`);
@@ -69,45 +65,45 @@ const createNotificationContent = (eventType, data, recipient) => {
     case EventTypes.SHIPMENT_CREATED:
       return {
         message: `New shipment available from ${data.origin.address} to ${data.destination.address}. Cargo: ${data.cargoDetails.description}. Check the app for more details!`,
-        mediaUrls: []
+        mediaUrls: [],
       };
-      
+
     case EventTypes.APPLICATION_SUBMITTED:
       return {
         message: `New application received for your shipment #${data.shipmentId}. Truck Owner: ${data.ownerName}, Truck: ${data.truckDetails}. Check the app to review!`,
-        mediaUrls: []
+        mediaUrls: [],
       };
-      
+
     case EventTypes.APPLICATION_APPROVED:
       return {
         message: `Congratulations! Your application for shipment #${data.shipmentId} has been approved. Origin: ${data.origin}, Destination: ${data.destination}. Please prepare for pickup.`,
-        mediaUrls: []
+        mediaUrls: [],
       };
-      
+
     case EventTypes.APPLICATION_REJECTED:
       return {
         message: `Your application for shipment #${data.shipmentId} was not selected this time. Reason: ${data.reason || 'Another truck was chosen'}. Please check the app for other available shipments.`,
-        mediaUrls: []
+        mediaUrls: [],
       };
-      
+
     case EventTypes.SHIPMENT_STATUS_UPDATED:
       return {
         message: `Shipment #${data.shipmentId} status updated to: ${data.status}. ${data.notes || ''}`,
-        mediaUrls: data.documentUrls || []
+        mediaUrls: data.documentUrls || [],
       };
-      
+
     case EventTypes.SHIPMENT_DELIVERED:
       return {
         message: `Shipment #${data.shipmentId} has been delivered to ${data.destination}. Please check the app to confirm delivery.`,
-        mediaUrls: data.documentUrls || []
+        mediaUrls: data.documentUrls || [],
       };
-      
+
     case EventTypes.PAYMENT_UPLOADED:
       return {
         message: `Payment receipt uploaded for shipment #${data.shipmentId}. The shipment is now confirmed.`,
-        mediaUrls: [data.receiptUrl]
+        mediaUrls: [data.receiptUrl],
       };
-      
+
     default:
       logger.warn(`Unknown event type: ${eventType}`);
       return null;
@@ -121,11 +117,7 @@ const createNotificationContent = (eventType, data, recipient) => {
  * @returns {Promise<Object>} - Notification result
  */
 const notifyNewShipment = async (shipment, truckOwner) => {
-  return sendNotification(
-    EventTypes.SHIPMENT_CREATED,
-    shipment,
-    { truckOwner }
-  );
+  return sendNotification(EventTypes.SHIPMENT_CREATED, shipment, { truckOwner });
 };
 
 /**
@@ -140,14 +132,10 @@ const notifyNewApplication = async (application, merchant, truckOwner, truckDeta
   const data = {
     shipmentId: application.shipmentId,
     ownerName: truckOwner.name,
-    truckDetails: `${truckDetails.model} (${truckDetails.plateNumber})`
+    truckDetails: `${truckDetails.model} (${truckDetails.plateNumber})`,
   };
-  
-  return sendNotification(
-    EventTypes.APPLICATION_SUBMITTED,
-    data,
-    { merchant }
-  );
+
+  return sendNotification(EventTypes.APPLICATION_SUBMITTED, data, { merchant });
 };
 
 /**
@@ -163,14 +151,10 @@ const notifyApplicationApproved = async (application, shipment, truckOwner, driv
     shipmentId: shipment._id,
     origin: shipment.origin.address,
     destination: shipment.destination.address,
-    pickupDate: shipment.estimatedPickupDate
+    pickupDate: shipment.estimatedPickupDate,
   };
-  
-  return sendNotification(
-    EventTypes.APPLICATION_APPROVED,
-    data,
-    { truckOwner, driver }
-  );
+
+  return sendNotification(EventTypes.APPLICATION_APPROVED, data, { truckOwner, driver });
 };
 
 module.exports = {
@@ -178,5 +162,5 @@ module.exports = {
   sendNotification,
   notifyNewShipment,
   notifyNewApplication,
-  notifyApplicationApproved
+  notifyApplicationApproved,
 };

@@ -1,6 +1,8 @@
 const express = require('express');
+
 const router = express.Router();
 const { body } = require('express-validator');
+
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const driverController = require('../controllers/driver/driverController');
 
@@ -154,7 +156,7 @@ router.post(
   '/shipments/:shipmentId/start',
   [
     body('notes').optional(),
-    body('startOdometer').isNumeric().withMessage('Odometer reading must be a number')
+    body('startOdometer').isNumeric().withMessage('Odometer reading must be a number'),
   ],
   driverController.startDelivery
 );
@@ -223,7 +225,7 @@ router.post(
     body('notes').optional(),
     body('endOdometer').isNumeric().withMessage('Odometer reading must be a number'),
     body('recipientName').notEmpty().withMessage('Recipient name is required'),
-    body('recipientSignature').optional()
+    body('recipientSignature').optional(),
   ],
   driverController.completeDelivery
 );
@@ -235,7 +237,7 @@ router.post(
     body('issueType').notEmpty().withMessage('Issue type is required'),
     body('description').notEmpty().withMessage('Description is required'),
     body('latitude').optional().isFloat({ min: -90, max: 90 }),
-    body('longitude').optional().isFloat({ min: -180, max: 180 })
+    body('longitude').optional().isFloat({ min: -180, max: 180 }),
   ],
   driverController.reportIssue
 );
@@ -291,10 +293,7 @@ router.post(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.post(
-  '/shipments/:shipmentId/proof',
-  driverController.uploadProofOfDelivery
-);
+router.post('/shipments/:shipmentId/proof', driverController.uploadProofOfDelivery);
 
 // Get delivery route
 router.get('/route/:shipmentId', driverController.getDeliveryRoute);
@@ -302,11 +301,7 @@ router.get('/route/:shipmentId', driverController.getDeliveryRoute);
 // Update shipment status
 router.patch(
   '/shipments/:shipmentId/status',
-  [
-    body('status')
-      .notEmpty()
-      .withMessage('Status is required')
-  ],
+  [body('status').notEmpty().withMessage('Status is required')],
   driverController.updateShipmentStatus
 );
 
@@ -320,7 +315,7 @@ router.post(
     body('latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid latitude is required'),
     body('longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid longitude is required'),
     body('truckCondition').notEmpty().withMessage('Truck condition is required'),
-    body('fuelLevel').isInt({ min: 0, max: 100 }).withMessage('Fuel level must be between 0-100')
+    body('fuelLevel').isInt({ min: 0, max: 100 }).withMessage('Fuel level must be between 0-100'),
   ],
   driverController.driverCheckin
 );
@@ -332,7 +327,7 @@ router.post(
     body('latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid latitude is required'),
     body('longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid longitude is required'),
     body('totalMiles').isNumeric().withMessage('Total miles must be a number'),
-    body('fuelLevel').isInt({ min: 0, max: 100 }).withMessage('Fuel level must be between 0-100')
+    body('fuelLevel').isInt({ min: 0, max: 100 }).withMessage('Fuel level must be between 0-100'),
   ],
   driverController.driverCheckout
 );
@@ -340,22 +335,14 @@ router.post(
 // Update availability status
 router.patch(
   '/availability',
-  [
-    body('isAvailable')
-      .isBoolean()
-      .withMessage('Availability status must be a boolean')
-  ],
+  [body('isAvailable').isBoolean().withMessage('Availability status must be a boolean')],
   driverController.updateAvailability
 );
 
 // Update driver status (more detailed than availability)
 router.patch(
   '/status',
-  [
-    body('status')
-      .notEmpty()
-      .withMessage('Status is required')
-  ],
+  [body('status').notEmpty().withMessage('Status is required')],
   driverController.updateDriverStatus
 );
 
@@ -408,15 +395,11 @@ router.patch(
  */
 // Update location - support both PATCH and POST methods
 const locationValidation = [
-  body('latitude')
-    .isFloat({ min: -90, max: 90 })
-    .withMessage('Invalid latitude value'),
-  body('longitude')
-    .isFloat({ min: -180, max: 180 })
-    .withMessage('Invalid longitude value')
+  body('latitude').isFloat({ min: -90, max: 90 }).withMessage('Invalid latitude value'),
+  body('longitude').isFloat({ min: -180, max: 180 }).withMessage('Invalid longitude value'),
 ];
 
 router.patch('/location', locationValidation, driverController.updateLocation);
 router.post('/location', locationValidation, driverController.updateLocation);
 
-module.exports = router; 
+module.exports = router;

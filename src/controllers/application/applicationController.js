@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const mongoose = require('mongoose');
+
 const { Application, ApplicationStatus } = require('../../models/Application');
 const { Shipment, ShipmentStatus } = require('../../models/Shipment');
 const Truck = require('../../models/Truck');
@@ -20,64 +21,64 @@ exports.createApplication = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { shipmentId, assignedTruckId, driverId, bidDetails } = req.body;
-    
+
     // Set ownerId to current user id
     const ownerId = req.user.id;
-    
+
     // Check if shipment exists and is in REQUESTED state
     const shipment = await Shipment.findById(shipmentId);
-    
+
     if (!shipment) {
       return next(new ApiError('Shipment not found', 404));
     }
-    
+
     if (shipment.status !== ShipmentStatus.REQUESTED) {
       return next(new ApiError(`Cannot apply for shipment with status: ${shipment.status}`, 400));
     }
-    
+
     // Check if truck exists and belongs to the truck owner
     const truck = await Truck.findById(assignedTruckId);
-    
+
     if (!truck) {
       return next(new ApiError('Truck not found', 404));
     }
-    
+
     if (truck.ownerId.toString() !== ownerId) {
       return next(new ApiError('You do not own this truck', 403));
     }
-    
+
     // Check if truck is available
     if (!truck.available) {
       return next(new ApiError('The selected truck is not available', 400));
     }
-    
+
     // Check if driver exists and belongs to the truck owner
     const driver = await User.findById(driverId);
-    
+
     if (!driver) {
       return next(new ApiError('Driver not found', 404));
     }
-    
+
     if (driver.role !== 'Driver') {
       return next(new ApiError('Selected user is not a driver', 400));
     }
-    
+
     if (driver.ownerId && driver.ownerId.toString() !== ownerId) {
       return next(new ApiError('This driver does not work for you', 403));
     }
-    
+
     // Check if already applied for this shipment
     const existingApplication = await Application.findOne({
       shipmentId,
-      ownerId
+      ownerId,
     });
-    
+
     if (existingApplication) {
       return next(new ApiError('You have already applied for this shipment', 400));
     }
-    
+
     // Create the application
     const application = await Application.create({
       shipmentId,
@@ -85,14 +86,14 @@ exports.createApplication = async (req, res, next) => {
       assignedTruckId,
       driverId,
       bidDetails,
-      status: ApplicationStatus.PENDING
+      status: ApplicationStatus.PENDING,
     });
-    
+
     res.status(201).json({
       status: 'success',
       data: {
-        application
-      }
+        application,
+      },
     });
   } catch (error) {
     next(error);
@@ -108,25 +109,25 @@ exports.getMyApplications = async (req, res, next) => {
   try {
     // Build query object
     const query = {
-      ownerId: req.user.id
+      ownerId: req.user.id,
     };
-    
+
     // Add status filter if provided
     if (req.query.status) {
       query.status = req.query.status;
     }
-    
+
     const applications = await Application.find(query)
       .populate('shipmentId')
       .populate('assignedTruckId')
       .populate('driverId');
-    
+
     res.status(200).json({
       status: 'success',
       results: applications.length,
       data: {
-        applications
-      }
+        applications,
+      },
     });
   } catch (error) {
     next(error);
@@ -141,32 +142,34 @@ exports.getMyApplications = async (req, res, next) => {
 exports.getShipmentApplications = async (req, res, next) => {
   try {
     const { shipmentId } = req.params;
-    
+
     // Check if shipment exists and belongs to merchant
     const shipment = await Shipment.findById(shipmentId);
-    
+
     if (!shipment) {
       return next(new ApiError('Shipment not found', 404));
     }
-    
+
     if (shipment.merchantId.toString() !== req.user.id) {
-      return next(new ApiError('You do not have permission to view applications for this shipment', 403));
+      return next(
+        new ApiError('You do not have permission to view applications for this shipment', 403)
+      );
     }
-    
+
     // Get all applications for this shipment
     const applications = await Application.find({
-      shipmentId
+      shipmentId,
     })
-    .populate('ownerId', 'name email phone companyName')
-    .populate('assignedTruckId')
-    .populate('driverId', 'name email phone licenseNumber');
-    
+      .populate('ownerId', 'name email phone companyName')
+      .populate('assignedTruckId')
+      .populate('driverId', 'name email phone licenseNumber');
+
     res.status(200).json({
       status: 'success',
       results: applications.length,
       data: {
-        applications
-      }
+        applications,
+      },
     });
   } catch (error) {
     next(error);
@@ -185,25 +188,25 @@ exports.getApplication = async (req, res, next) => {
       .populate('ownerId', 'name email phone companyName')
       .populate('assignedTruckId')
       .populate('driverId', 'name email phone licenseNumber');
-    
+
     if (!application) {
       return next(new ApiError('Application not found', 404));
     }
-    
+
     // Check permissions
     const isTruckOwner = application.ownerId._id.toString() === req.user.id;
     const shipment = application.shipmentId;
     const isMerchant = shipment.merchantId.toString() === req.user.id;
-    
+
     if (!isTruckOwner && !isMerchant) {
       return next(new ApiError('You do not have permission to view this application', 403));
     }
-    
+
     res.status(200).json({
       status: 'success',
       data: {
-        application
-      }
+        application,
+      },
     });
   } catch (error) {
     next(error);
@@ -222,76 +225,78 @@ exports.updateApplication = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     // Find application
     const application = await Application.findById(req.params.id);
-    
+
     if (!application) {
       return next(new ApiError('Application not found', 404));
     }
-    
+
     // Check if application belongs to the truck owner
     if (application.ownerId.toString() !== req.user.id) {
       return next(new ApiError('You do not have permission to update this application', 403));
     }
-    
+
     // Check if application is still pending
     if (application.status !== ApplicationStatus.PENDING) {
-      return next(new ApiError(`Cannot update application with status: ${application.status}`, 400));
+      return next(
+        new ApiError(`Cannot update application with status: ${application.status}`, 400)
+      );
     }
-    
+
     // Only allow updating bidDetails
     if (req.body.bidDetails) {
       application.bidDetails = {
         ...application.bidDetails,
-        ...req.body.bidDetails
+        ...req.body.bidDetails,
       };
     }
-    
+
     // If truck or driver is being updated, validate them
     if (req.body.assignedTruckId) {
       const truck = await Truck.findById(req.body.assignedTruckId);
-      
+
       if (!truck) {
         return next(new ApiError('Truck not found', 404));
       }
-      
+
       if (truck.ownerId.toString() !== req.user.id) {
         return next(new ApiError('You do not own this truck', 403));
       }
-      
+
       if (!truck.available) {
         return next(new ApiError('The selected truck is not available', 400));
       }
-      
+
       application.assignedTruckId = req.body.assignedTruckId;
     }
-    
+
     if (req.body.driverId) {
       const driver = await User.findById(req.body.driverId);
-      
+
       if (!driver) {
         return next(new ApiError('Driver not found', 404));
       }
-      
+
       if (driver.role !== 'Driver') {
         return next(new ApiError('Selected user is not a driver', 400));
       }
-      
+
       if (driver.ownerId && driver.ownerId.toString() !== req.user.id) {
         return next(new ApiError('This driver does not work for you', 403));
       }
-      
+
       application.driverId = req.body.driverId;
     }
-    
+
     await application.save();
-    
+
     res.status(200).json({
       status: 'success',
       data: {
-        application
-      }
+        application,
+      },
     });
   } catch (error) {
     next(error);
@@ -307,29 +312,31 @@ exports.cancelApplication = async (req, res, next) => {
   try {
     // Find application
     const application = await Application.findById(req.params.id);
-    
+
     if (!application) {
       return next(new ApiError('Application not found', 404));
     }
-    
+
     // Check if application belongs to the truck owner
     if (application.ownerId.toString() !== req.user.id) {
       return next(new ApiError('You do not have permission to cancel this application', 403));
     }
-    
+
     // Check if application is still pending
     if (application.status !== ApplicationStatus.PENDING) {
-      return next(new ApiError(`Cannot cancel application with status: ${application.status}`, 400));
+      return next(
+        new ApiError(`Cannot cancel application with status: ${application.status}`, 400)
+      );
     }
-    
+
     // Cancel the application
     await application.cancel();
-    
+
     res.status(200).json({
       status: 'success',
       data: {
-        application
-      }
+        application,
+      },
     });
   } catch (error) {
     next(error);
@@ -348,49 +355,52 @@ exports.acceptApplication = async (req, res, next) => {
       .populate('shipmentId')
       .populate('assignedTruckId')
       .populate('driverId');
-    
+
     if (!application) {
       return next(new ApiError('Application not found', 404));
     }
-    
+
     const shipment = application.shipmentId;
-    
+
     // Check if shipment belongs to the merchant
     if (shipment.merchantId.toString() !== req.user.id) {
       return next(new ApiError('You do not have permission to accept this application', 403));
     }
-    
+
     // Check if application is still pending
     if (application.status !== ApplicationStatus.PENDING) {
-      return next(new ApiError(`Cannot accept application with status: ${application.status}`, 400));
+      return next(
+        new ApiError(`Cannot accept application with status: ${application.status}`, 400)
+      );
     }
-    
+
     // Check if shipment is still in REQUESTED state
     if (shipment.status !== ShipmentStatus.REQUESTED) {
-      return next(new ApiError(`Cannot accept application for shipment with status: ${shipment.status}`, 400));
+      return next(
+        new ApiError(`Cannot accept application for shipment with status: ${shipment.status}`, 400)
+      );
     }
-    
+
     // Check if truck and driver are still available
     const truck = application.assignedTruckId;
     if (!truck || !truck.available) {
       return next(new ApiError('The truck in this application is no longer available', 400));
     }
-    
+
     const driver = application.driverId;
     if (!driver) {
       return next(new ApiError('The driver in this application is not available', 400));
     }
-    
+
     // Check if transactions are supported
     const transactionsSupported = await db.supportsTransactions();
-    
+
     if (transactionsSupported) {
       // With transactions
       return await acceptWithTransaction(application, shipment, res, next);
-    } else {
-      // Without transactions (fallback mode)
-      return await acceptWithoutTransaction(application, shipment, res, next);
     }
+    // Without transactions (fallback mode)
+    return await acceptWithoutTransaction(application, shipment, res, next);
   } catch (error) {
     next(error);
   }
@@ -404,59 +414,59 @@ const acceptWithTransaction = async (application, shipment, res, next) => {
   // Start a transaction
   const session = await mongoose.startSession();
   session.startTransaction();
-  
+
   try {
     // Accept the application
     application.status = ApplicationStatus.ACCEPTED;
-    
+
     // Add to status history
     application.statusHistory.push({
       status: ApplicationStatus.ACCEPTED,
       timestamp: new Date(),
-      changedBy: shipment.merchantId
+      changedBy: shipment.merchantId,
     });
-    
+
     await application.save({ session });
-    
+
     // Reject all other applications for this shipment
     await Application.rejectOthers(shipment._id, application._id, shipment.merchantId);
-    
+
     // Mark the truck as unavailable
     const truckToUpdate = await Truck.findById(application.assignedTruckId).session(session);
     if (!truckToUpdate) {
       await session.abortTransaction();
       return next(new ApiError('Truck not found', 404));
     }
-    
+
     truckToUpdate.available = false;
     truckToUpdate.status = 'IN_SERVICE';
-    
+
     await truckToUpdate.save({ session });
-    
+
     // Update the shipment with the assigned truck and driver from the application
     shipment.status = ShipmentStatus.ASSIGNED; // Changed from CONFIRMED to ASSIGNED to reflect driver and truck assignment
     shipment.selectedApplicationId = application._id;
     shipment.assignedTruckId = application.assignedTruckId;
     shipment.assignedDriverId = application.driverId;
-    
+
     // Add timeline entry
     await shipment.addTimelineEntry({
       status: ShipmentStatus.ASSIGNED,
-      note: 'Application accepted. Truck and driver assigned to shipment.'
+      note: 'Application accepted. Truck and driver assigned to shipment.',
     });
-    
+
     await shipment.save({ session });
-    
+
     // Commit the transaction
     await session.commitTransaction();
     session.endSession();
-    
+
     res.status(200).json({
       status: 'success',
       data: {
         application,
-        shipment
-      }
+        shipment,
+      },
     });
   } catch (error) {
     // Abort transaction in case of error
@@ -474,25 +484,25 @@ const acceptWithoutTransaction = async (application, shipment, res, next) => {
   try {
     // Accept the application
     application.status = ApplicationStatus.ACCEPTED;
-    
+
     // Add to status history
     application.statusHistory.push({
       status: ApplicationStatus.ACCEPTED,
       timestamp: new Date(),
-      changedBy: shipment.merchantId
+      changedBy: shipment.merchantId,
     });
-    
+
     await application.save();
-    
+
     // Reject all other applications for this shipment
     // Use a non-transaction version
     await Application.updateMany(
-      { 
-        shipmentId: shipment._id, 
+      {
+        shipmentId: shipment._id,
         _id: { $ne: application._id },
-        status: ApplicationStatus.PENDING 
+        status: ApplicationStatus.PENDING,
       },
-      { 
+      {
         status: ApplicationStatus.REJECTED,
         rejectionReason: 'Another application was selected',
         $push: {
@@ -500,40 +510,40 @@ const acceptWithoutTransaction = async (application, shipment, res, next) => {
             status: ApplicationStatus.REJECTED,
             timestamp: new Date(),
             note: 'Another application was selected',
-            changedBy: shipment.merchantId
-          }
-        }
+            changedBy: shipment.merchantId,
+          },
+        },
       }
     );
-    
+
     // Mark the truck as unavailable
     const truckToAssign = await Truck.findById(application.assignedTruckId);
     if (!truckToAssign) {
       return next(new ApiError('Truck not found', 404));
     }
-    
+
     await truckToAssign.assignToShipment(application.driverId);
-    
+
     // Update the shipment with the assigned truck and driver from the application
     shipment.status = ShipmentStatus.ASSIGNED; // Changed from CONFIRMED to ASSIGNED to reflect driver and truck assignment
     shipment.selectedApplicationId = application._id;
     shipment.assignedTruckId = application.assignedTruckId;
     shipment.assignedDriverId = application.driverId;
-    
+
     // Add timeline entry
     await shipment.addTimelineEntry({
       status: ShipmentStatus.ASSIGNED,
-      note: 'Application accepted. Truck and driver assigned to shipment.'
+      note: 'Application accepted. Truck and driver assigned to shipment.',
     });
-    
+
     await shipment.save();
-    
+
     res.status(200).json({
       status: 'success',
       data: {
         application,
-        shipment
-      }
+        shipment,
+      },
     });
   } catch (error) {
     // If any operation fails, we don't have transaction rollback
@@ -555,37 +565,38 @@ exports.rejectApplication = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     // Find application
-    const application = await Application.findById(req.params.id)
-      .populate('shipmentId');
-    
+    const application = await Application.findById(req.params.id).populate('shipmentId');
+
     if (!application) {
       return next(new ApiError('Application not found', 404));
     }
-    
+
     const shipment = application.shipmentId;
-    
+
     // Check if shipment belongs to the merchant
     if (shipment.merchantId.toString() !== req.user.id) {
       return next(new ApiError('You do not have permission to reject this application', 403));
     }
-    
+
     // Check if application is still pending
     if (application.status !== ApplicationStatus.PENDING) {
-      return next(new ApiError(`Cannot reject application with status: ${application.status}`, 400));
+      return next(
+        new ApiError(`Cannot reject application with status: ${application.status}`, 400)
+      );
     }
-    
+
     // Reject the application
     await application.reject(req.body.reason);
-    
+
     res.status(200).json({
       status: 'success',
       data: {
-        application
-      }
+        application,
+      },
     });
   } catch (error) {
     next(error);
   }
-}; 
+};

@@ -13,6 +13,7 @@ const Applications = React.lazy(() => import('./pages/Applications'));
 const Trucks = React.lazy(() => import('./pages/Trucks'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Profile = React.lazy(() => import('./pages/Profile'));
+const Reports = React.lazy(() => import('./pages/Reports'));
 
 const LoadingFallback = () => (
   <div style={{ 
@@ -44,6 +45,11 @@ const App = () => {
             <Route path="/shipments" element={<Shipments />} />
             <Route path="/applications" element={<Applications />} />
             <Route path="/trucks" element={<Trucks />} />
+            <Route path="/reports" element={
+              <ProtectedRoute requiredRole="Admin">
+                <Reports />
+              </ProtectedRoute>
+            } />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
           </Route>

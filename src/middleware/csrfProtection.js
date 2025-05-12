@@ -4,6 +4,7 @@
  */
 
 const csrf = require('csurf');
+
 const logger = require('../utils/logger');
 
 // Initialize CSRF protection with options
@@ -12,8 +13,8 @@ const csrfProtection = csrf({
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 3600 * 1000 // 1 hour
-  }
+    maxAge: 3600 * 1000, // 1 hour
+  },
 });
 
 /**
@@ -32,13 +33,13 @@ const handleCSRFError = (err, req, res, next) => {
     ip: req.ip,
     userAgent: req.headers['user-agent'],
     requestId: req.requestId,
-    userId: req.user?.id || 'unauthenticated'
+    userId: req.user?.id || 'unauthenticated',
   });
 
   // Send forbidden response
   res.status(403).json({
     success: false,
-    message: 'Invalid or expired CSRF token. Please refresh the page and try again.'
+    message: 'Invalid or expired CSRF token. Please refresh the page and try again.',
   });
 };
 
@@ -49,10 +50,10 @@ const handleCSRFError = (err, req, res, next) => {
 const generateCSRFToken = (req, res, next) => {
   // Add CSRF token to response locals for template rendering
   res.locals.csrfToken = req.csrfToken();
-  
+
   // Also add as a header for API clients
   res.set('X-CSRF-Token', req.csrfToken());
-  
+
   next();
 };
 
@@ -62,10 +63,10 @@ const generateCSRFToken = (req, res, next) => {
 const addCSRFHeaders = (req, res, next) => {
   // Prevent embedding in frames (helps prevent clickjacking)
   res.set('X-Frame-Options', 'DENY');
-  
+
   // Instructs browser to only send the referrer header when navigating to same origin
   res.set('Referrer-Policy', 'same-origin');
-  
+
   next();
 };
 
@@ -73,5 +74,5 @@ module.exports = {
   csrfProtection,
   handleCSRFError,
   generateCSRFToken,
-  addCSRFHeaders
-}; 
+  addCSRFHeaders,
+};

@@ -3,7 +3,7 @@
  * tags:
  *   name: Shipments
  *   description: Shipment management endpoints
- * 
+ *
  * /api/shipments:
  *   get:
  *     summary: Get all shipments with filters
@@ -75,7 +75,7 @@
  *         $ref: '#/components/responses/Unauthorized'
  *       500:
  *         $ref: '#/components/responses/Error'
- * 
+ *
  *   post:
  *     summary: Create a new shipment
  *     tags: [Shipments]
@@ -148,7 +148,7 @@
  *         $ref: '#/components/responses/Unauthorized'
  *       500:
  *         $ref: '#/components/responses/Error'
- * 
+ *
  * /api/shipments/{id}:
  *   get:
  *     summary: Get a shipment by ID
@@ -180,7 +180,7 @@
  *         $ref: '#/components/responses/NotFound'
  *       500:
  *         $ref: '#/components/responses/Error'
- * 
+ *
  *   put:
  *     summary: Update a shipment
  *     tags: [Shipments]
@@ -255,7 +255,7 @@
  *         $ref: '#/components/responses/NotFound'
  *       500:
  *         $ref: '#/components/responses/Error'
- * 
+ *
  *   delete:
  *     summary: Delete a shipment
  *     tags: [Shipments]
@@ -286,7 +286,7 @@
  *         $ref: '#/components/responses/NotFound'
  *       500:
  *         $ref: '#/components/responses/Error'
- * 
+ *
  * /api/shipments/{id}/tracking:
  *   get:
  *     summary: Get tracking information for a shipment
@@ -346,4 +346,4 @@
  *         $ref: '#/components/responses/NotFound'
  *       500:
  *         $ref: '#/components/responses/Error'
- */ 
+ */
