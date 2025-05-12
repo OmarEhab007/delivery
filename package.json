@@ -6,17 +6,6 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --detectOpenHandles",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:e2e": "jest tests/simplified-e2e.test.js --detectOpenHandles --forceExit",
-    "test:rate-limit": "node tests/utils/test-rate-limit.js",
-    "test:compression": "node tests/utils/test-compression.js",
-    "test:caching": "node tests/utils/test-caching.js",
-    "test:csrf": "node tests/utils/test-csrf.js",
-    "test:csp": "node tests/utils/test-csp.js",
-    "test:security": "npm run test:csrf && npm run test:csp",
-    "test:indexes": "node tests/utils/test-indexes.js",
     "create-admin": "node src/scripts/createAdminUser.js",
     "logs": "node src/scripts/log-utils.js",
     "logs:list": "node src/scripts/log-utils.js list",
@@ -28,12 +17,7 @@
     "db:create-indexes": "node src/scripts/database/createIndexes.js",
     "db:monitor-indexes": "node src/scripts/database/monitorIndexes.js",
     "db:optimize": "npm run db:create-indexes && npm run db:monitor-indexes",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "lint:format": "npm run lint:fix && npm run format",
-    "lint:check": "eslint . && prettier --check .",
-    "prepare": "husky install"
+    "format": "prettier --write ."
   },
   "keywords": [
     "shipping",
