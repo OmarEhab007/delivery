@@ -21,17 +21,20 @@ For each module, we have created:
 We have implemented:
 
 1. **Testing Environment**
+
    - In-memory MongoDB database for isolated testing
    - JWT authentication setup
    - Test-specific environment variables
 
 2. **Test Utilities**
+
    - Helper functions for creating test data
    - User creation with different roles
    - Token generation
    - Entity creation (Trucks, Shipments, Applications)
 
 3. **Test Scripts**
+
    - Individual test running (`npm test -- auth.test.js`)
    - Test suite running (`npm test`)
    - Coverage reporting (`npm run test:coverage`)
@@ -70,4 +73,4 @@ The test suite provides coverage for:
 
 ## Conclusion
 
-The testing framework created for the Delivery App provides a solid foundation for ensuring code quality and functionality as the application evolves. Even if there are current challenges with running the tests due to environment configuration, the test structure itself provides valuable documentation of the API behavior and requirements. 
+The testing framework created for the Delivery App provides a solid foundation for ensuring code quality and functionality as the application evolves. Even if there are current challenges with running the tests due to environment configuration, the test structure itself provides valuable documentation of the API behavior and requirements.

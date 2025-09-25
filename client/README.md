@@ -31,11 +31,13 @@ A modern React-based admin portal for the Delivery App, providing a comprehensiv
 ### Installation
 
 1. Install dependencies:
+
    ```
    npm install
    ```
 
 2. Start the development server:
+
    ```
    npm start
    ```
@@ -72,4 +74,4 @@ To run both the frontend and backend concurrently:
 npm run dev:all
 ```
 
-This command should be run from the root directory of the project, not from the client directory. 
+This command should be run from the root directory of the project, not from the client directory.

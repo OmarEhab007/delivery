@@ -1,68 +1,35 @@
-# Delivery App Documentation
+# Delivery App Knowledge Base
 
-Welcome to the comprehensive documentation for the Delivery App system. This documentation is designed to serve as a reference for backend developers, frontend developers, testers, and system administrators.
+This directory houses the full set of operational, architectural, and runbook documents for the Delivery App. Use this index to navigate by topic.
 
-## Table of Contents
+## 📚 Key References
 
-### System Documentation
+- [System Architecture](SYSTEM_ARCHITECTURE.md) – system context, component diagrams, request flows
+- [Database Schema](DATABASE_SCHEMA.md) – entities, relationships, indexes, transaction notes
+- [API Documentation](API_DOCUMENTATION.md) – endpoint contracts, examples, auth requirements
+- [Swagger Guide](SWAGGER_GUIDE.md) – extending OpenAPI definitions and UI usage
+- [Monitoring](monitoring.md) & [HEALTH_MONITORING](HEALTH_MONITORING.md) – probes, external checks, alerting strategy
+- [LOGGING](LOGGING.md) – Winston configuration, log rotation, log levels
+- [Deployment Runbook](DEPLOYMENT_RUNBOOK.md) – prod compose, rollout/rollback, backup/restore
 
-1. [System Architecture](./SYSTEM_ARCHITECTURE.md) - High-level overview of the system components and design
-2. [Database Schema](./DATABASE_SCHEMA.md) - Detailed documentation of database models and relationships
-3. [API Documentation](./API_DOCUMENTATION.md) - Complete reference for all API endpoints
+## 🛠 Developer Guides
 
-### Developer Guides
+- [BACKEND_GUIDE](BACKEND_GUIDE.md) – coding conventions, module patterns, common pitfalls
+- [DOCUMENT_MANAGEMENT_GUIDE](DOCUMENT_MANAGEMENT_GUIDE.md) – storage layout, validation, access rules
+- [MONGODB_TRANSACTIONS](MONGODB_TRANSACTIONS.md) – how to enable/use replica set transactions
+- [API_TESTING_GUIDE](API_TESTING_GUIDE.md) – Postman collection usage, automated test tips
+- [PROJECT_STATUS_AUDIT](PROJECT_STATUS_AUDIT.md) – current state summary and outstanding gaps
 
-1. [Backend Development Guide](./BACKEND_GUIDE.md) - Guide for backend developers
-2. [API Testing Guide](./API_TESTING_GUIDE.md) - Guide for testing the API endpoints
+## 🧭 Roadmaps & Plans
 
-## System Overview
+- [DEVELOPMENT_ROADMAP](DEVELOPMENT_ROADMAP.md) – phase-based feature plan
+- [QUICK_START](QUICK_START.md) – condensed setup instructions
+- [TASKS](../TASKS.md) – current backlog for active development
 
-The Delivery App is a comprehensive platform for connecting merchants with truck owners for shipping cargo. The system allows merchants to create shipment requests, truck owners to bid on these requests, and facilitates the end-to-end management of the shipping process.
+## 🤝 Operational Policies
 
-### Key Features
+- CONTRIBUTING.md – contribution workflow, branching, PR checklist
+- CODE_OF_CONDUCT.md – community expectations
+- SECURITY.md – disclosure guidelines and contact
 
-- User management with multiple roles (Admin, Merchant, Truck Owner, Driver)
-- Shipment creation and lifecycle management
-- Application/bidding system for truck owners
-- Timeline tracking for shipments
-- Location tracking for in-transit shipments
-- Secure authentication and authorization
-
-### Technology Stack
-
-- **Backend**: Node.js with Express.js
-- **Database**: MongoDB with Mongoose ODM
-- **Frontend**: React.js (for admin panel)
-- **Authentication**: JSON Web Tokens (JWT)
-- **Deployment**: Docker support
-
-## Getting Started
-
-To set up a development environment:
-
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Copy `.env.sample` to `.env` and configure environment variables
-4. Start the development server: `npm run dev`
-
-For more detailed instructions, refer to the specific development guides.
-
-## API Reference
-
-The API follows RESTful principles and is organized around the following resources:
-
-- **Auth**: User registration, login, and password management
-- **Shipments**: Creating and managing shipments
-- **Applications**: Bidding on shipments
-- **Trucks**: Managing truck information
-- **Users**: User profile management
-
-For a complete API reference, see the [API Documentation](./API_DOCUMENTATION.md).
-
-## Contributing
-
-When contributing to this project, please follow the coding standards and best practices outlined in the developer guides.
-
-## License
-
-This project is proprietary and confidential. Unauthorized copying, distribution, or use is strictly prohibited. 
+Keep this index updated whenever new guides are added or deprecated to ensure contributors can find the right reference quickly.

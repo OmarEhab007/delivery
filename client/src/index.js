@@ -22,4 +22,4 @@ root.render(
       </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>
-); 
+);

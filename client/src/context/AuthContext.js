@@ -1,7 +1,8 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jwtDecode from 'jwt-decode';
 import axios from 'axios';
+import { initCsrfToken } from '../utils/csrfUtils';
 
 const AuthContext = createContext();
 
@@ -13,9 +14,21 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('auth_token'));
   const navigate = useNavigate();
 
+  // Use useCallback to memoize the logout function
+  const logout = useCallback(() => {
+    localStorage.removeItem('auth_token');
+    setToken(null);
+    setCurrentUser(null);
+    delete axios.defaults.headers.common['Authorization'];
+    navigate('/login');
+  }, [navigate]);
+
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // Initialize CSRF token for all users (even before login)
+        await initCsrfToken();
+
         if (token) {
           // Check if token is expired
           const decodedToken = jwtDecode(token);
@@ -32,7 +45,7 @@ export const AuthProvider = ({ children }) => {
 
           // Get current user info
           const response = await axios.get('/api/auth/me');
-          
+
           // Only set admin users
           if (response.data.data.user.role === 'Admin') {
             setCurrentUser(response.data.data.user);
@@ -50,10 +63,13 @@ export const AuthProvider = ({ children }) => {
     };
 
     initAuth();
-  }, [token]);
+  }, [token, logout]);
 
   const login = async (email, password) => {
     try {
+      // First initialize CSRF token
+      await initCsrfToken();
+
       const response = await axios.post('/api/auth/login', { email, password });
       const { token, data } = response.data;
       const user = data.user;
@@ -68,23 +84,15 @@ export const AuthProvider = ({ children }) => {
       setToken(token);
       setCurrentUser(user);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
+
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Login failed. Please check your credentials.'
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Login failed. Please check your credentials.',
       };
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    setToken(null);
-    setCurrentUser(null);
-    delete axios.defaults.headers.common['Authorization'];
-    navigate('/login');
   };
 
   const value = {
@@ -98,4 +106,4 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export default AuthContext; 
+export default AuthContext;

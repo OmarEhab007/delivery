@@ -7,6 +7,7 @@ This document provides information about all admin APIs in the Delivery App.
 All admin endpoints require authentication using a JWT token and are restricted to users with Admin role.
 
 **Authorization Header:**
+
 ```
 Authorization: Bearer <token>
 ```
@@ -14,16 +15,19 @@ Authorization: Bearer <token>
 ## User Management
 
 ### Get All Users
+
 ```
 GET /api/admin/users
 ```
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Number of results per page (default: 10)
 - `role` (optional): Filter by user role (Admin, Merchant, TruckOwner, Driver)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -52,11 +56,13 @@ GET /api/admin/users
 ```
 
 ### Get User by ID
+
 ```
 GET /api/admin/users/:id
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -76,11 +82,13 @@ GET /api/admin/users/:id
 ```
 
 ### Create User
+
 ```
 POST /api/admin/users
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "John Smith",
@@ -92,6 +100,7 @@ POST /api/admin/users
 ```
 
 For TruckOwner role, additional fields are required:
+
 ```json
 {
   "name": "Truck Co.",
@@ -105,6 +114,7 @@ For TruckOwner role, additional fields are required:
 ```
 
 For Driver role, additional fields are required:
+
 ```json
 {
   "name": "Driver Name",
@@ -118,6 +128,7 @@ For Driver role, additional fields are required:
 ```
 
 For Admin role, optional fields:
+
 ```json
 {
   "name": "Admin Name",
@@ -130,6 +141,7 @@ For Admin role, optional fields:
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -150,11 +162,13 @@ For Admin role, optional fields:
 ```
 
 ### Update User
+
 ```
 PUT /api/admin/users/:id
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "Updated Name",
@@ -165,6 +179,7 @@ PUT /api/admin/users/:id
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -185,11 +200,13 @@ PUT /api/admin/users/:id
 ```
 
 ### Delete User
+
 ```
 DELETE /api/admin/users/:id
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -202,11 +219,13 @@ DELETE /api/admin/users/:id
 ## Shipment Management
 
 ### Get All Shipments
+
 ```
 GET /api/admin/shipments
 ```
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Number of results per page (default: 10)
 - `status` (optional): Filter by shipment status
@@ -217,6 +236,7 @@ GET /api/admin/shipments
 - `endDate` (optional): Filter by created date range end
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -259,11 +279,13 @@ GET /api/admin/shipments
 ```
 
 ### Get Shipment by ID
+
 ```
 GET /api/admin/shipments/:id
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -298,11 +320,13 @@ GET /api/admin/shipments/:id
 ```
 
 ### Update Shipment
+
 ```
 PUT /api/admin/shipments/:id
 ```
 
 **Request Body:**
+
 ```json
 {
   "status": "InTransit",
@@ -318,6 +342,7 @@ PUT /api/admin/shipments/:id
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -344,11 +369,13 @@ PUT /api/admin/shipments/:id
 ```
 
 ### Change Shipment Status
+
 ```
 PATCH /api/admin/shipments/:id/status
 ```
 
 **Request Body:**
+
 ```json
 {
   "status": "Delivered"
@@ -356,6 +383,7 @@ PATCH /api/admin/shipments/:id/status
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -399,11 +427,13 @@ PATCH /api/admin/shipments/:id/status
 ```
 
 ### Delete Shipment
+
 ```
 DELETE /api/admin/shipments/:id
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -416,14 +446,17 @@ DELETE /api/admin/shipments/:id
 ## Application Management
 
 ### Get All Applications
+
 ```
 GET /api/admin/applications
 ```
 
 **Query Parameters:**
+
 - Similar to shipments, supports pagination and filtering
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -460,11 +493,13 @@ GET /api/admin/applications
 ```
 
 ### Update Application Status
+
 ```
 PATCH /api/admin/applications/:id/status
 ```
 
 **Request Body:**
+
 ```json
 {
   "status": "Approved",
@@ -473,6 +508,7 @@ PATCH /api/admin/applications/:id/status
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -506,14 +542,17 @@ PATCH /api/admin/applications/:id/status
 ## Truck Management
 
 ### Get All Trucks
+
 ```
 GET /api/admin/trucks
 ```
 
 **Query Parameters:**
+
 - Similar to other endpoints, supports pagination and filtering
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -548,11 +587,13 @@ GET /api/admin/trucks
 ```
 
 ### Create Truck
+
 ```
 POST /api/admin/trucks
 ```
 
 **Request Body:**
+
 ```json
 {
   "licensePlate": "TRK5678",
@@ -569,6 +610,7 @@ POST /api/admin/trucks
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -597,11 +639,13 @@ POST /api/admin/trucks
 ## Dashboard
 
 ### Get Dashboard Stats
+
 ```
 GET /api/admin/dashboard
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -657,9 +701,11 @@ npm run create-admin
 ```
 
 This will create an admin user with default credentials (if not set in environment variables):
+
 - Email: admin@deliveryapp.com
 - Password: admin123456
 
 To customize the admin credentials, set these environment variables before running the script:
+
 - `ADMIN_EMAIL`: Custom admin email
-- `ADMIN_PASSWORD`: Custom admin password 
+- `ADMIN_PASSWORD`: Custom admin password

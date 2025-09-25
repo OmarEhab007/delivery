@@ -13,14 +13,17 @@ const Applications = React.lazy(() => import('./pages/Applications'));
 const Trucks = React.lazy(() => import('./pages/Trucks'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Profile = React.lazy(() => import('./pages/Profile'));
+const Reports = React.lazy(() => import('./pages/Reports'));
 
 const LoadingFallback = () => (
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    height: '100vh' 
-  }}>
+  <div
+    style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100vh',
+    }}
+  >
     Loading...
   </div>
 );
@@ -32,9 +35,7 @@ const App = () => {
     <React.Suspense fallback={<LoadingFallback />}>
       <Routes>
         {/* Public routes */}
-        <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/dashboard" /> : <Login />
-        } />
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
 
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
@@ -44,23 +45,33 @@ const App = () => {
             <Route path="/shipments" element={<Shipments />} />
             <Route path="/applications" element={<Applications />} />
             <Route path="/trucks" element={<Trucks />} />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute requiredRole="Admin">
+                  <Reports />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
         </Route>
 
         {/* Redirect to dashboard if authenticated, otherwise to login */}
-        <Route path="/" element={
-          isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
-        } />
-        
+        <Route
+          path="/"
+          element={isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
+        />
+
         {/* Catch all - redirect to dashboard or login */}
-        <Route path="*" element={
-          isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
-        } />
+        <Route
+          path="*"
+          element={isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
+        />
       </Routes>
     </React.Suspense>
   );
 };
 
-export default App; 
+export default App;

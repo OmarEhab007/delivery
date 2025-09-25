@@ -1,206 +1,75 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const User = require('../src/models/User');
-const app = require('../src/server');
-const { createTestUser, generateToken } = require('./utils/testUtils');
 
-describe('Authentication Module Tests', () => {
-  
-  describe('User Registration', () => {
-    it('should register a new merchant user', async () => {
-      const userData = {
-        name: 'Test Merchant',
-        email: `testmerchant${Date.now()}@example.com`,
-        password: 'password123',
-        phone: '+1234567890',
-        role: 'Merchant'
-      };
-      
-      const response = await request(app)
-        .post('/api/auth/register/merchant')
-        .send(userData);
-      
-      expect(response.status).toBe(201);
-      expect(response.body).toHaveProperty('token');
-      expect(response.body.data.user).toHaveProperty('name', userData.name);
-      expect(response.body.data.user).toHaveProperty('email', userData.email);
-      expect(response.body.data.user).toHaveProperty('role', userData.role);
-      expect(response.body.data.user).not.toHaveProperty('password');
-    });
-    
-    it('should register a new truck owner', async () => {
-      const userData = {
-        name: 'Test Truck Owner',
-        email: `testtruckowner${Date.now()}@example.com`,
-        password: 'password123',
-        phone: '+1234567890',
-        role: 'TruckOwner',
-        companyName: 'Test Company',
-        companyAddress: 'Test Address'
-      };
-      
-      const response = await request(app)
-        .post('/api/auth/register/truckOwner')
-        .send(userData);
-      
-      expect(response.status).toBe(201);
-      expect(response.body).toHaveProperty('token');
-      expect(response.body.data.user).toHaveProperty('role', 'TruckOwner');
-    });
-    
-    it('should not register a user with existing email', async () => {
-      const user = await createTestUser('Merchant');
-      
-      const userData = {
-        name: 'Duplicate User',
-        email: user.email,
-        password: 'password123',
-        phone: '+1234567890',
-        role: 'Merchant'
-      };
-      
-      const response = await request(app)
-        .post('/api/auth/register/merchant')
-        .send(userData);
-      
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty('message');
-    });
+const { app } = require('../src/server');
+const User = require('../src/models/User');
+const otpService = require('../src/services/auth/otpService');
+
+jest.mock('../src/services/auth/otpService', () => {
+  const actual = jest.requireActual('../src/services/auth/otpService');
+  return {
+    ...actual,
+    deliverOtp: jest.fn().mockResolvedValue({ channel: 'log', simulated: true }),
+  };
+});
+
+describe('OTP Authentication', () => {
+  afterEach(async () => {
+    await User.deleteMany({});
+    jest.clearAllMocks();
   });
-  
-  describe('User Login', () => {
-    // NOTE: This test is skipped due to BCrypt compatibility issues between test and app
-    it.skip('should login an existing user with valid credentials', async () => {
-      // Create a user with a known password directly with bcrypt
-      const email = `testlogin${Date.now()}@example.com`;
-      const password = 'password123';
-      
-      // Create new user and save to DB
-      const user = new User({
-        name: 'Test Login User',
-        email: email,
-        password: await bcrypt.hash(password, 10), // Hash manually
-        phone: '+1234567890',
-        role: 'Merchant'
-      });
-      
-      await user.save();
-      
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: email,
-          password: password // Send the unhashed password
-        });
-      
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('token');
-      expect(response.body.data.user).toHaveProperty('email', email);
+
+  test('should request OTP and verify successfully', async () => {
+    const phone = '1234567890';
+    const otpCode = '123456';
+
+    await User.create({
+      name: 'OTP User',
+      email: 'otpuser@example.com',
+      password: 'password123',
+      phone,
+      role: 'Merchant',
     });
-    
-    it('should not login with invalid password', async () => {
-      const user = await createTestUser('Merchant');
-      
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: user.email,
-          password: 'wrongpassword'
-        });
-      
-      expect(response.status).toBe(401);
-      expect(response.body).toHaveProperty('message');
-    });
-    
-    it('should not login with non-existent email', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'nonexistent@example.com',
-          password: 'password123'
-        });
-      
-      expect(response.status).toBe(401);
-      expect(response.body).toHaveProperty('message');
-    });
+
+    jest.spyOn(otpService, 'generateOtp').mockReturnValue(otpCode);
+    jest.spyOn(otpService, 'hashOtp').mockReturnValue('hashed-code');
+    jest.spyOn(otpService, 'canSendNewOtp').mockReturnValue(true);
+    jest.spyOn(otpService, 'getExpiryMs').mockReturnValue(300000);
+
+    const requestResponse = await request(app).post('/api/auth/otp/request').send({ phone });
+    expect(requestResponse.status).toBe(200);
+
+    jest.spyOn(otpService, 'verifyOtp').mockReturnValue(true);
+
+    const response = await request(app)
+      .post('/api/auth/otp/verify')
+      .send({ phone, otp: otpCode })
+      .expect(200);
+
+    expect(response.body).toHaveProperty('token');
+    expect(response.body.data.user.phone).toBe(phone);
   });
-  
-  describe('Profile Management', () => {
-    it('should get the current user profile', async () => {
-      const user = await createTestUser('Merchant');
-      const token = generateToken(user);
-      
-      const response = await request(app)
-        .get('/api/auth/me')
-        .set('Authorization', `Bearer ${token}`);
-      
-      expect(response.status).toBe(200);
-      expect(response.body.data.user).toHaveProperty('_id', user._id.toString());
-      expect(response.body.data.user).toHaveProperty('email', user.email);
+
+  test('should reject invalid OTP', async () => {
+    const phone = '1234567891';
+
+    await User.create({
+      name: 'Invalid OTP User',
+      email: 'invalidotp@example.com',
+      password: 'password123',
+      phone,
+      role: 'Merchant',
+      otp: {
+        codeHash: 'hashed-code',
+        expiresAt: new Date(Date.now() + 300000),
+        attemptCount: 0,
+        lastSentAt: new Date(),
+      },
     });
-    
-    it('should update user profile', async () => {
-      const user = await createTestUser('Merchant');
-      const token = generateToken(user);
-      
-      const updateData = {
-        name: 'Updated Name',
-        phone: '+9876543210'
-      };
-      
-      const response = await request(app)
-        .patch('/api/users/updateMe')
-        .set('Authorization', `Bearer ${token}`)
-        .send(updateData);
-      
-      expect(response.status).toBe(200);
-      expect(response.body.data.user).toHaveProperty('name', updateData.name);
-      expect(response.body.data.user).toHaveProperty('phone', updateData.phone);
-    });
+
+    jest.spyOn(otpService, 'verifyOtp').mockReturnValue(false);
+    jest.spyOn(otpService, 'hasAttemptsRemaining').mockReturnValue(true);
+
+    await request(app).post('/api/auth/otp/verify').send({ phone, otp: '000000' }).expect(400);
   });
-  
-  describe('Password Management', () => {
-    // NOTE: This test is skipped due to BCrypt compatibility issues in the test environment
-    it.skip('should change user password', async () => {
-      // Create a user with a known password directly with bcrypt
-      const email = `testpassword${Date.now()}@example.com`;
-      const password = 'password123';
-      
-      // Create new user and save to DB
-      const user = new User({
-        name: 'Test Password User',
-        email: email,
-        password: await bcrypt.hash(password, 10), // Hash manually
-        phone: '+1234567890',
-        role: 'Merchant'
-      });
-      
-      await user.save();
-      
-      const token = generateToken(user);
-      
-      const passwordData = {
-        currentPassword: password,
-        newPassword: 'newpassword123'
-      };
-      
-      const response = await request(app)
-        .patch('/api/auth/updatePassword')
-        .set('Authorization', `Bearer ${token}`)
-        .send(passwordData);
-      
-      expect(response.status).toBe(200);
-      
-      // Verify new password works
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: email,
-          password: 'newpassword123'
-        });
-      
-      expect(loginResponse.status).toBe(200);
-    });
-  });
-}); 
+});

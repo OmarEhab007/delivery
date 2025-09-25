@@ -1,38 +1,43 @@
 const path = require('path');
+
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const mongoose = require('mongoose');
-const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+
+const User = require('../models/User');
+const logger = require('../utils/logger');
 
 const createAdminUser = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('Connected to MongoDB');
+    logger.info('Connected to MongoDB for createAdminUser');
 
-    // Check if admin user already exists
     const existingAdmin = await User.findOne({ role: 'Admin' });
     if (existingAdmin) {
-      console.log('Admin user already exists with email:', existingAdmin.email);
+      logger.info('Admin user already exists', { email: existingAdmin.email });
       process.exit(0);
     }
 
-    // Create admin user
+    const password = process.env.ADMIN_PASSWORD || 'admin123456';
+
     const adminUser = await User.create({
-      name: 'Admin User',
+      name: process.env.ADMIN_NAME || 'Admin User',
       email: process.env.ADMIN_EMAIL || 'admin@deliveryapp.com',
-      password: process.env.ADMIN_PASSWORD || 'admin123456',
-      phone: '1234567890',
+      password,
+      phone: process.env.ADMIN_PHONE || '1234567890',
       role: 'Admin',
-      adminPermissions: ['FULL_ACCESS']
+      adminPermissions: ['FULL_ACCESS'],
     });
 
-    console.log('Admin user created successfully:', adminUser.email);
+    logger.warn('Admin user created. Rotate password immediately.', {
+      email: adminUser.email,
+    });
   } catch (error) {
-    console.error('Error creating admin user:', error);
+    logger.error('Error creating admin user', { error: error.message });
   } finally {
     await mongoose.connection.close();
     process.exit(0);
   }
 };
 
-createAdminUser(); 
+createAdminUser();

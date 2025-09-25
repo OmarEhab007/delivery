@@ -1,0 +1,31 @@
+# Node dependencies
+node_modules
+client/node_modules
+
+# Build artifacts
+client/build
+coverage
+
+# Logs and uploads
+logs
+uploads
+
+# Tests and tooling
+tests
+coverage/
+docs/
+
+# Git and editor state
+.git
+.gitignore
+.env
+env/
+.DS_Store
+*.log
+
+# Misc
+backups
+tmp
+.vscode
+.idea
+

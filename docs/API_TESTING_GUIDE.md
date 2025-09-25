@@ -38,21 +38,25 @@ Before testing protected endpoints, you need to obtain JWT tokens:
 The collection is organized to follow typical user workflows:
 
 1. **Auth Flow**:
+
    - Register users of different roles
    - Login to obtain tokens
    - Test password reset flow
 
 2. **Merchant Flow**:
+
    - Create shipments
    - View and manage shipments
    - Select applications from truck owners
 
 3. **Truck Owner Flow**:
+
    - Create and manage trucks
    - Register drivers
    - Apply for shipments
 
 4. **Driver Flow**:
+
    - View assigned shipments
    - Update shipment status and location
 
@@ -131,7 +135,7 @@ describe('Shipment API', () => {
       email: 'merchant@example.com',
       password: 'password123',
       phone: '1234567890',
-      role: 'Merchant'
+      role: 'Merchant',
     });
 
     token = signToken(merchant._id);
@@ -142,17 +146,17 @@ describe('Shipment API', () => {
       const shipmentData = {
         origin: {
           address: 'Origin Address',
-          country: 'USA'
+          country: 'USA',
         },
         destination: {
           address: 'Destination Address',
-          country: 'Canada'
+          country: 'Canada',
         },
         cargoDetails: {
           description: 'Test Cargo',
           weight: 1000,
-          volume: 10
-        }
+          volume: 10,
+        },
       };
 
       const response = await request(app)
@@ -175,11 +179,13 @@ describe('Shipment API', () => {
 ### Authentication Tests
 
 1. **Registration**:
+
    - Valid registration should create a user and return a token
    - Duplicate email should return an error
    - Invalid data should return validation errors
 
 2. **Login**:
+
    - Valid credentials should return a token
    - Invalid credentials should return an error
    - Inactive user should not be able to login
@@ -192,16 +198,19 @@ describe('Shipment API', () => {
 ### Shipment Tests
 
 1. **Create Shipment**:
+
    - Merchant creates a shipment with valid data
    - Invalid data should return validation errors
    - Non-merchant users cannot create shipments
 
 2. **Apply for Shipment**:
+
    - Truck owner applies for a shipment
    - Cannot apply twice for the same shipment
    - Cannot apply with unavailable truck
 
 3. **Select Application**:
+
    - Merchant accepts an application
    - Other applications are automatically rejected
    - Shipment status is updated to CONFIRMED
@@ -214,6 +223,7 @@ describe('Shipment API', () => {
 ### User Management Tests
 
 1. **Profile Update**:
+
    - User can update their own profile
    - Password update requires current password
    - Email uniqueness is enforced
@@ -261,42 +271,42 @@ Example Artillery.io configuration:
 ```yaml
 # load-test.yml
 config:
-  target: "http://localhost:3000/api"
+  target: 'http://localhost:3000/api'
   phases:
     - duration: 60
       arrivalRate: 5
-      name: "Warm up"
+      name: 'Warm up'
     - duration: 120
       arrivalRate: 10
-      name: "Sustained load"
+      name: 'Sustained load'
   defaults:
     headers:
-      Content-Type: "application/json"
-      Authorization: "Bearer {{token}}"
+      Content-Type: 'application/json'
+      Authorization: 'Bearer {{token}}'
 
 scenarios:
-  - name: "List shipments and view details"
+  - name: 'List shipments and view details'
     flow:
       - post:
-          url: "/auth/login"
+          url: '/auth/login'
           json:
-            email: "merchant@example.com"
-            password: "password123"
+            email: 'merchant@example.com'
+            password: 'password123'
           capture:
-            json: "$.data.token"
-            as: "token"
+            json: '$.data.token'
+            as: 'token'
       - get:
-          url: "/shipments"
+          url: '/shipments'
           headers:
-            Authorization: "Bearer {{token}}"
+            Authorization: 'Bearer {{token}}'
       - get:
-          url: "/shipments/{{shipmentId}}"
+          url: '/shipments/{{shipmentId}}'
           headers:
-            Authorization: "Bearer {{token}}"
+            Authorization: 'Bearer {{token}}'
 ```
 
 Run the load test:
 
 ```bash
 artillery run load-test.yml
-``` 
+```

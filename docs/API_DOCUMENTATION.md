@@ -214,8 +214,55 @@ Register different types of users in the system.
         "_id": "user_id",
         "name": "User Name",
         "email": "user@example.com",
-        "role": "Merchant",
+        "role": "Merchant"
         // Other user fields based on role
+      },
+      "token": "jwt_token"
+    }
+  }
+  ```
+
+#### Request OTP Login Code
+
+- **URL**: `/auth/otp/request`
+- **Method**: `POST`
+- **Auth required**: No
+- **Request Body**:
+  ```json
+  {
+    "phone": "+15551234567"
+  }
+  ```
+- **Success Response**: `200 OK`
+  ```json
+  {
+    "status": "success",
+    "message": "OTP sent successfully"
+  }
+  ```
+
+#### Verify OTP and Login
+
+- **URL**: `/auth/otp/verify`
+- **Method**: `POST`
+- **Auth required**: No
+- **Request Body**:
+  ```json
+  {
+    "phone": "+15551234567",
+    "otp": "123456"
+  }
+  ```
+- **Success Response**: `200 OK`
+  ```json
+  {
+    "status": "success",
+    "data": {
+      "user": {
+        "_id": "user_id",
+        "name": "User Name",
+        "phone": "+15551234567",
+        "role": "Merchant"
       },
       "token": "jwt_token"
     }
@@ -236,7 +283,7 @@ Register different types of users in the system.
         "_id": "user_id",
         "name": "User Name",
         "email": "user@example.com",
-        "role": "Merchant",
+        "role": "Merchant"
         // Other user fields based on role
       }
     }
@@ -281,7 +328,7 @@ Register different types of users in the system.
       "user": {
         "_id": "user_id",
         "name": "User Name",
-        "email": "user@example.com",
+        "email": "user@example.com"
         // Other user fields
       },
       "token": "jwt_token"
@@ -309,7 +356,7 @@ Register different types of users in the system.
       "user": {
         "_id": "user_id",
         "name": "User Name",
-        "email": "user@example.com",
+        "email": "user@example.com"
         // Other user fields
       },
       "token": "jwt_token"
@@ -331,7 +378,7 @@ Register different types of users in the system.
       "address": "Pickup Address",
       "coordinates": {
         "lat": 40.7128,
-        "lng": -74.0060
+        "lng": -74.006
       },
       "country": "USA"
     },
@@ -367,7 +414,7 @@ Register different types of users in the system.
           "address": "Pickup Address",
           "coordinates": {
             "lat": 40.7128,
-            "lng": -74.0060
+            "lng": -74.006
           },
           "country": "USA"
         },
@@ -538,7 +585,7 @@ Register different types of users in the system.
     "note": "Shipment has left the warehouse",
     "location": {
       "lat": 40.7128,
-      "lng": -74.0060,
+      "lng": -74.006,
       "address": "Current Address"
     },
     "documents": [
@@ -1025,4 +1072,4 @@ Register different types of users in the system.
 - `404`: Not Found - Resource not found
 - `409`: Conflict - Resource already exists
 - `422`: Unprocessable Entity - Validation errors
-- `500`: Internal Server Error - Server encountered an error 
+- `500`: Internal Server Error - Server encountered an error

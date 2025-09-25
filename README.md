@@ -1,82 +1,89 @@
-# Delivery App - Merchant-Truck Coordination Platform
+# Delivery App
 
-This is a backend application that connects Merchants with Truck Owners (and their Drivers) to coordinate international shipments.
+> Production-ready platform that connects merchants with truck owners and drivers to orchestrate international shipments, approvals, and real-time tracking.
 
-## Features
+## Overview
+- Role-based workflows for Admins, Merchants, Truck Owners, and Drivers
+- Request → Payment → Admin approval → Entry creation flow with configurable limits
+- Real-time shipment location updates via Socket.io
+- Document management with secure storage and audit trails
+- Health monitoring, Prometheus metrics, and Grafana dashboards baked in
 
-- User management with role-based access (Admin, Merchant, Truck Owner, Driver)
-- Automatic admin user creation on first run
-- Shipment creation and management
-- Fleet management (trucks and drivers)
-- Application/bid system for shipments
-- Document upload and management
-- Real-time location tracking for shipments
-- WhatsApp notifications for important events
-
-## Tech Stack
-
-- Node.js with Express
-- MongoDB with Mongoose
-- JWT for authentication
-- Socket.io for real-time tracking
-- Twilio for WhatsApp integration
-- AWS S3 for document storage
-- Docker and Docker Compose for containerization
-
-## Project Structure
-
+## Architecture
 ```
 delivery-app/
 ├── src/
-│   ├── config/         # Configuration files
-│   ├── controllers/    # Route controllers for all endpoints
-│   ├── middleware/     # Custom middleware functions
-│   ├── models/         # Mongoose models
-│   ├── routes/         # Route definitions
-│   ├── services/       # Business logic
-│   ├── utils/          # Utility functions
-│   └── server.js       # Entry point
-├── tests/              # Automated tests
-├── .env.example        # Example environment variables
-├── docker-compose.yml  # Docker compose configuration
-├── Dockerfile          # Docker configuration
-└── package.json        # Project metadata and dependencies
+│   ├── config/          # App, database, swagger, monitoring config
+│   ├── controllers/     # Express route handlers
+│   ├── middleware/      # Auth, rate limits, security headers, logging
+│   ├── models/          # Mongoose schemas (Users, Shipments, Trucks, etc.)
+│   ├── routes/          # REST endpoints grouped by module
+│   ├── services/        # Business logic (auth, notifications, documents)
+│   ├── utils/           # Metrics, tracing, logging, validation helpers
+│   └── server.js        # Express bootstrap + Socket.io server
+├── client/              # React admin panel (optional)
+├── docker/              # Prometheus, Grafana, Mongo init scripts
+├── docs/                # Runbooks, API guide, monitoring, deployment
+├── env/                 # Environment templates for production
+├── tests/               # Jest unit/integration tests + utilities
+└── Dockerfile & compose files
 ```
 
-## Getting Started
+Key technologies: Node.js/Express, MongoDB (Mongoose), JWT auth, Socket.io, Prometheus/Grafana, Docker, Winston logging.
 
+## Quick Start
 ### Prerequisites
+- Node.js 18+
+- Docker & Docker Compose (for local infra)
+- MongoDB (local or container)
 
-- Node.js (v14+)
-- MongoDB
-- Docker and Docker Compose (optional)
+### Local development
+```bash
+git clone https://github.com/<org>/delivery-app.git
+cd delivery-app
+cp env.sample .env  # fill in secrets locally
+npm install
+npm run dev
+```
 
-### Installation
+The first startup seeds an admin user using values from `ADMIN_*` env vars. More details in [`docs/ADMIN_INITIALIZATION.md`](docs/ADMIN_INITIALIZATION.md).
 
-1. Clone the repository
-2. Copy `env.sample` to `.env` and update the values
-3. Install dependencies:
-   ```
-   npm install
-   ```
-4. Start the application:
-   ```
-   npm run dev
-   ```
-   
-   **Note**: On first run, an admin user will be automatically created if one doesn't exist. See [Admin Initialization](docs/ADMIN_INITIALIZATION.md) for details.
+### Docker Compose
+```bash
+docker compose up -d
+```
+This boots the API, MongoDB (with init script), Prometheus, and Grafana using `docker-compose.yml`. For production, use `docker-compose.prod.yml` plus the runbook.
 
-### Using Docker
+## Configuration & Secrets
+All secrets are supplied via environment variables (see `env.sample`). Critical ones:
+- `MONGODB_URI` – connection string (auth enabled by default in production compose)
+- `JWT_SECRET`, `COOKIE_SECRET`
+- Admin bootstrap: `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+- Rate limits, CSRF, compression, cache, and external service keys (Twilio, Stripe, Google Maps)
 
-1. Build and start the containers:
-   ```
-   docker-compose up -d
-   ```
+`src/utils/validateEnv.js` enforces mandatory values on startup, especially in production.
 
-## API Documentation
+## Deployment
+- Build hardened image: `docker build --target runner -t registry.example.com/delivery-app:<tag> .`
+- Follow the [Deployment Runbook](docs/DEPLOYMENT_RUNBOOK.md) for secrets, health checks, and rollback steps
+- Recommended: front the app with nginx/Caddy, terminate TLS, restrict Prometheus/Grafana to private networks
+- MongoDB backups handled by `scripts/backup/mongodb-backup.sh` (cron friendly)
 
-API documentation will be available at `/api-docs` when the server is running.
+## Quality & Tooling
+- Linting/formatting: `npm run lint`, `npm run format`
+- Tests: `npm test` (uses mongodb-memory-server for isolation)
+- Coverage reports land in `coverage/`
+- Husky + lint-staged enforce formatting on commit
+- Planned CI (GitHub Actions) runs lint, tests, coverage upload, Docker build, and security scans
 
-## Development Workflow
+## Monitoring & Observability
+- `/health` and `/health/*` endpoints expose system/storage/DB checks
+- `GET /api/metrics` (admin JWT required) exposes Prometheus metrics
+- Grafana dashboards are provisioned under `docker/grafana/`
+- Winston structured logging with daily rotation; logs stored under `logs/`
 
-See [TASKS.md](./TASKS.md) for the development roadmap and progress tracking.
+## Documentation
+- API reference: [`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md) plus live Swagger (`/api-docs`, admin-only)
+- System diagrams and roadmap: [`docs/SYSTEM_ARCHITECTURE.md`](docs/SYSTEM_ARCHITECTURE.md), [`docs/DEVELOPMENT_ROADMAP.md`](docs/DEVELOPMENT_ROADMAP.md)
+- Monitoring, logging, deployment, and health guides located under `docs/`
+

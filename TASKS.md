@@ -5,6 +5,7 @@ This document outlines the implementation tasks for the Delivery App project. It
 ## Guidelines for Cursor AI
 
 ### General Rules
+
 - Read the existing code before implementing new features to maintain consistency
 - Follow the established folder structure and naming conventions
 - Write clear comments and documentation for your implementations
@@ -15,6 +16,7 @@ This document outlines the implementation tasks for the Delivery App project. It
 - Follow RESTful API design principles
 
 ### Code Style
+
 - Use camelCase for variables and functions
 - Use PascalCase for class names and model names
 - Use kebab-case for file names
@@ -26,6 +28,7 @@ This document outlines the implementation tasks for the Delivery App project. It
 ## Task List
 
 ### 1. Project Setup (COMPLETED)
+
 - [x] Create project structure
 - [x] Set up Express.js server
 - [x] Configure MongoDB connection
@@ -34,6 +37,7 @@ This document outlines the implementation tasks for the Delivery App project. It
 - [x] Configure logging system
 
 ### 2. User Authentication (COMPLETED)
+
 - [x] Create User model
 - [x] Implement JWT authentication
 - [x] Create registration endpoints for Merchants and Truck Owners
@@ -43,6 +47,7 @@ This document outlines the implementation tasks for the Delivery App project. It
 - [x] Implement user profile management
 
 ### 3. Fleet Management (COMPLETED)
+
 - [x] Create Truck model
 - [x] Create CRUD endpoints for trucks
 - [x] Implement truck registration validation
@@ -52,6 +57,7 @@ This document outlines the implementation tasks for the Delivery App project. It
 - [x] Add vehicle status tracking
 
 ### 4. Shipment Management (COMPLETED)
+
 - [x] Create Shipment model
 - [x] Implement CRUD operations for shipments
 - [x] Add status tracking and timeline for shipments
@@ -61,6 +67,7 @@ This document outlines the implementation tasks for the Delivery App project. It
 - [x] Create shipment assignment logic
 
 ### 5. Application/Bid System (COMPLETED)
+
 - [x] Create Application model
 - [x] Implement application submission endpoints
 - [x] Create application approval/rejection workflow
@@ -68,15 +75,18 @@ This document outlines the implementation tasks for the Delivery App project. It
 - [x] Implement bid comparison functionality
 - [x] Create application search and filtering
 
-### 6. Document Management
-- [ ] Set up file upload service with AWS S3
-- [ ] Create document metadata storage
-- [ ] Implement document upload/download endpoints
-- [ ] Add document type validation
-- [ ] Create document verification workflow
-- [ ] Implement document access control
+### 6. Document Management (COMPLETED)
+
+- [x] Set up on-premises file storage service
+- [x] Create document metadata storage and Document model
+- [x] Implement document upload/download endpoints
+- [x] Add document type validation
+- [x] Create document verification workflow
+- [x] Implement document access control
+- [x] Integrate document linking with entities (Shipment, Application, Truck)
 
 ### 7. Notification System
+
 - [ ] Set up Twilio integration
 - [ ] Create notification service
 - [ ] Implement event-based notifications
@@ -85,6 +95,7 @@ This document outlines the implementation tasks for the Delivery App project. It
 - [ ] Implement notification preferences
 
 ### 8. Real-time Tracking
+
 - [ ] Set up Socket.io
 - [ ] Create location update endpoints
 - [ ] Implement real-time location broadcasting
@@ -93,6 +104,7 @@ This document outlines the implementation tasks for the Delivery App project. It
 - [ ] Implement security for location data
 
 ### 9. API Testing and Documentation (COMPLETED)
+
 - [x] Create API documentation with Swagger
 - [x] Write unit tests for critical endpoints
 - [x] Create integration tests
@@ -100,6 +112,7 @@ This document outlines the implementation tasks for the Delivery App project. It
 - [x] Document API usage examples
 
 ### 10. Deployment and DevOps
+
 - [ ] Optimize Docker configuration for production
 - [ ] Create deployment instructions
 - [ ] Set up CI/CD pipeline (optional)
@@ -108,22 +121,19 @@ This document outlines the implementation tasks for the Delivery App project. It
 
 ## Next Tasks to Implement
 
-1. Document Management:
-   - Set up file upload service with AWS S3
-   - Create document metadata storage
-   - Implement document upload/download endpoints
+1. Notification System:
 
-2. Notification System:
    - Set up Twilio integration
    - Create notification service
    - Implement event-based notifications
 
-3. Real-time Tracking:
+2. Real-time Tracking:
+
    - Set up Socket.io
    - Create location update endpoints
    - Implement real-time location broadcasting
 
-4. Deployment and DevOps:
+3. Deployment and DevOps:
    - Optimize Docker configuration for production
    - Create deployment instructions
    - Set up CI/CD pipeline
@@ -134,8 +144,9 @@ This document outlines the implementation tasks for the Delivery App project. It
 - Basic authentication and models implemented
 - Docker environment configured
 - User Authentication module completed
-- Fleet Management module completed  
+- Fleet Management module completed
 - Shipment Management module completed
 - Application/Bid System completed
 - API Testing and Documentation completed
-- Next focus should be on Document Management
+- Document Management module completed with on-premises storage and entity linking
+- Next focus should be on Notification System

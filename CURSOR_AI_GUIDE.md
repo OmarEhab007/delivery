@@ -5,12 +5,14 @@ This guide is specifically for Cursor AI to assist in the development of the Del
 ## Development Approach
 
 ### Incremental Development
+
 1. Start with implementing one module at a time
 2. Complete the core functionality before moving to edge cases
 3. Follow the task order in TASKS.md
 4. Always ensure existing functionality is not broken when adding new features
 
 ### Code Quality
+
 1. Write clean, maintainable code
 2. Include comprehensive error handling
 3. Add validation for all user inputs
@@ -20,36 +22,42 @@ This guide is specifically for Cursor AI to assist in the development of the Del
 ## Module-Specific Guidance
 
 ### User Authentication and Management
+
 - Complete the password reset functionality using email (nodemailer)
 - Implement proper role-based middleware that checks both JWT validity and user role
 - Add user profile management endpoints for updating basic information
 - Consider implementing email verification for new accounts
 
-### Fleet Management 
+### Fleet Management
+
 - Truck CRUD operations should always verify that the user is a Truck Owner
 - Include validation for truck details (registration number format, etc.)
 - When a truck is assigned to a shipment, mark it as unavailable until delivery is completed
 - Implement search functionality with multiple filters (capacity, availability, location)
 
 ### Shipment Management
+
 - Implement state transitions with validation (e.g., can't go from REQUESTED to DELIVERED)
 - Create endpoints for Merchants to view their shipments with different status filters
 - Allow Truck Owners to see only shipments they can apply for or have been assigned
 - Implement pagination for shipment listings to handle large volumes
 
 ### Application/Bid System
+
 - Ensure a Truck Owner can't apply multiple times to the same shipment
 - Implement comparison functionality to help Merchants choose between applications
 - When an application is accepted, automatically reject all others for that shipment
 - Include notification triggers for all status changes
 
 ### Document Management
+
 - Integrate with AWS S3 for secure file storage
 - Implement proper document type validation (file extensions, size limits)
 - Create endpoints for retrieving documents with proper access control
 - Associate documents with specific shipment stages
 
 ### Real-time Tracking
+
 - Implement Socket.io for real-time updates
 - Create a secure connection mechanism using JWT for authentication
 - Store location history for shipments in a space-efficient manner
@@ -58,6 +66,7 @@ This guide is specifically for Cursor AI to assist in the development of the Del
 ## Best Practices
 
 ### Security
+
 - Never trust user input, always validate
 - Use parameterized queries for MongoDB to prevent injection
 - Implement rate limiting for sensitive endpoints
@@ -65,6 +74,7 @@ This guide is specifically for Cursor AI to assist in the development of the Del
 - Ensure JWT tokens are securely handled
 
 ### Performance
+
 - Use indexes for frequently queried fields in MongoDB
 - Implement pagination for list endpoints
 - Use efficient database query patterns
@@ -72,6 +82,7 @@ This guide is specifically for Cursor AI to assist in the development of the Del
 - Consider using aggregation for complex queries
 
 ### Testing
+
 - Write unit tests for critical business logic
 - Create integration tests for API endpoints
 - Use Jest for testing
@@ -91,18 +102,21 @@ For each module, follow this implementation order:
 ## Troubleshooting Common Issues
 
 ### MongoDB Connection Issues
+
 - Check connection string
 - Ensure MongoDB is running
 - Verify network connectivity
 - Check authentication credentials
 
 ### JWT Authentication Problems
+
 - Validate token signing secret
 - Check token expiration
 - Ensure proper token storage and transmission
 - Verify payload structure
 
 ### API Endpoint Errors
+
 - Check route definition
 - Verify controller method implementation
 - Ensure proper middleware is applied

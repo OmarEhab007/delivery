@@ -1,11 +1,18 @@
+const crypto = require('crypto');
+
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
-const crypto = require('crypto');
+const asyncHandler = require('express-async-handler');
+
 const User = require('../../models/User');
 const { ApiError } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
-const asyncHandler = require('express-async-handler');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
+const otpService = require('../../services/auth/otpService');
+const {
+  UserRegistrationRequest,
+  UserRegistrationState,
+} = require('../../models/UserRegistrationRequest');
 
 /**
  * Generate JWT token
@@ -14,7 +21,7 @@ const { ApiSuccess } = require('../../middleware/apiSuccess');
  */
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d' // Use a valid expiration time (30 days)
+    expiresIn: '30d', // Use a valid expiration time (30 days)
   });
 };
 
@@ -39,30 +46,23 @@ exports.registerMerchant = async (req, res, next) => {
       return next(new ApiError('User already exists', 400));
     }
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
-      role: 'Merchant'
+    const request = await UserRegistrationRequest.create({
+      role: 'Merchant',
+      payload: {
+        name,
+        email,
+        password,
+        phone,
+      },
     });
 
-    // Generate token
-    const token = generateToken(user._id);
-
-    res.status(201).json({
+    res.status(202).json({
       status: 'success',
-      token,
+      message: 'Registration submitted for admin approval',
       data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role
-        }
-      }
+        requestId: request._id,
+        state: request.state,
+      },
     });
   } catch (error) {
     next(error);
@@ -90,34 +90,25 @@ exports.registerTruckOwner = async (req, res, next) => {
       return next(new ApiError('User already exists', 400));
     }
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
+    const request = await UserRegistrationRequest.create({
       role: 'TruckOwner',
-      companyName,
-      companyAddress
+      payload: {
+        name,
+        email,
+        password,
+        phone,
+        companyName,
+        companyAddress,
+      },
     });
 
-    // Generate token
-    const token = generateToken(user._id);
-
-    res.status(201).json({
+    res.status(202).json({
       status: 'success',
-      token,
+      message: 'Registration submitted for admin approval',
       data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          companyName: user.companyName,
-          companyAddress: user.companyAddress
-        }
-      }
+        requestId: request._id,
+        state: request.state,
+      },
     });
   } catch (error) {
     next(error);
@@ -145,30 +136,26 @@ exports.registerDriver = async (req, res, next) => {
       return next(new ApiError('User already exists', 400));
     }
 
-    // Create driver with reference to truck owner
-    const driver = await User.create({
-      name,
-      email,
-      password,
-      phone,
+    const request = await UserRegistrationRequest.create({
       role: 'Driver',
-      ownerId: req.user._id, // This comes from the protect middleware
-      licenseNumber
+      submittedBy: req.user._id,
+      payload: {
+        name,
+        email,
+        password,
+        phone,
+        licenseNumber,
+        ownerId: req.user._id,
+      },
     });
 
-    res.status(201).json({
+    res.status(202).json({
       status: 'success',
+      message: 'Driver registration submitted for admin approval',
       data: {
-        driver: {
-          id: driver._id,
-          name: driver.name,
-          email: driver.email,
-          phone: driver.phone,
-          role: driver.role,
-          licenseNumber: driver.licenseNumber,
-          ownerId: driver.ownerId
-        }
-      }
+        requestId: request._id,
+        state: request.state,
+      },
     });
   } catch (error) {
     next(error);
@@ -212,8 +199,121 @@ exports.login = async (req, res, next) => {
       status: 'success',
       token,
       data: {
-        user
-      }
+        user,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Request OTP login code
+ * @route POST /api/auth/otp/request
+ * @access Public
+ */
+exports.requestOtp = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { phone } = req.body;
+    const user = await User.findOne({ phone });
+
+    if (!user) {
+      return next(new ApiError('User not found', 404));
+    }
+
+    if (user.active === false) {
+      return next(new ApiError('User account is inactive', 403));
+    }
+
+    const now = new Date();
+
+    if (!otpService.canSendNewOtp(user.otp, now)) {
+      const retryAfter =
+        otpService.getResendIntervalMs() -
+        (now.getTime() - new Date(user.otp.lastSentAt).getTime());
+      res.setHeader('Retry-After', Math.ceil(retryAfter / 1000));
+      return next(new ApiError('OTP recently sent. Please wait before requesting again.', 429));
+    }
+
+    const code = otpService.generateOtp();
+    const codeHash = otpService.hashOtp(code);
+
+    user.otp = {
+      codeHash,
+      expiresAt: new Date(now.getTime() + otpService.getExpiryMs()),
+      attemptCount: 0,
+      lastSentAt: now,
+      resendCount: user.otp?.resendCount ? user.otp.resendCount + 1 : 1,
+    };
+
+    await user.save({ validateBeforeSave: false });
+
+    await otpService.deliverOtp(user.phone, code);
+
+    logger.info(`OTP requested for user ${user._id}`);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'OTP sent successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verify OTP and login
+ * @route POST /api/auth/otp/verify
+ * @access Public
+ */
+exports.verifyOtp = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { phone, otp } = req.body;
+    const user = await User.findOne({ phone }).select('+otp.codeHash');
+
+    if (!user || !user.otp || !user.otp.codeHash) {
+      return next(new ApiError('Invalid or expired OTP', 400));
+    }
+
+    if (user.otp.expiresAt && user.otp.expiresAt < new Date()) {
+      user.otp = undefined;
+      await user.save({ validateBeforeSave: false });
+      return next(new ApiError('OTP has expired. Please request a new one.', 400));
+    }
+
+    if (!otpService.hasAttemptsRemaining(user.otp)) {
+      return next(new ApiError('Maximum OTP attempts exceeded. Please request a new code.', 423));
+    }
+
+    const isValid = otpService.verifyOtp(otp, user.otp.codeHash);
+
+    if (!isValid) {
+      user.otp.attemptCount += 1;
+      await user.save({ validateBeforeSave: false });
+      return next(new ApiError('Invalid OTP. Please try again.', 400));
+    }
+
+    user.otp = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    const token = generateToken(user._id);
+
+    res.status(200).json({
+      status: 'success',
+      token,
+      data: {
+        user,
+      },
     });
   } catch (error) {
     next(error);
@@ -228,13 +328,13 @@ exports.login = async (req, res, next) => {
 exports.getCurrentUser = async (req, res, next) => {
   try {
     // User is already available in req (from protect middleware)
-    const user = req.user;
+    const { user } = req;
 
     res.status(200).json({
       status: 'success',
       data: {
-        user
-      }
+        user,
+      },
     });
   } catch (error) {
     next(error);
@@ -253,39 +353,36 @@ exports.forgotPassword = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { email } = req.body;
-    
+
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
       return next(new ApiError('There is no user with that email address', 404));
     }
-    
+
     // Generate random reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
-    
+
     // Hash token before saving to database
-    const hashedToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
-      
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
     // Save to database with expiry time (10 minutes)
     user.passwordResetToken = hashedToken;
     user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
     await user.save({ validateBeforeSave: false });
-    
+
     // TODO: Send email with reset token (implement email service)
     // For now, returning token in response (only for development)
-    
+
     logger.info(`Password reset token generated for user: ${user.email}`);
-    
+
     res.status(200).json({
       status: 'success',
       message: 'Token sent to email',
       // Remove in production:
-      resetToken
+      resetToken,
     });
   } catch (error) {
     next(error);
@@ -304,39 +401,36 @@ exports.resetPassword = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { token } = req.params;
     const { password } = req.body;
-    
+
     // Hash the provided token
-    const hashedToken = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
-      
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
     // Find user with this token that hasn't expired
     const user = await User.findOne({
       passwordResetToken: hashedToken,
-      passwordResetExpires: { $gt: Date.now() }
+      passwordResetExpires: { $gt: Date.now() },
     });
-    
+
     if (!user) {
       return next(new ApiError('Token is invalid or has expired', 400));
     }
-    
+
     // Update password and clear reset fields
     user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
-    
+
     // Generate new JWT token
     const newToken = generateToken(user._id);
-    
+
     res.status(200).json({
       status: 'success',
       token: newToken,
-      message: 'Password has been reset successfully'
+      message: 'Password has been reset successfully',
     });
   } catch (error) {
     next(error);
@@ -355,29 +449,29 @@ exports.updatePassword = async (req, res, next) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { currentPassword, newPassword } = req.body;
-    
+
     // Get current user with password
     const user = await User.findById(req.user._id).select('+password');
-    
+
     // Check if current password is correct
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return next(new ApiError('Current password is incorrect', 401));
     }
-    
+
     // Update password
     user.password = newPassword;
     await user.save();
-    
+
     // Generate new token
     const token = generateToken(user._id);
-    
+
     res.status(200).json({
       status: 'success',
       token,
-      message: 'Password updated successfully'
+      message: 'Password updated successfully',
     });
   } catch (error) {
     next(error);
@@ -391,13 +485,13 @@ exports.updatePassword = async (req, res, next) => {
  */
 const registerAdmin = asyncHandler(async (req, res, next) => {
   const { name, email, password, phone, adminPermissions } = req.body;
-  
+
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return next(new ApiError('User with this email already exists', 400));
   }
-  
+
   // Create a new admin user
   const admin = await User.create({
     name,
@@ -405,12 +499,12 @@ const registerAdmin = asyncHandler(async (req, res, next) => {
     password,
     phone,
     role: 'Admin',
-    adminPermissions: adminPermissions || ['FULL_ACCESS']
+    adminPermissions: adminPermissions || ['FULL_ACCESS'],
   });
-  
+
   // Generate JWT token
   const token = generateToken(admin._id);
-  
+
   // Return success response with token
   return ApiSuccess(
     res,
@@ -421,13 +515,83 @@ const registerAdmin = asyncHandler(async (req, res, next) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
-        adminPermissions: admin.adminPermissions
+        adminPermissions: admin.adminPermissions,
       },
-      token
+      token,
     },
     201
   );
 });
+
+/**
+ * Register an admin (for testing purposes only)
+ * @route POST /api/auth/register/testadmin
+ * @access Public
+ */
+exports.registerTestAdmin = async (req, res, next) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, email, password, phone } = req.body;
+
+    // Check if user already exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return next(new ApiError('User already exists', 400));
+    }
+
+    // Create admin user
+    const user = await User.create({
+      name,
+      email,
+      password,
+      phone,
+      role: 'Admin',
+    });
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      status: 'success',
+      token,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Generate a CSRF token for the client
+ * @route GET /api/auth/csrf-token
+ * @access Public
+ */
+exports.getCsrfToken = (req, res) => {
+  // The csrfToken() function is added to the request object by the csurf middleware
+  const token = req.csrfToken();
+
+  // Set the token in the response header
+  res.set('X-CSRF-Token', token);
+
+  // Send a 200 OK response
+  res.status(200).json({
+    success: true,
+    message: 'CSRF token generated',
+  });
+};
 
 // Export all controller functions
 exports.registerAdmin = registerAdmin;
