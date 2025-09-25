@@ -87,14 +87,3 @@ All secrets are supplied via environment variables (see `env.sample`). Critical 
 - System diagrams and roadmap: [`docs/SYSTEM_ARCHITECTURE.md`](docs/SYSTEM_ARCHITECTURE.md), [`docs/DEVELOPMENT_ROADMAP.md`](docs/DEVELOPMENT_ROADMAP.md)
 - Monitoring, logging, deployment, and health guides located under `docs/`
 
-## Contributing & Community
-- See [`CONTRIBUTING.md`](CONTRIBUTING.md) for branching, coding standards, and PR workflow
-- Code of conduct in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
-- Security reports: follow [`SECURITY.md`](SECURITY.md)
-
-## Roadmap Highlights
-- Automated payouts & invoicing integrations
-- Mobile driver app with offline-first tracking
-- Advanced analytics dashboards for pool performance
-
-Have questions or want to extend the platform? Open an issue or start a discussion! 🚚
