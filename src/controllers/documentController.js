@@ -20,7 +20,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads')
 const validateEntity = async (entityType, entityId) => {
   try {
     // Debug logging
-    console.log('validateEntity called with:', { entityType, entityId });
+    logger.debug('validateEntity called with:', { entityType, entityId });
 
     let entity;
     switch (entityType) {
@@ -58,14 +58,14 @@ const validateEntity = async (entityType, entityId) => {
 
     return entity;
   } catch (error) {
-    console.error('Error in validateEntity:', error);
+    logger.error('Error in validateEntity:', error);
     throw error;
   }
 };
 
 // Upload a document
 const uploadDocument = catchAsync(async (req, res, next) => {
-  console.log('Starting document upload process');
+  logger.info('Starting document upload process');
 
   // Ensure required fields are provided
   const { entityType, entityId, documentType, name } = req.body;
@@ -79,7 +79,7 @@ const uploadDocument = catchAsync(async (req, res, next) => {
     );
   }
 
-  console.log(`Received upload for ${entityType} ${entityId}, document type ${documentType}`);
+  logger.info(`Received document upload request for ${entityType} ${entityId}`);
 
   // Validate entity exists
   await validateEntity(entityType, entityId);
@@ -89,11 +89,11 @@ const uploadDocument = catchAsync(async (req, res, next) => {
     return next(new ApiError('No file was uploaded', 400));
   }
 
-  console.log('File details:', {
-    originalname: req.file.originalname,
-    mimetype: req.file.mimetype,
+  logger.info('Upload file details', {
+    originalName: req.file.originalname,
+    mimeType: req.file.mimetype,
     size: req.file.size,
-    path: req.file.path // For disk storage
+    storagePath: req.file.path,
   });
 
   try {
@@ -191,9 +191,11 @@ const uploadMultipleDocuments = catchAsync(async (req, res) => {
         entityType: documentData.entityType,
         entityId: documentData.entityId,
         expiryDate: documentData.expiryDate,
-        metadata: documentData.metadata ? new Map(Object.entries(documentData.metadata)) : undefined,
+        metadata: documentData.metadata
+          ? new Map(Object.entries(documentData.metadata))
+          : undefined,
       });
-      
+
       await document.save();
       documents.push(document);
     } else {
@@ -243,26 +245,26 @@ const getDocument = catchAsync(async (req, res) => {
 const downloadDocument = catchAsync(async (req, res, next) => {
   try {
     const { id } = req.params;
-    console.log(`Starting download for document ID: ${id}`);
 
     // Get the document details first to check if it exists
     const document = await Document.findById(id);
     if (!document) {
-      console.error(`Document not found with ID: ${id}`);
+      logger.warn(`Download attempted for missing document ${id}`);
       return next(new ApiError('Document not found', 404));
     }
 
-    console.log(`Document found: ${document._id}, path: ${document.filePath}`);
-    
     // Build the full path and check if file exists
-    const fullPath = path.join(UPLOAD_DIR || path.join(process.cwd(), 'uploads'), document.filePath);
-    console.log(`Checking file at: ${fullPath}`);
-    
+    const fullPath = path.join(
+      UPLOAD_DIR,
+      document.filePath.startsWith('/') ? document.filePath.substring(1) : document.filePath
+    );
+
+    // Verify the file exists
     if (!fs.existsSync(fullPath)) {
-      console.error(`File not found on disk at: ${fullPath}`);
-      return next(new ApiError(`File not found on disk: ${document.filePath}`, 404));
+      logger.warn(`File not found on disk for document ${document._id}: ${fullPath}`);
+      return next(new ApiError('Document file not found on disk', 404));
     }
-    
+
     // Get the complete file data
     const documentData = await documentService.getDocumentFile(id, req.user.id);
 
@@ -272,10 +274,12 @@ const downloadDocument = catchAsync(async (req, res, next) => {
       'Content-Length': documentData.metadata.size,
     });
 
-    console.log(`Sending file: ${documentData.metadata.originalName}, size: ${documentData.metadata.size}`);
+    logger.debug(
+      `Sending file: ${documentData.metadata.originalName}, size: ${documentData.metadata.size}`
+    );
     res.send(documentData.file);
   } catch (error) {
-    console.error(`Error downloading document: ${error.message}`);
+    logger.error(`Error downloading document: ${error.message}`);
     return next(new ApiError(`Error downloading document: ${error.message}`, 500));
   }
 });
@@ -307,12 +311,23 @@ const getDocumentsByEntity = catchAsync(async (req, res) => {
 });
 
 // Delete document
-const deleteDocument = catchAsync(async (req, res) => {
+const deleteDocument = catchAsync(async (req, res, next) => {
   const { id } = req.params;
 
   const document = await Document.findById(id);
   if (!document) {
     throw createCustomError('Document not found', 404);
+  }
+
+  logger.info(`Deleting document ${document._id} - ${document.name}`);
+
+  // Verify that the file exists before attempting to delete
+  const fullPath = path.join(UPLOAD_DIR, document.filePath);
+
+  // Delete from disk if file exists
+  if (fs.existsSync(fullPath)) {
+    await fs.promises.unlink(fullPath);
+    logger.info(`Deleted file from disk: ${fullPath}`);
   }
 
   // Get the entity to update its document references

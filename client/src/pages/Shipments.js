@@ -1,650 +1,885 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Box,
+  Stack,
+  Chip,
+  IconButton,
+  Tooltip,
+  Drawer,
   Typography,
+  Divider,
+  Grid,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton,
   TextField,
-  MenuItem,
-  Paper,
-  Grid,
-  Alert,
-  Tooltip,
-  Chip,
-  Divider
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
-  Close as CloseIcon,
-  Delete as DeleteIcon,
-  Edit as EditIcon,
   Info as InfoIcon,
-  LocalShipping as ShippingIcon,
-  CheckCircle as DeliveredIcon,
-  Cancel as CancelIcon
+  CheckCircle as ApproveIcon,
+  Cancel as RejectIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Close as CloseIcon,
+  HourglassTop as PendingIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
+
+import PageHeader from '../components/layout/PageHeader';
 import EnhancedDataGrid, { StatusChip } from '../components/common/EnhancedDataGrid';
-import { shipments } from '../api/api';
+import { dashboard, shipments } from '../api/api';
+import { normalizeShipment } from '../utils/adminDataTransformers';
 
-// Status mapping for consistent styling
 const statusMap = {
-  'REQUESTED': { label: 'Requested', color: 'info' },
-  'CONFIRMED': { label: 'Confirmed', color: 'primary' },
-  'IN_TRANSIT': { label: 'In Transit', color: 'warning' },
-  'DELIVERED': { label: 'Delivered', color: 'success' },
-  'CANCELLED': { label: 'Cancelled', color: 'error' }
+  PENDING_APPROVAL: { label: 'Pending Approval', color: 'warning' },
+  REQUESTED: { label: 'Requested', color: 'info' },
+  CONFIRMED: { label: 'Confirmed', color: 'primary' },
+  ASSIGNED: { label: 'Assigned', color: 'primary' },
+  LOADING: { label: 'Loading', color: 'warning' },
+  IN_TRANSIT: { label: 'In Transit', color: 'warning' },
+  AT_BORDER: { label: 'At Border', color: 'warning' },
+  UNLOADING: { label: 'Unloading', color: 'warning' },
+  DELIVERED: { label: 'Delivered', color: 'success' },
+  COMPLETED: { label: 'Completed', color: 'success' },
+  DELAYED: { label: 'Delayed', color: 'error' },
+  CANCELLED: { label: 'Cancelled', color: 'error' },
+  REJECTED: { label: 'Rejected', color: 'error' },
 };
 
-// Validation schema for status update
-const statusUpdateSchema = Yup.object({
-  status: Yup.string()
-    .required('Status is required')
-    .oneOf(Object.keys(statusMap), 'Invalid status'),
-  notes: Yup.string()
-});
-
-// Shipment details dialog
-const ShipmentDetailsDialog = ({ open, onClose, shipment }) => {
-  if (!shipment) return null;
-
-  return (
-    <Dialog 
-      open={open} 
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 2 }
-      }}
-    >
-      <DialogTitle sx={{ m: 0, p: 2, fontWeight: 'bold' }}>
-        Shipment Details
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-            color: (theme) => theme.palette.grey[500],
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent dividers>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              Shipment Information
-            </Typography>
-            <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">Shipment ID</Typography>
-                <Typography variant="body1">{shipment._id}</Typography>
-              </Box>
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">Description</Typography>
-                <Typography variant="body1">{shipment.description || 'No description'}</Typography>
-              </Box>
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">Weight (kg)</Typography>
-                <Typography variant="body1">{shipment.weight}</Typography>
-              </Box>
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">Dimensions (cm)</Typography>
-                <Typography variant="body1">
-                  {shipment.dimensions ? 
-                    `${shipment.dimensions.length} × ${shipment.dimensions.width} × ${shipment.dimensions.height}` : 
-                    'Not specified'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">Status</Typography>
-                <StatusChip
-                  label={statusMap[shipment.status]?.label || shipment.status}
-                  color={statusMap[shipment.status]?.color || 'default'}
-                />
-              </Box>
-            </Paper>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              Locations
-            </Typography>
-            <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Pickup Location</Typography>
-                <Typography variant="body1">
-                  {shipment.pickupLocation ? 
-                    `${shipment.pickupLocation.address}, ${shipment.pickupLocation.city}, ${shipment.pickupLocation.country}` : 
-                    'Not specified'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">Delivery Location</Typography>
-                <Typography variant="body1">
-                  {shipment.deliveryLocation ? 
-                    `${shipment.deliveryLocation.address}, ${shipment.deliveryLocation.city}, ${shipment.deliveryLocation.country}` : 
-                    'Not specified'}
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              Dates & Times
-            </Typography>
-            <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">Created On</Typography>
-                <Typography variant="body1">
-                  {new Date(shipment.createdAt).toLocaleString()}
-                </Typography>
-              </Box>
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">Expected Pickup</Typography>
-                <Typography variant="body1">
-                  {shipment.expectedPickupDate ? 
-                    new Date(shipment.expectedPickupDate).toLocaleString() : 
-                    'Not scheduled'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">Expected Delivery</Typography>
-                <Typography variant="body1">
-                  {shipment.expectedDeliveryDate ? 
-                    new Date(shipment.expectedDeliveryDate).toLocaleString() : 
-                    'Not scheduled'}
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              Merchant & Truck Details
-            </Typography>
-            <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">Merchant</Typography>
-                <Typography variant="body1">
-                  {shipment.merchantId?.name || 'Not assigned'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">Assigned Truck</Typography>
-                <Typography variant="body1">
-                  {shipment.assignedTruckId ? 
-                    `${shipment.assignedTruckId.registrationNumber} (${shipment.assignedTruckId.type})` : 
-                    'Not assigned'}
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-          
-          {shipment.notes && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                Notes
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="body1">{shipment.notes}</Typography>
-              </Paper>
-            </Grid>
-          )}
-          
-          {shipment.trackingHistory && shipment.trackingHistory.length > 0 && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                Tracking History
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                {shipment.trackingHistory.map((entry, index) => (
-                  <Box key={index} sx={{ mb: index !== shipment.trackingHistory.length - 1 ? 2 : 0 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="body2" fontWeight="bold">
-                        {entry.status}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(entry.timestamp).toLocaleString()}
-                      </Typography>
-                    </Box>
-                    {entry.location && (
-                      <Typography variant="body2" color="text.secondary">
-                        Location: {entry.location}
-                      </Typography>
-                    )}
-                    {entry.notes && <Typography variant="body2">{entry.notes}</Typography>}
-                    {index !== shipment.trackingHistory.length - 1 && <Divider sx={{ mt: 1.5 }} />}
-                  </Box>
-                ))}
-              </Paper>
-            </Grid>
-          )}
-        </Grid>
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} variant="outlined">
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+const approvalStateMap = {
+  PENDING: { label: 'Pending', color: 'warning' },
+  APPROVED: { label: 'Approved', color: 'success' },
+  REJECTED: { label: 'Rejected', color: 'error' },
 };
 
-// Status update dialog
-const StatusUpdateDialog = ({ open, onClose, onSubmit, shipment }) => {
-  const formik = useFormik({
-    initialValues: {
-      status: shipment?.status || '',
-      notes: ''
-    },
-    validationSchema: statusUpdateSchema,
-    enableReinitialize: true,
-    onSubmit: (values) => {
-      onSubmit(values);
-    }
-  });
+const statusFilters = [
+  'ALL',
+  'PENDING_APPROVAL',
+  'REQUESTED',
+  'CONFIRMED',
+  'ASSIGNED',
+  'IN_TRANSIT',
+  'DELIVERED',
+  'CANCELLED',
+  'REJECTED',
+];
 
-  return (
-    <Dialog 
-      open={open} 
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 2 }
-      }}
-    >
-      <DialogTitle sx={{ m: 0, p: 2, fontWeight: 'bold' }}>
-        Update Shipment Status
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-            color: (theme) => theme.palette.grey[500],
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      <form onSubmit={formik.handleSubmit}>
-        <DialogContent dividers>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Changing the status will update the tracking history and notify relevant parties.
-          </Alert>
-          
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                select
-                fullWidth
-                id="status"
-                name="status"
-                label="Status"
-                value={formik.values.status}
-                onChange={formik.handleChange}
-                error={formik.touched.status && Boolean(formik.errors.status)}
-                helperText={formik.touched.status && formik.errors.status}
-              >
-                {Object.entries(statusMap).map(([value, { label }]) => (
-                  <MenuItem key={value} value={value}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                id="notes"
-                name="notes"
-                label="Notes (Optional)"
-                multiline
-                rows={3}
-                value={formik.values.notes}
-                onChange={formik.handleChange}
-                error={formik.touched.notes && Boolean(formik.errors.notes)}
-                helperText={formik.touched.notes && formik.errors.notes}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={onClose} variant="outlined">
-            Cancel
-          </Button>
-          <Button 
-            type="submit" 
-            variant="contained"
-            disabled={formik.isSubmitting}
-          >
-            Update Status
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
-  );
+const tabsConfig = {
+  overview: 'overview',
+  approvals: 'approvals',
 };
 
-// Delete shipment confirmation dialog
-const DeleteShipmentDialog = ({ open, onClose, onConfirm, shipmentId }) => (
-  <Dialog 
-    open={open} 
-    onClose={onClose}
-    maxWidth="xs"
-    fullWidth
-    PaperProps={{
-      sx: { borderRadius: 2 }
-    }}
-  >
-    <DialogTitle sx={{ fontWeight: 'bold' }}>Confirm Delete</DialogTitle>
-    <DialogContent>
-      <Alert severity="warning" sx={{ mb: 2 }}>
-        This action cannot be undone.
-      </Alert>
-      <Typography>
-        Are you sure you want to delete shipment <strong>{shipmentId}</strong>?
-      </Typography>
-    </DialogContent>
-    <DialogActions sx={{ px: 3, py: 2 }}>
-      <Button onClick={onClose} variant="outlined">
-        Cancel
-      </Button>
-      <Button onClick={onConfirm} variant="contained" color="error">
-        Delete
-      </Button>
-    </DialogActions>
-  </Dialog>
-);
+const approvalStateFilters = ['ALL', 'PENDING', 'APPROVED', 'REJECTED'];
 
 const Shipments = () => {
   const { enqueueSnackbar } = useSnackbar();
+
+  const [summary, setSummary] = useState(null);
+  const [activeTab, setActiveTab] = useState(tabsConfig.overview);
+
+  const [rows, setRows] = useState([]);
+  const [rowCount, setRowCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [shipmentsData, setShipmentsData] = useState([]);
-  const [filterValue, setFilterValue] = useState('');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  
-  // Dialog states
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedShipment, setSelectedShipment] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch shipments data
+  const [approvalRows, setApprovalRows] = useState([]);
+  const [approvalRowCount, setApprovalRowCount] = useState(0);
+  const [approvalLoading, setApprovalLoading] = useState(false);
+  const [approvalPage, setApprovalPage] = useState(0);
+  const [approvalPageSize, setApprovalPageSize] = useState(10);
+  const [approvalStateFilter, setApprovalStateFilter] = useState('PENDING');
+  const [approvalSearchTerm, setApprovalSearchTerm] = useState('');
+  const [selectedShipment, setSelectedShipment] = useState(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [actionLoadingById, setActionLoadingById] = useState({});
+  const [approveDialogShipment, setApproveDialogShipment] = useState(null);
+  const [rejectDialogShipment, setRejectDialogShipment] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectError, setRejectError] = useState('');
+
+  const fetchSummary = useCallback(async () => {
+    try {
+      const response = await dashboard.getStats();
+      if (response.data?.status === 'success') {
+        setSummary(response.data.data.shipments);
+      }
+    } catch (error) {
+      console.error('Failed to load shipment stats', error);
+    }
+  }, []);
+
   const fetchShipments = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await shipments.getAll();
-      if (response.data && response.data.data) {
-        setShipmentsData(response.data.data.shipments || []);
+      const params = { page: page + 1, limit: pageSize };
+      if (statusFilter !== 'ALL') {
+        if (statusFilter === 'PENDING_APPROVAL') {
+          params.status = statusFilter;
+          params.approvalState = 'PENDING';
+        } else {
+          params.status = statusFilter;
+        }
       }
+
+      const response = await shipments.getAll(params);
+      const payload = response.data?.data || response.data;
+      const list = payload?.shipments?.map(normalizeShipment) || [];
+      const pagination = payload?.pagination;
+
+      setRows(list);
+      setRowCount(pagination?.total ?? list.length);
     } catch (error) {
       console.error('Error fetching shipments:', error);
       enqueueSnackbar('Failed to load shipments', { variant: 'error' });
+      setRows([]);
+      setRowCount(0);
     } finally {
       setLoading(false);
     }
-  }, [enqueueSnackbar]);
+  }, [enqueueSnackbar, page, pageSize, statusFilter]);
+
+  const fetchApprovalShipments = useCallback(async () => {
+    setApprovalLoading(true);
+    try {
+      const params = { page: approvalPage + 1, limit: approvalPageSize };
+
+      if (approvalStateFilter !== 'ALL') {
+        params.approvalState = approvalStateFilter;
+      }
+
+      if (approvalStateFilter === 'PENDING' || approvalStateFilter === 'ALL') {
+        params.status = 'PENDING_APPROVAL';
+      }
+
+      const response = await shipments.getAll(params);
+      const payload = response.data?.data || response.data;
+      const list = payload?.shipments?.map(normalizeShipment) || [];
+      const pagination = payload?.pagination;
+
+      setApprovalRows(list);
+      setApprovalRowCount(pagination?.total ?? list.length);
+    } catch (error) {
+      console.error('Error fetching approval shipments:', error);
+      enqueueSnackbar('Failed to load approval shipments', { variant: 'error' });
+      setApprovalRows([]);
+      setApprovalRowCount(0);
+    } finally {
+      setApprovalLoading(false);
+    }
+  }, [approvalPage, approvalPageSize, approvalStateFilter, enqueueSnackbar]);
+
+  useEffect(() => {
+    fetchSummary();
+  }, [fetchSummary]);
 
   useEffect(() => {
     fetchShipments();
   }, [fetchShipments]);
 
-  // Handle viewing shipment details
-  const handleViewDetails = (shipment) => {
-    setSelectedShipment(shipment);
-    setDetailsDialogOpen(true);
-  };
-
-  // Handle status update click
-  const handleStatusUpdateClick = (shipment) => {
-    setSelectedShipment(shipment);
-    setStatusDialogOpen(true);
-  };
-
-  // Handle delete click
-  const handleDeleteClick = (shipment) => {
-    setSelectedShipment(shipment);
-    setDeleteDialogOpen(true);
-  };
-
-  // Handle status update submission
-  const handleStatusUpdate = async (values) => {
-    if (!selectedShipment) return;
-
-    setStatusDialogOpen(false);
-    setLoading(true);
-
-    try {
-      await shipments.changeStatus(selectedShipment._id, values.status, values.notes);
-      enqueueSnackbar('Shipment status updated successfully', { variant: 'success' });
-      fetchShipments();
-    } catch (error) {
-      console.error('Error updating shipment status:', error);
-      enqueueSnackbar('Failed to update shipment status', { variant: 'error' });
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (activeTab === tabsConfig.approvals) {
+      fetchApprovalShipments();
     }
-  };
+  }, [activeTab, fetchApprovalShipments]);
 
-  // Handle delete confirmation
-  const handleDeleteConfirm = async () => {
-    if (!selectedShipment) return;
+  const filteredRows = useMemo(() => {
+    if (!searchTerm) return rows;
+    const term = searchTerm.toLowerCase();
+    return rows.filter((shipment) =>
+      [
+        shipment._id,
+        shipment.merchantId?.name,
+        shipment.origin?.address,
+        shipment.destination?.address,
+        shipment.cargoDetails?.description,
+        shipment.status,
+      ]
+        .filter(Boolean)
+        .some((value) => value.toString().toLowerCase().includes(term))
+    );
+  }, [rows, searchTerm]);
 
-    setDeleteDialogOpen(false);
-    setLoading(true);
+  const filteredApprovalRows = useMemo(() => {
+    if (!approvalSearchTerm) return approvalRows;
+    const term = approvalSearchTerm.toLowerCase();
+    return approvalRows.filter((shipment) =>
+      [
+        shipment._id,
+        shipment.merchantId?.name,
+        shipment.origin?.address,
+        shipment.destination?.address,
+        shipment.cargoDetails?.description,
+        shipment.approvalState,
+      ]
+        .filter(Boolean)
+        .some((value) => value.toString().toLowerCase().includes(term))
+    );
+  }, [approvalRows, approvalSearchTerm]);
 
-    try {
-      await shipments.delete(selectedShipment._id);
-      enqueueSnackbar('Shipment deleted successfully', { variant: 'success' });
-      fetchShipments();
-    } catch (error) {
-      console.error('Error deleting shipment:', error);
-      enqueueSnackbar('Failed to delete shipment', { variant: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const openDetails = useCallback((shipment) => {
+    setSelectedShipment(shipment);
+    setIsDrawerOpen(true);
+  }, []);
 
-  // Table columns definition
-  const columns = [
-    { 
-      field: '_id', 
-      headerName: 'Shipment ID',
-      flex: 1,
-      minWidth: 220,
-    },
-    { 
-      field: 'merchantName', 
-      headerName: 'Merchant',
-      flex: 1,
-      minWidth: 150,
-      valueGetter: (params) => {
-        return params.row.merchantId?.name || 'N/A';
+  const closeApproveDialog = useCallback(() => {
+    setApproveDialogShipment(null);
+  }, []);
+
+  const closeRejectDialog = useCallback(() => {
+    setRejectDialogShipment(null);
+    setRejectReason('');
+    setRejectError('');
+  }, []);
+
+  const handleShipmentDecision = useCallback(
+    async (id, action, payload) => {
+      setActionLoadingById((prev) => ({ ...prev, [id]: true }));
+      try {
+        let response;
+        if (action === 'approve') {
+          response = await shipments.approve(id);
+          enqueueSnackbar('Shipment approved', { variant: 'success' });
+        } else if (action === 'reject') {
+          response = await shipments.reject(id, payload?.reason);
+          enqueueSnackbar('Shipment rejected', { variant: 'info' });
+        } else {
+          throw new Error(`Unsupported action: ${action}`);
+        }
+
+        const updatedShipment = normalizeShipment(
+          response?.data?.data?.shipment || response?.data?.shipment || response?.data
+        );
+
+        if (updatedShipment) {
+          setRows((prev) =>
+            prev.map((shipment) =>
+              shipment._id === updatedShipment._id ? updatedShipment : shipment
+            )
+          );
+          setApprovalRows((prev) =>
+            prev.map((shipment) =>
+              shipment._id === updatedShipment._id ? updatedShipment : shipment
+            )
+          );
+          setSelectedShipment((prev) =>
+            prev?._id === updatedShipment._id ? updatedShipment : prev
+          );
+        }
+
+        await Promise.allSettled([fetchSummary(), fetchShipments(), fetchApprovalShipments()]);
+
+        return updatedShipment;
+      } catch (error) {
+        console.error(`Failed to ${action} shipment`, error);
+        enqueueSnackbar(`Failed to ${action} shipment`, { variant: 'error' });
+        return null;
+      } finally {
+        setActionLoadingById((prev) => ({ ...prev, [id]: false }));
       }
     },
-    { 
-      field: 'weight', 
-      headerName: 'Weight (kg)',
-      flex: 0.5,
-      minWidth: 100,
-      type: 'number'
-    },
-    { 
-      field: 'pickupCity', 
-      headerName: 'Origin',
-      flex: 0.7,
-      minWidth: 120,
-      valueGetter: (params) => {
-        return params.row.pickupLocation?.city || 'N/A';
-      }
-    },
-    { 
-      field: 'deliveryCity', 
-      headerName: 'Destination',
-      flex: 0.7,
-      minWidth: 120,
-      valueGetter: (params) => {
-        return params.row.deliveryLocation?.city || 'N/A';
-      }
-    },
-    { 
-      field: 'status', 
-      headerName: 'Status',
-      flex: 0.8,
-      minWidth: 130,
-      renderCell: (params) => (
-        <StatusChip
-          label={statusMap[params.value]?.label || params.value}
-          color={statusMap[params.value]?.color || 'default'}
-        />
-      ),
-    },
-    {
-      field: 'createdAt',
-      headerName: 'Created On',
-      flex: 0.8,
-      minWidth: 130,
-      valueFormatter: (params) => new Date(params.value).toLocaleDateString(),
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      flex: 0.8,
-      minWidth: 150,
-      sortable: false,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Tooltip title="View Details">
-            <IconButton
-              size="small"
-              onClick={() => handleViewDetails(params.row)}
-              color="primary"
-            >
-              <InfoIcon />
-            </IconButton>
-          </Tooltip>
-          
-          <Tooltip title="Update Status">
-            <IconButton
-              size="small"
-              onClick={() => handleStatusUpdateClick(params.row)}
-              color="secondary"
-            >
-              <EditIcon />
-            </IconButton>
-          </Tooltip>
-          
-          <Tooltip title="Delete">
-            <IconButton
-              size="small"
-              onClick={() => handleDeleteClick(params.row)}
-              color="error"
-            >
-              <DeleteIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      ),
-    },
-  ];
-
-  // Quick status filters
-  const renderStatusFilters = () => (
-    <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-      {Object.entries(statusMap).map(([status, { label, color }]) => (
-        <Chip 
-          key={status}
-          label={label}
-          color={color}
-          variant="outlined"
-          onClick={() => setFilterValue(status)}
-          sx={{ 
-            cursor: 'pointer',
-            '&:hover': { boxShadow: 1 }
-          }}
-        />
-      ))}
-      {filterValue && (
-        <Chip 
-          label="Clear Filters"
-          variant="outlined"
-          onClick={() => setFilterValue('')}
-          sx={{ cursor: 'pointer' }}
-        />
-      )}
-    </Box>
+    [enqueueSnackbar, fetchApprovalShipments, fetchShipments, fetchSummary]
   );
+
+  const handleApproveShipment = useCallback((shipment) => {
+    setApproveDialogShipment(shipment);
+  }, []);
+
+  const handleRejectShipment = useCallback((shipment) => {
+    setRejectDialogShipment(shipment);
+    setRejectReason('');
+    setRejectError('');
+  }, []);
+
+  const confirmApproveShipment = useCallback(async () => {
+    if (!approveDialogShipment) {
+      return;
+    }
+    await handleShipmentDecision(approveDialogShipment._id, 'approve');
+    closeApproveDialog();
+  }, [approveDialogShipment, closeApproveDialog, handleShipmentDecision]);
+
+  const confirmRejectShipment = useCallback(async () => {
+    if (!rejectDialogShipment) {
+      return;
+    }
+
+    const trimmedReason = rejectReason.trim();
+    if (!trimmedReason) {
+      setRejectError('Please provide a rejection reason');
+      return;
+    }
+
+    const result = await handleShipmentDecision(rejectDialogShipment._id, 'reject', {
+      reason: trimmedReason,
+    });
+
+    if (result) {
+      closeRejectDialog();
+    }
+  }, [closeRejectDialog, handleShipmentDecision, rejectDialogShipment, rejectReason]);
+
+  const overviewColumns = useMemo(
+    () => [
+      { field: '_id', headerName: 'Shipment ID', flex: 1.2, minWidth: 220 },
+      {
+        field: 'merchant',
+        headerName: 'Merchant',
+        flex: 1,
+        minWidth: 160,
+        valueGetter: (params) => params.row.merchantId?.name || '—',
+      },
+      {
+        field: 'origin',
+        headerName: 'Origin',
+        flex: 0.9,
+        minWidth: 150,
+        valueGetter: (params) => params.row.origin?.address || '—',
+      },
+      {
+        field: 'destination',
+        headerName: 'Destination',
+        flex: 0.9,
+        minWidth: 150,
+        valueGetter: (params) => params.row.destination?.address || '—',
+      },
+      {
+        field: 'weight',
+        headerName: 'Weight (kg)',
+        flex: 0.5,
+        minWidth: 120,
+        valueGetter: (params) => params.row.cargoDetails?.weight ?? '—',
+      },
+      {
+        field: 'status',
+        headerName: 'Status',
+        flex: 0.7,
+        minWidth: 140,
+        renderCell: (params) => (
+          <StatusChip status={(params.value || '').toUpperCase()} statusMap={statusMap} />
+        ),
+      },
+      {
+        field: 'approvalState',
+        headerName: 'Approval',
+        flex: 0.8,
+        minWidth: 150,
+        renderCell: (params) => (
+          <StatusChip status={(params.value || '').toUpperCase()} statusMap={approvalStateMap} />
+        ),
+      },
+      {
+        field: 'createdAt',
+        headerName: 'Created',
+        flex: 0.7,
+        minWidth: 140,
+        valueFormatter: (params) =>
+          params.value ? new Date(params.value).toLocaleDateString() : '—',
+      },
+      {
+        field: 'actions',
+        headerName: 'Actions',
+        flex: 0.9,
+        minWidth: 180,
+        sortable: false,
+        renderCell: (params) => (
+          <Stack direction="row" spacing={1}>
+            <Tooltip title="Details">
+              <IconButton size="small" onClick={() => openDetails(params.row)}>
+                <InfoIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Update Status">
+              <IconButton size="small">
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton size="small" color="error">
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        ),
+      },
+    ],
+    [openDetails]
+  );
+
+  const approvalColumns = useMemo(
+    () => [
+      { field: '_id', headerName: 'Shipment ID', flex: 1.2, minWidth: 220 },
+      {
+        field: 'merchant',
+        headerName: 'Merchant',
+        flex: 1,
+        minWidth: 160,
+        valueGetter: (params) => params.row.merchantId?.name || '—',
+      },
+      {
+        field: 'origin',
+        headerName: 'Origin',
+        flex: 0.9,
+        minWidth: 150,
+        valueGetter: (params) => params.row.origin?.address || '—',
+      },
+      {
+        field: 'destination',
+        headerName: 'Destination',
+        flex: 0.9,
+        minWidth: 150,
+        valueGetter: (params) => params.row.destination?.address || '—',
+      },
+      {
+        field: 'approvalState',
+        headerName: 'Approval',
+        flex: 0.8,
+        minWidth: 150,
+        renderCell: (params) => (
+          <StatusChip status={(params.value || '').toUpperCase()} statusMap={approvalStateMap} />
+        ),
+      },
+      {
+        field: 'createdAt',
+        headerName: 'Submitted',
+        flex: 0.7,
+        minWidth: 140,
+        valueFormatter: (params) =>
+          params.value ? new Date(params.value).toLocaleDateString() : '—',
+      },
+      {
+        field: 'actions',
+        headerName: 'Actions',
+        flex: 1,
+        minWidth: 220,
+        sortable: false,
+        renderCell: (params) => {
+          const shipment = params.row;
+          const isLoading = Boolean(actionLoadingById[shipment._id]);
+
+          return (
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="Details">
+                <IconButton size="small" onClick={() => openDetails(shipment)}>
+                  <InfoIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Approve">
+                <span>
+                  <IconButton
+                    size="small"
+                    color="success"
+                    disabled={isLoading}
+                    onClick={() => handleApproveShipment(shipment)}
+                  >
+                    {isLoading ? (
+                      <PendingIcon fontSize="small" />
+                    ) : (
+                      <ApproveIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Reject">
+                <span>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    disabled={isLoading}
+                    onClick={() => handleRejectShipment(shipment)}
+                  >
+                    {isLoading ? (
+                      <PendingIcon fontSize="small" />
+                    ) : (
+                      <RejectIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Stack>
+          );
+        },
+      },
+    ],
+    [actionLoadingById, handleApproveShipment, handleRejectShipment, openDetails]
+  );
+
+  const stats = useMemo(() => {
+    if (!summary) return null;
+    const cancelledCount =
+      summary.statusDistribution?.find((item) => item.status === 'CANCELLED')?.count ?? 0;
+
+    const baseStats = [
+      {
+        label: 'Total shipments',
+        value: summary.total ?? 0,
+        caption: `${summary.inTransit ?? 0} in transit`,
+      },
+      { label: 'Delivered this month', value: summary.delivered ?? 0 },
+      {
+        label: 'Cancellation rate',
+        value: summary.total ? `${Math.round((cancelledCount / summary.total) * 100)}%` : '0%',
+      },
+    ];
+
+    if (activeTab === tabsConfig.approvals) {
+      baseStats.unshift({ label: 'Pending approval', value: summary.pending ?? 0 });
+    }
+
+    return baseStats;
+  }, [activeTab, summary]);
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold' }}>
-        Shipments Management
-      </Typography>
-      
-      {renderStatusFilters()}
-      
-      <Paper sx={{ p: 0, mb: 3 }}>
-        <Box sx={{ height: 600, width: '100%' }}>
+      <PageHeader
+        title="Shipment Control"
+        subtitle="Monitor and manage shipments throughout the delivery lifecycle."
+        stats={stats}
+      />
+
+      <Tabs
+        value={activeTab}
+        onChange={(_, value) => setActiveTab(value)}
+        sx={{ mb: 2 }}
+        textColor="primary"
+        indicatorColor="primary"
+      >
+        <Tab label="Overview" value={tabsConfig.overview} />
+        <Tab
+          label={`Approvals${summary?.pending ? ` (${summary.pending})` : ''}`}
+          value={tabsConfig.approvals}
+        />
+      </Tabs>
+
+      {activeTab === tabsConfig.overview ? (
+        <Box>
+          <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
+            {statusFilters.map((status) => (
+              <Chip
+                key={status}
+                label={status === 'ALL' ? 'All' : status.replace(/_/g, ' ')}
+                color={statusFilter === status ? 'primary' : 'default'}
+                variant={statusFilter === status ? 'filled' : 'outlined'}
+                onClick={() => {
+                  setStatusFilter(status);
+                  setPage(0);
+                }}
+              />
+            ))}
+          </Stack>
+
           <EnhancedDataGrid
-            rows={shipmentsData}
-            columns={columns}
+            rows={filteredRows}
+            columns={overviewColumns}
             loading={loading}
-            getRowId={(row) => row._id}
-            onFilterChange={(value) => setFilterValue(value)}
-            filterValue={filterValue}
-            filterPlaceholder="Search shipments..."
-            pageSize={pageSize}
-            onPageSizeChange={(newSize) => setPageSize(newSize)}
-            pageSizeOptions={[5, 10, 25, 50]}
             page={page}
+            pageSize={pageSize}
             onPageChange={(newPage) => setPage(newPage)}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setPage(0);
+            }}
+            filterValue={searchTerm}
+            onFilterChange={setSearchTerm}
+            serverSidePagination
+            rowCount={rowCount}
+            onRefresh={fetchShipments}
+            title="Shipment"
+            getRowId={(row) => row._id}
+            sx={{ height: 'calc(100vh - 240px)' }}
           />
         </Box>
-      </Paper>
+      ) : (
+        <Box>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Review shipments waiting for admin approval. Approved shipments will move into the
+            active pipeline; rejected ones notify the merchant automatically.
+          </Alert>
 
-      {/* Shipment Details Dialog */}
-      <ShipmentDetailsDialog
-        open={detailsDialogOpen}
-        onClose={() => setDetailsDialogOpen(false)}
-        shipment={selectedShipment}
-      />
+          <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
+            {approvalStateFilters.map((state) => (
+              <Chip
+                key={state}
+                label={state === 'ALL' ? 'All states' : state}
+                color={approvalStateFilter === state ? 'primary' : 'default'}
+                variant={approvalStateFilter === state ? 'filled' : 'outlined'}
+                onClick={() => {
+                  setApprovalStateFilter(state);
+                  setApprovalPage(0);
+                }}
+              />
+            ))}
+          </Stack>
 
-      {/* Status Update Dialog */}
-      <StatusUpdateDialog
-        open={statusDialogOpen}
-        onClose={() => setStatusDialogOpen(false)}
-        onSubmit={handleStatusUpdate}
-        shipment={selectedShipment}
-      />
+          <EnhancedDataGrid
+            rows={filteredApprovalRows}
+            columns={approvalColumns}
+            loading={approvalLoading}
+            page={approvalPage}
+            pageSize={approvalPageSize}
+            onPageChange={(newPage) => setApprovalPage(newPage)}
+            onPageSizeChange={(newSize) => {
+              setApprovalPageSize(newSize);
+              setApprovalPage(0);
+            }}
+            filterValue={approvalSearchTerm}
+            onFilterChange={setApprovalSearchTerm}
+            serverSidePagination
+            rowCount={approvalRowCount}
+            onRefresh={fetchApprovalShipments}
+            title="Pending shipment"
+            getRowId={(row) => row._id}
+            sx={{ height: 'calc(100vh - 240px)' }}
+          />
+        </Box>
+      )}
 
-      {/* Delete Shipment Dialog */}
-      <DeleteShipmentDialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        onConfirm={handleDeleteConfirm}
-        shipmentId={selectedShipment?._id}
-      />
+      <Drawer
+        anchor="right"
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        PaperProps={{ sx: { width: { xs: '100%', sm: 420 }, p: 3 } }}
+      >
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Typography variant="h6" fontWeight={600}>
+            Shipment Details
+          </Typography>
+          <IconButton size="small" onClick={() => setIsDrawerOpen(false)}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+
+        {selectedShipment ? (
+          <Stack spacing={2}>
+            {selectedShipment.approvalState === 'PENDING' && (
+              <Alert
+                severity="warning"
+                action={
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      color="success"
+                      size="small"
+                      onClick={() => handleApproveShipment(selectedShipment)}
+                      disabled={Boolean(actionLoadingById[selectedShipment._id])}
+                      startIcon={
+                        actionLoadingById[selectedShipment._id] ? (
+                          <PendingIcon fontSize="small" />
+                        ) : (
+                          <ApproveIcon fontSize="small" />
+                        )
+                      }
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      color="error"
+                      size="small"
+                      onClick={() => handleRejectShipment(selectedShipment)}
+                      disabled={Boolean(actionLoadingById[selectedShipment._id])}
+                      startIcon={
+                        actionLoadingById[selectedShipment._id] ? (
+                          <PendingIcon fontSize="small" />
+                        ) : (
+                          <RejectIcon fontSize="small" />
+                        )
+                      }
+                    >
+                      Reject
+                    </Button>
+                  </Stack>
+                }
+              >
+                Pending admin approval
+              </Alert>
+            )}
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary">
+                Reference
+              </Typography>
+              <Typography variant="body1" color="text.primary" sx={{ overflowWrap: 'anywhere' }}>
+                {selectedShipment._id}
+              </Typography>
+            </Box>
+            <Divider />
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Merchant
+                </Typography>
+                <Typography variant="body1">{selectedShipment.merchantId?.name || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Status
+                </Typography>
+                <StatusChip
+                  status={(selectedShipment.status || '').toUpperCase()}
+                  statusMap={statusMap}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Approval
+                </Typography>
+                <Stack spacing={0.5}>
+                  <StatusChip
+                    status={(selectedShipment.approvalState || '').toUpperCase()}
+                    statusMap={approvalStateMap}
+                  />
+                  {selectedShipment.approval?.reviewedAt && (
+                    <Typography variant="caption" color="text.secondary">
+                      Reviewed {new Date(selectedShipment.approval.reviewedAt).toLocaleString()}
+                    </Typography>
+                  )}
+                  {selectedShipment.approval?.reviewedBy && (
+                    <Typography variant="caption" color="text.secondary">
+                      Reviewer: {selectedShipment.approval.reviewedBy?.name || 'Admin'}
+                    </Typography>
+                  )}
+                  {selectedShipment.approval?.rejectionReason && (
+                    <Typography variant="caption" color="error.main">
+                      Reason: {selectedShipment.approval.rejectionReason}
+                    </Typography>
+                  )}
+                </Stack>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Cargo
+                </Typography>
+                <Typography variant="body2" color="text.primary">
+                  {selectedShipment.cargoDetails?.description || '—'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {selectedShipment.cargoDetails?.weight ?? '—'} kg
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Route
+                </Typography>
+                <Typography variant="body2" color="text.primary">
+                  {selectedShipment.origin?.address || '—'} →{' '}
+                  {selectedShipment.destination?.address || '—'}
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Timing
+                </Typography>
+                <Typography variant="body2" color="text.primary">
+                  Pickup:{' '}
+                  {selectedShipment.estimatedPickupDate
+                    ? new Date(selectedShipment.estimatedPickupDate).toLocaleString()
+                    : '—'}
+                </Typography>
+                <Typography variant="body2" color="text.primary">
+                  Delivery:{' '}
+                  {selectedShipment.estimatedDeliveryDate
+                    ? new Date(selectedShipment.estimatedDeliveryDate).toLocaleString()
+                    : '—'}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Stack>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Select a shipment to view details.
+          </Typography>
+        )}
+      </Drawer>
+
+      <Dialog
+        open={Boolean(approveDialogShipment)}
+        onClose={closeApproveDialog}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Approve shipment</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Confirm approval for shipment {approveDialogShipment?._id}. The merchant will be
+            notified.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeApproveDialog}>Cancel</Button>
+          <Button
+            color="success"
+            onClick={confirmApproveShipment}
+            startIcon={
+              approveDialogShipment && actionLoadingById[approveDialogShipment._id] ? (
+                <PendingIcon fontSize="small" />
+              ) : (
+                <ApproveIcon fontSize="small" />
+              )
+            }
+            disabled={Boolean(
+              approveDialogShipment && actionLoadingById[approveDialogShipment._id]
+            )}
+          >
+            Approve
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(rejectDialogShipment)}
+        onClose={closeRejectDialog}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Reject shipment</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2}>
+            <Typography variant="body2" color="text.secondary">
+              Provide a reason for rejecting shipment {rejectDialogShipment?._id}. This message is
+              sent to the merchant.
+            </Typography>
+            <TextField
+              label="Rejection reason"
+              value={rejectReason}
+              onChange={(event) => {
+                setRejectReason(event.target.value);
+                if (rejectError) {
+                  setRejectError('');
+                }
+              }}
+              error={Boolean(rejectError)}
+              helperText={rejectError || 'Required'}
+              multiline
+              minRows={3}
+              autoFocus
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeRejectDialog}>Cancel</Button>
+          <Button
+            color="error"
+            onClick={confirmRejectShipment}
+            startIcon={
+              rejectDialogShipment && actionLoadingById[rejectDialogShipment._id] ? (
+                <PendingIcon fontSize="small" />
+              ) : (
+                <RejectIcon fontSize="small" />
+              )
+            }
+            disabled={Boolean(rejectDialogShipment && actionLoadingById[rejectDialogShipment._id])}
+          >
+            Reject
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
 
-export default Shipments; 
+export default Shipments;

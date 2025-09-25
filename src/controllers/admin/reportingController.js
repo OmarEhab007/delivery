@@ -13,72 +13,72 @@ const logger = require('../../utils/logger');
 const getShipmentStatusTrends = async (req, res) => {
   try {
     const { timeframe = 'monthly', startDate, endDate, limit = 12 } = req.query;
-    
+
     let timeGrouping;
     let dateFilter = {};
-    
+
     // Parse dates if provided
     if (startDate) {
       dateFilter.createdAt = { $gte: new Date(startDate) };
     }
-    
+
     if (endDate) {
       dateFilter.createdAt = { ...dateFilter.createdAt, $lte: new Date(endDate) };
     }
-    
+
     // Set up time grouping based on timeframe parameter
     switch (timeframe) {
       case 'daily':
         timeGrouping = {
           year: { $year: '$createdAt' },
           month: { $month: '$createdAt' },
-          day: { $dayOfMonth: '$createdAt' }
+          day: { $dayOfMonth: '$createdAt' },
         };
         break;
       case 'weekly':
         timeGrouping = {
           year: { $year: '$createdAt' },
-          week: { $week: '$createdAt' }
+          week: { $week: '$createdAt' },
         };
         break;
       case 'monthly':
       default:
         timeGrouping = {
           year: { $year: '$createdAt' },
-          month: { $month: '$createdAt' }
+          month: { $month: '$createdAt' },
         };
         break;
     }
-    
+
     const pipeline = [
       { $match: dateFilter },
       {
         $group: {
           _id: {
             ...timeGrouping,
-            status: '$status'
+            status: '$status',
           },
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       { $sort: { '_id.year': -1, '_id.month': -1, '_id.day': -1, '_id.week': -1 } },
-      { $limit: parseInt(limit, 10) * 10 } // Multiplied to ensure we get enough data for each status
+      { $limit: parseInt(limit, 10) * 10 }, // Multiplied to ensure we get enough data for each status
     ];
-    
+
     const results = await Shipment.aggregate(pipeline);
-    
+
     // Transform the results to a more usable format
     const formattedResults = transformTimeSeriesResults(results, timeframe);
-    
+
     return res.status(200).json({
       success: true,
-      data: formattedResults
+      data: formattedResults,
     });
   } catch (error) {
     logger.error(`Error in getShipmentStatusTrends: ${error.message}`, { error });
     return res.status(500).json({
       success: false,
-      error: 'Error retrieving shipment status trends'
+      error: 'Error retrieving shipment status trends',
     });
   }
 };
@@ -91,49 +91,49 @@ const getShipmentStatusTrends = async (req, res) => {
 const getRevenueAnalysis = async (req, res) => {
   try {
     const { timeframe = 'monthly', startDate, endDate, limit = 12 } = req.query;
-    
+
     let timeGrouping;
     let dateFilter = {};
-    
+
     // Parse dates if provided
     if (startDate) {
       dateFilter['paymentDetails.paymentDate'] = { $gte: new Date(startDate) };
     }
-    
+
     if (endDate) {
-      dateFilter['paymentDetails.paymentDate'] = { 
-        ...dateFilter['paymentDetails.paymentDate'], 
-        $lte: new Date(endDate) 
+      dateFilter['paymentDetails.paymentDate'] = {
+        ...dateFilter['paymentDetails.paymentDate'],
+        $lte: new Date(endDate),
       };
     }
-    
+
     // Set up time grouping based on timeframe parameter
     switch (timeframe) {
       case 'daily':
         timeGrouping = {
           year: { $year: '$paymentDetails.paymentDate' },
           month: { $month: '$paymentDetails.paymentDate' },
-          day: { $dayOfMonth: '$paymentDetails.paymentDate' }
+          day: { $dayOfMonth: '$paymentDetails.paymentDate' },
         };
         break;
       case 'weekly':
         timeGrouping = {
           year: { $year: '$paymentDetails.paymentDate' },
-          week: { $week: '$paymentDetails.paymentDate' }
+          week: { $week: '$paymentDetails.paymentDate' },
         };
         break;
       case 'monthly':
       default:
         timeGrouping = {
           year: { $year: '$paymentDetails.paymentDate' },
-          month: { $month: '$paymentDetails.paymentDate' }
+          month: { $month: '$paymentDetails.paymentDate' },
         };
         break;
     }
-    
+
     // Only consider shipments with verified payments
     dateFilter['paymentDetails.paymentVerified'] = true;
-    
+
     const pipeline = [
       { $match: dateFilter },
       {
@@ -141,19 +141,19 @@ const getRevenueAnalysis = async (req, res) => {
           _id: timeGrouping,
           totalRevenue: { $sum: '$paymentDetails.amount' },
           count: { $sum: 1 },
-          avgRevenue: { $avg: '$paymentDetails.amount' }
-        }
+          avgRevenue: { $avg: '$paymentDetails.amount' },
+        },
       },
       { $sort: { '_id.year': -1, '_id.month': -1, '_id.day': -1, '_id.week': -1 } },
-      { $limit: parseInt(limit, 10) }
+      { $limit: parseInt(limit, 10) },
     ];
-    
+
     const results = await Shipment.aggregate(pipeline);
-    
+
     // Format dates in the response
-    const formattedResults = results.map(item => {
+    const formattedResults = results.map((item) => {
       let dateString;
-      
+
       if (timeframe === 'daily') {
         dateString = `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`;
       } else if (timeframe === 'weekly') {
@@ -161,24 +161,24 @@ const getRevenueAnalysis = async (req, res) => {
       } else {
         dateString = `${item._id.year}-${String(item._id.month).padStart(2, '0')}`;
       }
-      
+
       return {
         period: dateString,
         totalRevenue: item.totalRevenue,
         shipmentCount: item.count,
-        averageRevenuePerShipment: item.avgRevenue
+        averageRevenuePerShipment: item.avgRevenue,
       };
     });
-    
+
     return res.status(200).json({
       success: true,
-      data: formattedResults.reverse() // Reverse to get chronological order
+      data: formattedResults.reverse(), // Reverse to get chronological order
     });
   } catch (error) {
     logger.error(`Error in getRevenueAnalysis: ${error.message}`, { error });
     return res.status(500).json({
       success: false,
-      error: 'Error retrieving revenue analysis'
+      error: 'Error retrieving revenue analysis',
     });
   }
 };
@@ -191,16 +191,16 @@ const getRevenueAnalysis = async (req, res) => {
 const getPerformanceMetrics = async (req, res) => {
   try {
     const { entityType = 'driver', timeframe = 'allTime', limit = 10 } = req.query;
-    
+
     let pipeline = [];
-    
+
     // Filter for completed shipments only
     const matchStage = { $match: { status: 'COMPLETED' } };
-    
+
     if (timeframe !== 'allTime') {
       let dateFilter = {};
       const now = new Date();
-      
+
       switch (timeframe) {
         case 'lastWeek':
           const lastWeek = new Date(now);
@@ -220,12 +220,12 @@ const getPerformanceMetrics = async (req, res) => {
         default:
           break;
       }
-      
+
       matchStage.$match.updatedAt = dateFilter;
     }
-    
+
     pipeline.push(matchStage);
-    
+
     if (entityType === 'driver') {
       // Driver performance metrics
       pipeline = [
@@ -235,8 +235,8 @@ const getPerformanceMetrics = async (req, res) => {
             from: 'users',
             localField: 'assignedDriverId',
             foreignField: '_id',
-            as: 'driver'
-          }
+            as: 'driver',
+          },
         },
         { $unwind: { path: '$driver', preserveNullAndEmptyArrays: false } },
         {
@@ -249,17 +249,13 @@ const getPerformanceMetrics = async (req, res) => {
             averageRating: { $avg: '$rating.overall' },
             onTimeDeliveryRate: {
               $avg: {
-                $cond: [
-                  { $eq: ['$isDelayed', false] },
-                  1,
-                  0
-                ]
-              }
-            }
-          }
+                $cond: [{ $eq: ['$isDelayed', false] }, 1, 0],
+              },
+            },
+          },
         },
         { $sort: { totalShipments: -1 } },
-        { $limit: parseInt(limit, 10) }
+        { $limit: parseInt(limit, 10) },
       ];
     } else if (entityType === 'truck') {
       // Truck performance metrics
@@ -270,8 +266,8 @@ const getPerformanceMetrics = async (req, res) => {
             from: 'trucks',
             localField: 'assignedTruckId',
             foreignField: '_id',
-            as: 'truck'
-          }
+            as: 'truck',
+          },
         },
         { $unwind: { path: '$truck', preserveNullAndEmptyArrays: false } },
         {
@@ -283,31 +279,27 @@ const getPerformanceMetrics = async (req, res) => {
             totalDistance: { $sum: '$distanceTraveled' },
             breakdownRate: {
               $avg: {
-                $cond: [
-                  { $eq: ['$hadBreakdown', true] },
-                  1,
-                  0
-                ]
-              }
-            }
-          }
+                $cond: [{ $eq: ['$hadBreakdown', true] }, 1, 0],
+              },
+            },
+          },
         },
         { $sort: { totalShipments: -1 } },
-        { $limit: parseInt(limit, 10) }
+        { $limit: parseInt(limit, 10) },
       ];
     }
-    
+
     const results = await Shipment.aggregate(pipeline);
-    
+
     return res.status(200).json({
       success: true,
-      data: results
+      data: results,
     });
   } catch (error) {
     logger.error(`Error in getPerformanceMetrics: ${error.message}`, { error });
     return res.status(500).json({
       success: false,
-      error: 'Error retrieving performance metrics'
+      error: 'Error retrieving performance metrics',
     });
   }
 };
@@ -320,14 +312,14 @@ const getPerformanceMetrics = async (req, res) => {
 const getCustomerInsights = async (req, res) => {
   try {
     const { sortBy = 'shipmentCount', limit = 10 } = req.query;
-    
+
     let sortField = { totalShipments: -1 };
     if (sortBy === 'revenue') {
       sortField = { totalRevenue: -1 };
     } else if (sortBy === 'avgValue') {
       sortField = { avgOrderValue: -1 };
     }
-    
+
     const pipeline = [
       { $match: { 'paymentDetails.paymentVerified': true } },
       {
@@ -335,8 +327,8 @@ const getCustomerInsights = async (req, res) => {
           from: 'users',
           localField: 'merchantId',
           foreignField: '_id',
-          as: 'merchant'
-        }
+          as: 'merchant',
+        },
       },
       { $unwind: { path: '$merchant', preserveNullAndEmptyArrays: false } },
       {
@@ -348,40 +340,34 @@ const getCustomerInsights = async (req, res) => {
           totalRevenue: { $sum: '$paymentDetails.amount' },
           avgOrderValue: { $avg: '$paymentDetails.amount' },
           firstOrderDate: { $min: '$createdAt' },
-          lastOrderDate: { $max: '$createdAt' }
-        }
+          lastOrderDate: { $max: '$createdAt' },
+        },
       },
       {
         $addFields: {
           daysSinceFirstOrder: {
-            $divide: [
-              { $subtract: [new Date(), '$firstOrderDate'] },
-              1000 * 60 * 60 * 24
-            ]
+            $divide: [{ $subtract: [new Date(), '$firstOrderDate'] }, 1000 * 60 * 60 * 24],
           },
           daysSinceLastOrder: {
-            $divide: [
-              { $subtract: [new Date(), '$lastOrderDate'] },
-              1000 * 60 * 60 * 24
-            ]
-          }
-        }
+            $divide: [{ $subtract: [new Date(), '$lastOrderDate'] }, 1000 * 60 * 60 * 24],
+          },
+        },
       },
       { $sort: sortField },
-      { $limit: parseInt(limit, 10) }
+      { $limit: parseInt(limit, 10) },
     ];
-    
+
     const results = await Shipment.aggregate(pipeline);
-    
+
     return res.status(200).json({
       success: true,
-      data: results
+      data: results,
     });
   } catch (error) {
     logger.error(`Error in getCustomerInsights: ${error.message}`, { error });
     return res.status(500).json({
       success: false,
-      error: 'Error retrieving customer insights'
+      error: 'Error retrieving customer insights',
     });
   }
 };
@@ -394,43 +380,43 @@ const getCustomerInsights = async (req, res) => {
 const getOperationalEfficiency = async (req, res) => {
   try {
     const { timeframe = 'monthly', startDate, endDate, limit = 12 } = req.query;
-    
+
     let timeGrouping;
     let dateFilter = {};
-    
+
     // Parse dates if provided
     if (startDate) {
       dateFilter.createdAt = { $gte: new Date(startDate) };
     }
-    
+
     if (endDate) {
       dateFilter.createdAt = { ...dateFilter.createdAt, $lte: new Date(endDate) };
     }
-    
+
     // Set up time grouping based on timeframe parameter
     switch (timeframe) {
       case 'daily':
         timeGrouping = {
           year: { $year: '$createdAt' },
           month: { $month: '$createdAt' },
-          day: { $dayOfMonth: '$createdAt' }
+          day: { $dayOfMonth: '$createdAt' },
         };
         break;
       case 'weekly':
         timeGrouping = {
           year: { $year: '$createdAt' },
-          week: { $week: '$createdAt' }
+          week: { $week: '$createdAt' },
         };
         break;
       case 'monthly':
       default:
         timeGrouping = {
           year: { $year: '$createdAt' },
-          month: { $month: '$createdAt' }
+          month: { $month: '$createdAt' },
         };
         break;
     }
-    
+
     const pipeline = [
       { $match: dateFilter },
       {
@@ -439,18 +425,18 @@ const getOperationalEfficiency = async (req, res) => {
           totalShipments: { $sum: 1 },
           completedShipments: {
             $sum: {
-              $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0]
-            }
+              $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0],
+            },
           },
           cancelledShipments: {
             $sum: {
-              $cond: [{ $eq: ['$status', 'CANCELLED'] }, 1, 0]
-            }
+              $cond: [{ $eq: ['$status', 'CANCELLED'] }, 1, 0],
+            },
           },
           delayedShipments: {
             $sum: {
-              $cond: [{ $eq: ['$status', 'DELAYED'] }, 1, 0]
-            }
+              $cond: [{ $eq: ['$status', 'DELAYED'] }, 1, 0],
+            },
           },
           avgDeliveryTime: {
             $avg: {
@@ -459,14 +445,14 @@ const getOperationalEfficiency = async (req, res) => {
                 {
                   $divide: [
                     { $subtract: ['$updatedAt', '$createdAt'] },
-                    1000 * 60 * 60 * 24 // Convert ms to days
-                  ]
+                    1000 * 60 * 60 * 24, // Convert ms to days
+                  ],
                 },
-                null
-              ]
-            }
-          }
-        }
+                null,
+              ],
+            },
+          },
+        },
       },
       {
         $addFields: {
@@ -474,35 +460,35 @@ const getOperationalEfficiency = async (req, res) => {
             $cond: [
               { $gt: ['$totalShipments', 0] },
               { $divide: ['$completedShipments', '$totalShipments'] },
-              0
-            ]
+              0,
+            ],
           },
           cancellationRate: {
             $cond: [
               { $gt: ['$totalShipments', 0] },
               { $divide: ['$cancelledShipments', '$totalShipments'] },
-              0
-            ]
+              0,
+            ],
           },
           delayRate: {
             $cond: [
               { $gt: ['$totalShipments', 0] },
               { $divide: ['$delayedShipments', '$totalShipments'] },
-              0
-            ]
-          }
-        }
+              0,
+            ],
+          },
+        },
       },
       { $sort: { '_id.year': -1, '_id.month': -1, '_id.day': -1, '_id.week': -1 } },
-      { $limit: parseInt(limit, 10) }
+      { $limit: parseInt(limit, 10) },
     ];
-    
+
     const results = await Shipment.aggregate(pipeline);
-    
+
     // Format dates in the response
-    const formattedResults = results.map(item => {
+    const formattedResults = results.map((item) => {
       let dateString;
-      
+
       if (timeframe === 'daily') {
         dateString = `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`;
       } else if (timeframe === 'weekly') {
@@ -510,7 +496,7 @@ const getOperationalEfficiency = async (req, res) => {
       } else {
         dateString = `${item._id.year}-${String(item._id.month).padStart(2, '0')}`;
       }
-      
+
       return {
         period: dateString,
         totalShipments: item.totalShipments,
@@ -520,19 +506,19 @@ const getOperationalEfficiency = async (req, res) => {
         completionRate: item.completionRate,
         cancellationRate: item.cancellationRate,
         delayRate: item.delayRate,
-        avgDeliveryTime: item.avgDeliveryTime
+        avgDeliveryTime: item.avgDeliveryTime,
       };
     });
-    
+
     return res.status(200).json({
       success: true,
-      data: formattedResults.reverse() // Reverse to get chronological order
+      data: formattedResults.reverse(), // Reverse to get chronological order
     });
   } catch (error) {
     logger.error(`Error in getOperationalEfficiency: ${error.message}`, { error });
     return res.status(500).json({
       success: false,
-      error: 'Error retrieving operational efficiency metrics'
+      error: 'Error retrieving operational efficiency metrics',
     });
   }
 };
@@ -545,23 +531,23 @@ const getOperationalEfficiency = async (req, res) => {
 const getGeospatialAnalytics = async (req, res) => {
   try {
     const { analysisType = 'originDestination' } = req.query;
-    
+
     let pipeline = [];
-    
+
     if (analysisType === 'originDestination') {
       // Get top origin-destination pairs
       pipeline = [
         {
           $match: {
             'origin.country': { $exists: true, $ne: null },
-            'destination.country': { $exists: true, $ne: null }
-          }
+            'destination.country': { $exists: true, $ne: null },
+          },
         },
         {
           $group: {
             _id: {
               origin: '$origin.country',
-              destination: '$destination.country'
+              destination: '$destination.country',
             },
             count: { $sum: 1 },
             totalRevenue: {
@@ -569,23 +555,23 @@ const getGeospatialAnalytics = async (req, res) => {
                 $cond: [
                   { $eq: ['$paymentDetails.paymentVerified', true] },
                   '$paymentDetails.amount',
-                  0
-                ]
-              }
+                  0,
+                ],
+              },
             },
             avgTravelTime: {
               $avg: {
                 $cond: [
                   { $eq: ['$status', 'COMPLETED'] },
                   { $divide: [{ $subtract: ['$updatedAt', '$createdAt'] }, 1000 * 60 * 60 * 24] },
-                  null
-                ]
-              }
-            }
-          }
+                  null,
+                ],
+              },
+            },
+          },
         },
         { $sort: { count: -1 } },
-        { $limit: 20 }
+        { $limit: 20 },
       ];
     } else if (analysisType === 'hotspots') {
       // Identify shipping hotspots based on origin/destination frequency
@@ -595,62 +581,62 @@ const getGeospatialAnalytics = async (req, res) => {
             originHotspots: [
               {
                 $match: {
-                  'origin.country': { $exists: true, $ne: null }
-                }
+                  'origin.country': { $exists: true, $ne: null },
+                },
               },
               {
                 $group: {
                   _id: '$origin.country',
-                  count: { $sum: 1 }
-                }
+                  count: { $sum: 1 },
+                },
               },
               { $sort: { count: -1 } },
-              { $limit: 10 }
+              { $limit: 10 },
             ],
             destinationHotspots: [
               {
                 $match: {
-                  'destination.country': { $exists: true, $ne: null }
-                }
+                  'destination.country': { $exists: true, $ne: null },
+                },
               },
               {
                 $group: {
                   _id: '$destination.country',
-                  count: { $sum: 1 }
-                }
+                  count: { $sum: 1 },
+                },
               },
               { $sort: { count: -1 } },
-              { $limit: 10 }
-            ]
-          }
-        }
+              { $limit: 10 },
+            ],
+          },
+        },
       ];
     }
-    
+
     const results = await Shipment.aggregate(pipeline);
-    
+
     // Format the results depending on the analysis type
     let formattedResults = results;
-    
+
     if (analysisType === 'originDestination') {
-      formattedResults = results.map(item => ({
+      formattedResults = results.map((item) => ({
         origin: item._id.origin,
         destination: item._id.destination,
         shipmentCount: item.count,
         totalRevenue: item.totalRevenue,
-        averageTravelTime: item.avgTravelTime
+        averageTravelTime: item.avgTravelTime,
       }));
     }
-    
+
     return res.status(200).json({
       success: true,
-      data: formattedResults
+      data: formattedResults,
     });
   } catch (error) {
     logger.error(`Error in getGeospatialAnalytics: ${error.message}`, { error });
     return res.status(500).json({
       success: false,
-      error: 'Error retrieving geospatial analytics'
+      error: 'Error retrieving geospatial analytics',
     });
   }
 };
@@ -659,11 +645,11 @@ const getGeospatialAnalytics = async (req, res) => {
 const transformTimeSeriesResults = (results, timeframe) => {
   // Create a map to organize data by time period
   const timeMap = new Map();
-  
+
   // Process each result
-  results.forEach(item => {
+  results.forEach((item) => {
     let dateString;
-    
+
     // Format the date string based on timeframe
     if (timeframe === 'daily' && item._id.day) {
       dateString = `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`;
@@ -672,28 +658,28 @@ const transformTimeSeriesResults = (results, timeframe) => {
     } else {
       dateString = `${item._id.year}-${String(item._id.month).padStart(2, '0')}`;
     }
-    
+
     // Initialize the period if it doesn't exist
     if (!timeMap.has(dateString)) {
       timeMap.set(dateString, {
         period: dateString,
-        statuses: {}
+        statuses: {},
       });
     }
-    
+
     // Add the status count
     const period = timeMap.get(dateString);
     period.statuses[item._id.status] = item.count;
   });
-  
+
   // Convert map to array and sort by date
   const timeSeries = Array.from(timeMap.values());
-  
+
   // Sort by period (date)
   timeSeries.sort((a, b) => {
     return new Date(a.period) - new Date(b.period);
   });
-  
+
   return timeSeries;
 };
 
@@ -703,5 +689,5 @@ module.exports = {
   getPerformanceMetrics,
   getCustomerInsights,
   getOperationalEfficiency,
-  getGeospatialAnalytics
-}; 
+  getGeospatialAnalytics,
+};

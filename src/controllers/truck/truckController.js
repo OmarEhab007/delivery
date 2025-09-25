@@ -4,6 +4,7 @@ const Truck = require('../../models/Truck');
 const User = require('../../models/User');
 const { ApiError } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
+const metricScheduler = require('../../utils/metricScheduler');
 
 /**
  * Create a new truck
@@ -32,6 +33,12 @@ exports.createTruck = async (req, res, next) => {
 
     // Create new truck
     const truck = await Truck.create(req.body);
+
+    try {
+      await metricScheduler.updateTruckStatusMetrics();
+    } catch (metricsError) {
+      logger.warn(`Failed to refresh truck status metrics after creation: ${metricsError.message}`);
+    }
 
     res.status(201).json({
       status: 'success',
@@ -140,6 +147,12 @@ exports.updateTruck = async (req, res, next) => {
       runValidators: true,
     });
 
+    try {
+      await metricScheduler.updateTruckStatusMetrics();
+    } catch (metricsError) {
+      logger.warn(`Failed to refresh truck status metrics after update: ${metricsError.message}`);
+    }
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -172,6 +185,12 @@ exports.deleteTruck = async (req, res, next) => {
 
     // Soft delete truck
     await Truck.findByIdAndUpdate(req.params.id, { active: false });
+
+    try {
+      await metricScheduler.updateTruckStatusMetrics();
+    } catch (metricsError) {
+      logger.warn(`Failed to refresh truck status metrics after deletion: ${metricsError.message}`);
+    }
 
     res.status(204).json({
       status: 'success',
@@ -277,6 +296,14 @@ exports.assignDriver = async (req, res, next) => {
     // Add driverId to truck
     truck.driverId = driverId;
     await truck.save();
+
+    try {
+      await metricScheduler.updateTruckStatusMetrics();
+    } catch (metricsError) {
+      logger.warn(
+        `Failed to refresh truck status metrics after assigning driver: ${metricsError.message}`
+      );
+    }
 
     res.status(200).json({
       status: 'success',

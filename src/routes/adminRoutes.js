@@ -10,6 +10,11 @@ const adminController = require('../controllers/admin/adminController');
 const adminShipmentController = require('../controllers/admin/adminShipmentController');
 const adminApplicationController = require('../controllers/admin/adminApplicationController');
 const adminTruckController = require('../controllers/admin/adminTruckController');
+const {
+  getUserRegistrationRequests,
+  approveUserRegistrationRequest,
+  rejectUserRegistrationRequest,
+} = require('../controllers/admin/adminController');
 
 // All routes in this file are protected and restricted to Admin role
 router.use(protect);
@@ -487,6 +492,24 @@ router
   .get(adminShipmentController.getShipmentById)
   .put(adminShipmentController.updateShipment)
   .delete(adminShipmentController.deleteShipment);
+
+router.patch('/shipments/:id/approve', adminShipmentController.approveShipment);
+
+router.patch(
+  '/shipments/:id/reject',
+  [body('reason').optional().isString().withMessage('Reason must be a string')],
+  adminShipmentController.rejectShipment
+);
+
+router.route('/registration-requests').get(getUserRegistrationRequests);
+
+router.patch('/registration-requests/:id/approve', approveUserRegistrationRequest);
+
+router.patch(
+  '/registration-requests/:id/reject',
+  [body('reason').optional().isString().withMessage('Reason must be a string')],
+  rejectUserRegistrationRequest
+);
 
 /**
  * @swagger

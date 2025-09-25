@@ -8,6 +8,11 @@ const User = require('../../models/User');
 const { ApiError } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
+const otpService = require('../../services/auth/otpService');
+const {
+  UserRegistrationRequest,
+  UserRegistrationState,
+} = require('../../models/UserRegistrationRequest');
 
 /**
  * Generate JWT token
@@ -41,29 +46,22 @@ exports.registerMerchant = async (req, res, next) => {
       return next(new ApiError('User already exists', 400));
     }
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
+    const request = await UserRegistrationRequest.create({
       role: 'Merchant',
+      payload: {
+        name,
+        email,
+        password,
+        phone,
+      },
     });
 
-    // Generate token
-    const token = generateToken(user._id);
-
-    res.status(201).json({
+    res.status(202).json({
       status: 'success',
-      token,
+      message: 'Registration submitted for admin approval',
       data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-        },
+        requestId: request._id,
+        state: request.state,
       },
     });
   } catch (error) {
@@ -92,33 +90,24 @@ exports.registerTruckOwner = async (req, res, next) => {
       return next(new ApiError('User already exists', 400));
     }
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
+    const request = await UserRegistrationRequest.create({
       role: 'TruckOwner',
-      companyName,
-      companyAddress,
+      payload: {
+        name,
+        email,
+        password,
+        phone,
+        companyName,
+        companyAddress,
+      },
     });
 
-    // Generate token
-    const token = generateToken(user._id);
-
-    res.status(201).json({
+    res.status(202).json({
       status: 'success',
-      token,
+      message: 'Registration submitted for admin approval',
       data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          companyName: user.companyName,
-          companyAddress: user.companyAddress,
-        },
+        requestId: request._id,
+        state: request.state,
       },
     });
   } catch (error) {
@@ -147,29 +136,25 @@ exports.registerDriver = async (req, res, next) => {
       return next(new ApiError('User already exists', 400));
     }
 
-    // Create driver with reference to truck owner
-    const driver = await User.create({
-      name,
-      email,
-      password,
-      phone,
+    const request = await UserRegistrationRequest.create({
       role: 'Driver',
-      ownerId: req.user._id, // This comes from the protect middleware
-      licenseNumber,
+      submittedBy: req.user._id,
+      payload: {
+        name,
+        email,
+        password,
+        phone,
+        licenseNumber,
+        ownerId: req.user._id,
+      },
     });
 
-    res.status(201).json({
+    res.status(202).json({
       status: 'success',
+      message: 'Driver registration submitted for admin approval',
       data: {
-        driver: {
-          id: driver._id,
-          name: driver.name,
-          email: driver.email,
-          phone: driver.phone,
-          role: driver.role,
-          licenseNumber: driver.licenseNumber,
-          ownerId: driver.ownerId,
-        },
+        requestId: request._id,
+        state: request.state,
       },
     });
   } catch (error) {
@@ -209,6 +194,119 @@ exports.login = async (req, res, next) => {
 
     // Remove password from output
     user.password = undefined;
+
+    res.status(200).json({
+      status: 'success',
+      token,
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Request OTP login code
+ * @route POST /api/auth/otp/request
+ * @access Public
+ */
+exports.requestOtp = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { phone } = req.body;
+    const user = await User.findOne({ phone });
+
+    if (!user) {
+      return next(new ApiError('User not found', 404));
+    }
+
+    if (user.active === false) {
+      return next(new ApiError('User account is inactive', 403));
+    }
+
+    const now = new Date();
+
+    if (!otpService.canSendNewOtp(user.otp, now)) {
+      const retryAfter =
+        otpService.getResendIntervalMs() -
+        (now.getTime() - new Date(user.otp.lastSentAt).getTime());
+      res.setHeader('Retry-After', Math.ceil(retryAfter / 1000));
+      return next(new ApiError('OTP recently sent. Please wait before requesting again.', 429));
+    }
+
+    const code = otpService.generateOtp();
+    const codeHash = otpService.hashOtp(code);
+
+    user.otp = {
+      codeHash,
+      expiresAt: new Date(now.getTime() + otpService.getExpiryMs()),
+      attemptCount: 0,
+      lastSentAt: now,
+      resendCount: user.otp?.resendCount ? user.otp.resendCount + 1 : 1,
+    };
+
+    await user.save({ validateBeforeSave: false });
+
+    await otpService.deliverOtp(user.phone, code);
+
+    logger.info(`OTP requested for user ${user._id}`);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'OTP sent successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verify OTP and login
+ * @route POST /api/auth/otp/verify
+ * @access Public
+ */
+exports.verifyOtp = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { phone, otp } = req.body;
+    const user = await User.findOne({ phone }).select('+otp.codeHash');
+
+    if (!user || !user.otp || !user.otp.codeHash) {
+      return next(new ApiError('Invalid or expired OTP', 400));
+    }
+
+    if (user.otp.expiresAt && user.otp.expiresAt < new Date()) {
+      user.otp = undefined;
+      await user.save({ validateBeforeSave: false });
+      return next(new ApiError('OTP has expired. Please request a new one.', 400));
+    }
+
+    if (!otpService.hasAttemptsRemaining(user.otp)) {
+      return next(new ApiError('Maximum OTP attempts exceeded. Please request a new code.', 423));
+    }
+
+    const isValid = otpService.verifyOtp(otp, user.otp.codeHash);
+
+    if (!isValid) {
+      user.otp.attemptCount += 1;
+      await user.save({ validateBeforeSave: false });
+      return next(new ApiError('Invalid OTP. Please try again.', 400));
+    }
+
+    user.otp = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    const token = generateToken(user._id);
 
     res.status(200).json({
       status: 'success',

@@ -16,67 +16,70 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, 'Please provide a name'],
-      trim: true
+      trim: true,
     },
     email: {
       type: String,
       required: [true, 'Please provide an email'],
       unique: true,
       lowercase: true,
-      match: [
-        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-        'Please provide a valid email'
-      ]
+      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email'],
     },
     password: {
       type: String,
       required: [true, 'Please provide a password'],
       minlength: 6,
-      select: false // Don't include in query results by default
+      select: false, // Don't include in query results by default
     },
     phone: {
       type: String,
-      required: [true, 'Please provide a phone number']
+      required: [true, 'Please provide a phone number'],
     },
     role: {
       type: String,
       enum: ['Admin', 'Merchant', 'TruckOwner', 'Driver'],
-      required: [true, 'Please specify user role']
+      required: [true, 'Please specify user role'],
     },
     // Admin-specific fields
     adminPermissions: {
       type: [String],
-      enum: ['FULL_ACCESS', 'USER_MANAGEMENT', 'SHIPMENT_MANAGEMENT', 'TRUCK_MANAGEMENT', 'APPLICATION_MANAGEMENT'],
-      default: function() {
+      enum: [
+        'FULL_ACCESS',
+        'USER_MANAGEMENT',
+        'SHIPMENT_MANAGEMENT',
+        'TRUCK_MANAGEMENT',
+        'APPLICATION_MANAGEMENT',
+      ],
+      default: function () {
         return this.role === 'Admin' ? ['FULL_ACCESS'] : [];
-      }
+      },
     },
     // Truck Owner-specific fields
     companyName: {
       type: String,
-      required: function() {
+      required: function () {
         return this.role === 'TruckOwner';
-      }
+      },
     },
     companyAddress: {
       type: String,
-      required: function() {
+      required: function () {
         return this.role === 'TruckOwner';
-      }
+      },
     },
     // Driver-specific fields
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: function() {
+      required: function () {
         return this.role === 'Driver';
-      }
+      },
     },
     licenseNumber: {
       type: String,
-      required: function() {
+      required: function () {
         return this.role === 'Driver';
-      }
+      },
     },
     // Password reset fields
     passwordResetToken: String,
@@ -84,22 +87,24 @@ const userSchema = new mongoose.Schema(
     // Common fields
     active: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
   {
     timestamps: true,
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toObject: { virtuals: true },
   }
 );
 ```
 
 #### Virtual Fields
+
 - `trucks`: References trucks owned by a truck owner
 - `drivers`: References drivers under a truck owner
 
 #### Methods
+
 - `comparePassword(candidatePassword)`: Compares provided password with stored hashed password
 
 ### Truck
@@ -112,66 +117,68 @@ const truckSchema = new mongoose.Schema(
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Truck must belong to a truck owner']
+      required: [true, 'Truck must belong to a truck owner'],
     },
     driverId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'User',
       // Not required as it may be assigned later
     },
     plateNumber: {
       type: String,
       required: [true, 'Plate number is required'],
       unique: true,
-      trim: true
+      trim: true,
     },
     model: {
       type: String,
-      required: [true, 'Truck model is required']
+      required: [true, 'Truck model is required'],
     },
     capacity: {
       type: Number,
-      required: [true, 'Truck capacity is required (in tons)']
+      required: [true, 'Truck capacity is required (in tons)'],
     },
     year: {
       type: Number,
-      required: [true, 'Truck manufacturing year is required']
+      required: [true, 'Truck manufacturing year is required'],
     },
     available: {
       type: Boolean,
-      default: true
+      default: true,
     },
     insuranceInfo: {
       provider: String,
       policyNumber: String,
-      expiryDate: Date
+      expiryDate: Date,
     },
     dimensions: {
       length: Number,
       width: Number,
-      height: Number
+      height: Number,
     },
     features: [String],
     photos: [String],
     active: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
   {
     timestamps: true,
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toObject: { virtuals: true },
   }
 );
 ```
 
 #### Indexes
+
 - `ownerId`
 - `plateNumber`
 - `driverId`
 
 #### Virtual Fields
+
 - `currentShipment`: References the current active shipment assigned to this truck
 
 ### Shipment
@@ -185,24 +192,24 @@ const timelineEntrySchema = new mongoose.Schema(
     status: {
       type: String,
       enum: Object.values(ShipmentStatus),
-      required: true
+      required: true,
     },
     note: String,
     documents: [
       {
         name: String,
         url: String,
-        type: String
-      }
+        type: String,
+      },
     ],
     location: {
       lat: Number,
       lng: Number,
-      address: String
-    }
+      address: String,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
@@ -211,83 +218,83 @@ const shipmentSchema = new mongoose.Schema(
     merchantId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Shipment must belong to a merchant']
+      required: [true, 'Shipment must belong to a merchant'],
     },
     origin: {
       address: {
         type: String,
-        required: [true, 'Origin address is required']
+        required: [true, 'Origin address is required'],
       },
       coordinates: {
         lat: Number,
-        lng: Number
+        lng: Number,
       },
-      country: String
+      country: String,
     },
     destination: {
       address: {
         type: String,
-        required: [true, 'Destination address is required']
+        required: [true, 'Destination address is required'],
       },
       coordinates: {
         lat: Number,
-        lng: Number
+        lng: Number,
       },
-      country: String
+      country: String,
     },
     cargoDetails: {
       description: {
         type: String,
-        required: [true, 'Cargo description is required']
+        required: [true, 'Cargo description is required'],
       },
       weight: {
         type: Number,
-        required: [true, 'Cargo weight is required']
+        required: [true, 'Cargo weight is required'],
       },
       volume: Number,
       category: String,
       hazardous: {
         type: Boolean,
-        default: false
+        default: false,
       },
-      specialInstructions: String
+      specialInstructions: String,
     },
     status: {
       type: String,
       enum: Object.values(ShipmentStatus),
-      default: ShipmentStatus.REQUESTED
+      default: ShipmentStatus.REQUESTED,
     },
     selectedApplicationId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Application'
+      ref: 'Application',
     },
     assignedTruckId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Truck'
+      ref: 'Truck',
     },
     assignedDriverId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'User',
     },
     timeline: [timelineEntrySchema],
     currentLocation: {
       lat: Number,
       lng: Number,
       timestamp: Date,
-      address: String
+      address: String,
     },
     paymentDetails: {
       amount: Number,
       currency: {
         type: String,
-        default: 'USD'
+        default: 'USD',
       },
       paymentReceiptUrl: String,
       paymentVerified: {
         type: Boolean,
-        default: false
+        default: false,
       },
-      paymentDate: Date
+      paymentDate: Date,
     },
     estimatedPickupDate: Date,
     estimatedDeliveryDate: Date,
@@ -295,18 +302,19 @@ const shipmentSchema = new mongoose.Schema(
     actualDeliveryDate: Date,
     active: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
   {
     timestamps: true,
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toObject: { virtuals: true },
   }
 );
 ```
 
 #### Constants
+
 ```javascript
 const ShipmentStatus = {
   REQUESTED: 'REQUESTED',
@@ -315,11 +323,12 @@ const ShipmentStatus = {
   AT_BORDER: 'AT_BORDER',
   DELIVERED: 'DELIVERED',
   COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED'
+  CANCELLED: 'CANCELLED',
 };
 ```
 
 #### Indexes
+
 - `merchantId`
 - `status`
 - `assignedTruckId`
@@ -327,9 +336,11 @@ const ShipmentStatus = {
 - `origin.country`, `destination.country`
 
 #### Methods
+
 - `addTimelineEntry(entry)`: Adds a new entry to the timeline and updates status
 
 #### Virtual Fields
+
 - `applications`: References applications for this shipment
 
 ### Application
@@ -342,92 +353,102 @@ const applicationSchema = new mongoose.Schema(
     shipmentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Shipment',
-      required: [true, 'Application must be for a shipment']
+      required: [true, 'Application must be for a shipment'],
     },
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Application must be from a truck owner']
+      required: [true, 'Application must be from a truck owner'],
     },
     truckId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Truck',
-      required: [true, 'Application must specify a truck']
+      required: [true, 'Application must specify a truck'],
     },
     driverId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Application must specify a driver']
+      required: [true, 'Application must specify a driver'],
     },
     status: {
       type: String,
       enum: Object.values(ApplicationStatus),
-      default: ApplicationStatus.PENDING
+      default: ApplicationStatus.PENDING,
     },
     bidDetails: {
       price: {
         type: Number,
-        required: [true, 'Bid price is required']
+        required: [true, 'Bid price is required'],
       },
       currency: {
         type: String,
-        default: 'USD'
+        default: 'USD',
       },
       notes: String,
-      validUntil: Date
+      validUntil: Date,
     },
-    rejectionReason: String
+    rejectionReason: String,
   },
   {
     timestamps: true,
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toObject: { virtuals: true },
   }
 );
 ```
 
 #### Constants
+
 ```javascript
 const ApplicationStatus = {
   PENDING: 'PENDING',
   ACCEPTED: 'ACCEPTED',
   REJECTED: 'REJECTED',
-  CANCELLED: 'CANCELLED'
+  CANCELLED: 'CANCELLED',
 };
 ```
 
 #### Indexes
+
 - `{ shipmentId: 1, ownerId: 1 }` (unique)
 - `ownerId`
 - `status`
 - `{ shipmentId: 1, status: 1 }`
 
 #### Methods
+
 - `accept()`: Updates status to ACCEPTED
 - `reject(reason)`: Updates status to REJECTED with optional reason
 - `cancel()`: Updates status to CANCELLED
 
 #### Static Methods
+
 - `rejectOthers(shipmentId, acceptedAppId)`: Rejects all other pending applications for a shipment
 
 ## Relationships
 
 ### User (TruckOwner) to Truck
+
 - One-to-Many: A truck owner can have multiple trucks
 
 ### User (TruckOwner) to User (Driver)
+
 - One-to-Many: A truck owner can have multiple drivers
 
 ### Truck to Shipment
+
 - One-to-Many: A truck can be assigned to multiple shipments (over time)
 
 ### User (Merchant) to Shipment
+
 - One-to-Many: A merchant can have multiple shipments
 
 ### Shipment to Application
+
 - One-to-Many: A shipment can have multiple applications from different truck owners
 
 ### User (TruckOwner) to Application
+
 - One-to-Many: A truck owner can make multiple applications for different shipments
 
 ## Data Flow Example
@@ -440,4 +461,4 @@ const ApplicationStatus = {
 6. The selected truck and driver are assigned to the shipment
 7. As the shipment progresses, timeline entries are added and the status is updated
 8. When delivery is complete, the status is updated (`status: DELIVERED`)
-9. After verification, the shipment is marked as complete (`status: COMPLETED`) 
+9. After verification, the shipment is marked as complete (`status: COMPLETED`)

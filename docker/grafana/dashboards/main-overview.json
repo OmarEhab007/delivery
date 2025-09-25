@@ -249,9 +249,7 @@
       "options": {
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -311,9 +309,7 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -330,7 +326,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "shipments_by_status",
+          "expr": "sum(shipments_by_status) by (status)",
           "legendFormat": "{{status}}",
           "range": true,
           "refId": "A"
@@ -375,9 +371,7 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -627,4 +621,4 @@
   "uid": "delivery-app-overview",
   "version": 1,
   "weekStart": ""
-} 
+}

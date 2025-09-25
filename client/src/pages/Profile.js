@@ -14,7 +14,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Button
+  Button,
 } from '@mui/material';
 import {
   Email as EmailIcon,
@@ -22,7 +22,7 @@ import {
   Assignment as AssignmentIcon,
   Security as SecurityIcon,
   AccountCircle as AccountIcon,
-  AccessTime as TimeIcon
+  AccessTime as TimeIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { auth } from '../api/api';
@@ -39,10 +39,10 @@ const Profile = () => {
     role: '',
     createdAt: '',
     lastLogin: '',
-    profilePicture: null
+    profilePicture: null,
   });
-  
-  const [activityStats, setActivityStats] = useState({
+
+  const [activityStats] = useState({
     totalLogins: 45,
     lastWeekActivity: 12,
     recentActions: [
@@ -50,7 +50,7 @@ const Profile = () => {
       { id: 2, action: 'Approved shipment #12345', time: '5 hours ago' },
       { id: 3, action: 'Approved new driver application', time: '1 day ago' },
       { id: 4, action: 'Modified system settings', time: '3 days ago' },
-    ]
+    ],
   });
 
   // Fetch user data
@@ -67,8 +67,10 @@ const Profile = () => {
             phone: user.phone || '',
             role: user.role || '',
             createdAt: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '',
-            lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : new Date().toLocaleDateString(),
-            profilePicture: user.profilePicture || null
+            lastLogin: user.lastLogin
+              ? new Date(user.lastLogin).toLocaleDateString()
+              : new Date().toLocaleDateString(),
+            profilePicture: user.profilePicture || null,
           });
         }
       } catch (error) {
@@ -99,7 +101,7 @@ const Profile = () => {
       <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold' }}>
         My Profile
       </Typography>
-      
+
       <Grid container spacing={3}>
         {/* Profile Overview Card */}
         <Grid item xs={12} md={4}>
@@ -111,73 +113,55 @@ const Profile = () => {
                   width: 120,
                   height: 120,
                   mb: 2,
-                  boxShadow: 3
+                  boxShadow: 3,
                 }}
               />
-              <Typography variant="h5" fontWeight="bold">{userData.name}</Typography>
-              <Chip 
-                label={userData.role} 
-                color="primary" 
-                sx={{ mt: 1 }}
-              />
+              <Typography variant="h5" fontWeight="bold">
+                {userData.name}
+              </Typography>
+              <Chip label={userData.role} color="primary" sx={{ mt: 1 }} />
             </Box>
-            
+
             <Divider sx={{ my: 2 }} />
-            
+
             <List>
               <ListItem>
                 <ListItemIcon>
                   <EmailIcon color="primary" />
                 </ListItemIcon>
-                <ListItemText 
-                  primary="Email" 
-                  secondary={userData.email} 
-                />
+                <ListItemText primary="Email" secondary={userData.email} />
               </ListItem>
-              
+
               <ListItem>
                 <ListItemIcon>
                   <PhoneIcon color="primary" />
                 </ListItemIcon>
-                <ListItemText 
-                  primary="Phone" 
-                  secondary={userData.phone} 
-                />
+                <ListItemText primary="Phone" secondary={userData.phone} />
               </ListItem>
-              
+
               <ListItem>
                 <ListItemIcon>
                   <AccountIcon color="primary" />
                 </ListItemIcon>
-                <ListItemText 
-                  primary="Account Created" 
-                  secondary={userData.createdAt} 
-                />
+                <ListItemText primary="Account Created" secondary={userData.createdAt} />
               </ListItem>
-              
+
               <ListItem>
                 <ListItemIcon>
                   <TimeIcon color="primary" />
                 </ListItemIcon>
-                <ListItemText 
-                  primary="Last Login" 
-                  secondary={userData.lastLogin} 
-                />
+                <ListItemText primary="Last Login" secondary={userData.lastLogin} />
               </ListItem>
             </List>
-            
+
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-              <Button 
-                variant="contained" 
-                onClick={handleEditProfile}
-                fullWidth
-              >
+              <Button variant="contained" onClick={handleEditProfile} fullWidth>
                 Edit Profile
               </Button>
             </Box>
           </Paper>
         </Grid>
-        
+
         {/* Activity Stats */}
         <Grid item xs={12} md={8}>
           <Grid container spacing={3}>
@@ -209,7 +193,7 @@ const Profile = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
@@ -224,7 +208,9 @@ const Profile = () => {
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                       <Typography variant="body2">Last Week Activity</Typography>
-                      <Typography variant="body2">{activityStats.lastWeekActivity} actions</Typography>
+                      <Typography variant="body2">
+                        {activityStats.lastWeekActivity} actions
+                      </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                       <Typography variant="body2">Last Action</Typography>
@@ -238,7 +224,7 @@ const Profile = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid item xs={12}>
               <Card>
                 <CardContent>
@@ -249,12 +235,11 @@ const Profile = () => {
                     {activityStats.recentActions.map((action) => (
                       <React.Fragment key={action.id}>
                         <ListItem>
-                          <ListItemText 
-                            primary={action.action}
-                            secondary={action.time}
-                          />
+                          <ListItemText primary={action.action} secondary={action.time} />
                         </ListItem>
-                        {action.id !== activityStats.recentActions.length && <Divider component="li" />}
+                        {action.id !== activityStats.recentActions.length && (
+                          <Divider component="li" />
+                        )}
                       </React.Fragment>
                     ))}
                   </List>
@@ -268,4 +253,4 @@ const Profile = () => {
   );
 };
 
-export default Profile; 
+export default Profile;

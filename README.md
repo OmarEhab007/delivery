@@ -1,180 +1,100 @@
-# Delivery App - Merchant-Truck Coordination Platform
+# Delivery App
 
-This is a backend application that connects Merchants with Truck Owners (and their Drivers) to coordinate international shipments.
+> Production-ready platform that connects merchants with truck owners and drivers to orchestrate international shipments, approvals, and real-time tracking.
 
-## Features
+## Overview
+- Role-based workflows for Admins, Merchants, Truck Owners, and Drivers
+- Request → Payment → Admin approval → Entry creation flow with configurable limits
+- Real-time shipment location updates via Socket.io
+- Document management with secure storage and audit trails
+- Health monitoring, Prometheus metrics, and Grafana dashboards baked in
 
-- User management with role-based access (Admin, Merchant, Truck Owner, Driver)
-- Automatic admin user creation on first run
-- Shipment creation and management
-- Fleet management (trucks and drivers)
-- Application/bid system for shipments
-- Document upload and management
-- Real-time location tracking for shipments
-- WhatsApp notifications for important events
-- Optimized database performance with strategic indexing
-- Comprehensive system health monitoring
-
-## Tech Stack
-
-- Node.js with Express
-- MongoDB with Mongoose
-- JWT for authentication
-- Socket.io for real-time tracking
-- Twilio for WhatsApp integration
-- AWS S3 for document storage
-- Docker and Docker Compose for containerization
-
-## Project Structure
-
+## Architecture
 ```
 delivery-app/
 ├── src/
-│   ├── config/         # Configuration files
-│   ├── controllers/    # Route controllers for all endpoints
-│   ├── middleware/     # Custom middleware functions
-│   ├── models/         # Mongoose models
-│   ├── routes/         # Route definitions
-│   ├── scripts/        # Utility scripts
-│   │   └── database/   # Database maintenance scripts
-│   ├── services/       # Business logic
-│   ├── utils/          # Utility functions
-│   └── server.js       # Entry point
-├── tests/              # Automated tests
-├── .env.example        # Example environment variables
-├── docker-compose.yml  # Docker compose configuration
-├── Dockerfile          # Docker configuration
-└── package.json        # Project metadata and dependencies
+│   ├── config/          # App, database, swagger, monitoring config
+│   ├── controllers/     # Express route handlers
+│   ├── middleware/      # Auth, rate limits, security headers, logging
+│   ├── models/          # Mongoose schemas (Users, Shipments, Trucks, etc.)
+│   ├── routes/          # REST endpoints grouped by module
+│   ├── services/        # Business logic (auth, notifications, documents)
+│   ├── utils/           # Metrics, tracing, logging, validation helpers
+│   └── server.js        # Express bootstrap + Socket.io server
+├── client/              # React admin panel (optional)
+├── docker/              # Prometheus, Grafana, Mongo init scripts
+├── docs/                # Runbooks, API guide, monitoring, deployment
+├── env/                 # Environment templates for production
+├── tests/               # Jest unit/integration tests + utilities
+└── Dockerfile & compose files
 ```
 
-## Getting Started
+Key technologies: Node.js/Express, MongoDB (Mongoose), JWT auth, Socket.io, Prometheus/Grafana, Docker, Winston logging.
 
+## Quick Start
 ### Prerequisites
+- Node.js 18+
+- Docker & Docker Compose (for local infra)
+- MongoDB (local or container)
 
-- Node.js (v14+)
-- MongoDB
-- Docker and Docker Compose (optional)
-
-### Installation
-
-1. Clone the repository
-2. Copy `env.sample` to `.env` and update the values
-3. Install dependencies:
-   ```
-   npm install
-   ```
-4. Start the application:
-   ```
-   npm run dev
-   ```
-   
-   **Note**: On first run, an admin user will be automatically created if one doesn't exist. See [docs/ADMIN_INITIALIZATION.md](docs/ADMIN_INITIALIZATION.md) for details.
-
-### Database Optimization
-
-To optimize the MongoDB database with strategic indexes:
-
-```
-node src/scripts/database/createIndexes.js
-```
-
-This script creates optimized indexes for all collections to improve query performance. See [src/scripts/database/README.md](src/scripts/database/README.md) for details.
-
-### Using Docker
-
-1. Build and start the containers:
-   ```
-   docker-compose up -d
-   ```
-
-## API Documentation
-
-The application provides comprehensive API documentation using Swagger:
-
-- `/api-docs` - Interactive API documentation with Swagger UI
-- `/api-docs-json/json` - Raw OpenAPI specification in JSON format
-
-### Features of the API Documentation
-
-- Interactive testing interface for all endpoints
-- Detailed request and response schemas for all models:
-  - User - Authentication and user management
-  - Truck - Vehicle management and tracking
-  - Shipment - End-to-end shipping process
-  - Application - Bidding and application system
-  - Document - File upload and document management
-- Authentication support with JWT
-- Example requests and responses
-- Group-based organization of endpoints by role/function
-- Support for file uploads with multi-part form data
-- Ability to download the OpenAPI specification
-
-For more details on using and extending the API documentation, see [docs/SWAGGER_GUIDE.md](docs/SWAGGER_GUIDE.md).
-
-## System Health Monitoring
-
-The application includes comprehensive health monitoring endpoints to track system status:
-
-### Health Check Endpoints
-
-- `/health` - Basic health check (no authentication required)
-- `/health/system` - System resources health check (CPU, memory, etc.)
-- `/health/storage` - Storage health check (disk space, upload directory status)
-- `/health/database` - Database connection health check
-- `/health/comprehensive` - Complete system status check with all components
-
-All endpoints except `/health` require admin authentication.
-
-### Health Status Categories
-
-Health checks return one of the following status levels:
-
-- `healthy` - All systems operating normally
-- `degraded` - System operational but with some services impaired
-- `critical` - System at risk and requires immediate attention
-- `error` - System in error state and may not be functioning properly
-
-### Configuring External API Monitoring
-
-External API health checks can be configured in the `.env` file:
-
-```
-EXTERNAL_API_ENDPOINTS=[{"name":"Example API","url":"https://api.example.com/health","timeout":5000,"maxResponseTime":2000}]
-```
-
-This allows monitoring of third-party services that your application depends on.
-
-## Development Workflow
-
-See [TASKS.md](./TASKS.md) for the development roadmap and progress tracking.
-
-## Linting and Formatting
-
-This project uses ESLint and Prettier for code quality and consistent formatting:
-
-### Available Commands
-
-- `npm run lint` - Run ESLint to check for code issues
-- `npm run lint:fix` - Run ESLint and automatically fix issues when possible
-- `npm run format` - Run Prettier to format all files
-- `npm run lint:format` - Run both ESLint fix and Prettier format
-- `npm run lint:check` - Run both ESLint and Prettier in check mode (no fixes)
-
-### Pre-commit Hooks
-
-The project uses Husky to run linting and formatting checks before commits. This ensures that all committed code follows the project's style guidelines.
-
-### Configuration
-
-- ESLint configuration is in `.eslintrc.json`
-- Prettier configuration is in `.prettierrc`
-- Files to ignore during linting are specified in `.eslintignore`
-- Files to ignore during formatting are specified in `.prettierignore`
-
-If you need to temporarily bypass pre-commit hooks, you can use the `--no-verify` flag:
-
+### Local development
 ```bash
-git commit -m "Your commit message" --no-verify
+git clone https://github.com/<org>/delivery-app.git
+cd delivery-app
+cp env.sample .env  # fill in secrets locally
+npm install
+npm run dev
 ```
 
-However, it's generally better to fix the linting issues rather than bypassing the checks.
+The first startup seeds an admin user using values from `ADMIN_*` env vars. More details in [`docs/ADMIN_INITIALIZATION.md`](docs/ADMIN_INITIALIZATION.md).
+
+### Docker Compose
+```bash
+docker compose up -d
+```
+This boots the API, MongoDB (with init script), Prometheus, and Grafana using `docker-compose.yml`. For production, use `docker-compose.prod.yml` plus the runbook.
+
+## Configuration & Secrets
+All secrets are supplied via environment variables (see `env.sample`). Critical ones:
+- `MONGODB_URI` – connection string (auth enabled by default in production compose)
+- `JWT_SECRET`, `COOKIE_SECRET`
+- Admin bootstrap: `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+- Rate limits, CSRF, compression, cache, and external service keys (Twilio, Stripe, Google Maps)
+
+`src/utils/validateEnv.js` enforces mandatory values on startup, especially in production.
+
+## Deployment
+- Build hardened image: `docker build --target runner -t registry.example.com/delivery-app:<tag> .`
+- Follow the [Deployment Runbook](docs/DEPLOYMENT_RUNBOOK.md) for secrets, health checks, and rollback steps
+- Recommended: front the app with nginx/Caddy, terminate TLS, restrict Prometheus/Grafana to private networks
+- MongoDB backups handled by `scripts/backup/mongodb-backup.sh` (cron friendly)
+
+## Quality & Tooling
+- Linting/formatting: `npm run lint`, `npm run format`
+- Tests: `npm test` (uses mongodb-memory-server for isolation)
+- Coverage reports land in `coverage/`
+- Husky + lint-staged enforce formatting on commit
+- Planned CI (GitHub Actions) runs lint, tests, coverage upload, Docker build, and security scans
+
+## Monitoring & Observability
+- `/health` and `/health/*` endpoints expose system/storage/DB checks
+- `GET /api/metrics` (admin JWT required) exposes Prometheus metrics
+- Grafana dashboards are provisioned under `docker/grafana/`
+- Winston structured logging with daily rotation; logs stored under `logs/`
+
+## Documentation
+- API reference: [`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md) plus live Swagger (`/api-docs`, admin-only)
+- System diagrams and roadmap: [`docs/SYSTEM_ARCHITECTURE.md`](docs/SYSTEM_ARCHITECTURE.md), [`docs/DEVELOPMENT_ROADMAP.md`](docs/DEVELOPMENT_ROADMAP.md)
+- Monitoring, logging, deployment, and health guides located under `docs/`
+
+## Contributing & Community
+- See [`CONTRIBUTING.md`](CONTRIBUTING.md) for branching, coding standards, and PR workflow
+- Code of conduct in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+- Security reports: follow [`SECURITY.md`](SECURITY.md)
+
+## Roadmap Highlights
+- Automated payouts & invoicing integrations
+- Mobile driver app with offline-first tracking
+- Advanced analytics dashboards for pool performance
+
+Have questions or want to extend the platform? Open an issue or start a discussion! 🚚

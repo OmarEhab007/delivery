@@ -219,5 +219,5 @@ module.exports = {
   shipmentStatusGauge,
   trucksStatusGauge,
   jobQueueSizeGauge,
-  errorCounter
+  errorCounter,
 };

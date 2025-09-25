@@ -19,8 +19,7 @@ const { cacheControl } = require('../middleware/cacheControlMiddleware');
 router.get('/', (req, res) => {
   try {
     // Set cache headers directly with a higher value to confirm it's our headers
-    res.setHeader('Cache-Control', 'public, max-age=120');
-    console.log('Health endpoint setting Cache-Control: public, max-age=120');
+    res.setHeader('Cache-Control', 'no-store');
 
     // Simple health check that returns basic system status
     res.status(200).json({
@@ -187,17 +186,13 @@ router.get('/comprehensive', authenticateToken, restrictTo('Admin'), async (req,
  * @desc    Test endpoint for caching
  * @access  Public
  */
-router.get('/cache-test', (req, res) => {
+router.get('/cache-test', authenticateToken, restrictTo('Admin'), (req, res) => {
   try {
-    // Set cache headers explicitly
     res.set({
       'Cache-Control': 'public, max-age=300',
       'X-Cache-Test': 'true',
     });
 
-    console.log('Cache test endpoint - setting Cache-Control: public, max-age=300');
-
-    // Return a simple response
     res.status(200).json({
       status: 'ok',
       message: 'Cache test endpoint',
@@ -205,6 +200,7 @@ router.get('/cache-test', (req, res) => {
       cacheEnabled: true,
     });
   } catch (error) {
+    logger.error(`Cache test endpoint failed: ${error.message}`, { error });
     res.status(500).json({
       status: 'error',
       message: error.message,

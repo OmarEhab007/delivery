@@ -30,4 +30,4 @@ export const withCsrfToken = async (apiCall, ...args) => {
     console.error('API call failed:', error);
     throw error;
   }
-}; 
+};

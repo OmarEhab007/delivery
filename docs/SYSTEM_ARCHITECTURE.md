@@ -7,6 +7,7 @@ This document outlines the system architecture of the Delivery App, including co
 ## Technology Stack
 
 ### Backend
+
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Database**: MongoDB with Mongoose ODM
@@ -15,8 +16,8 @@ This document outlines the system architecture of the Delivery App, including co
 - **Password Hashing**: bcryptjs
 - **API Documentation**: Postman Collection
 
-
 ### DevOps
+
 - **Container**: Docker
 - **Logging**: Winston
 - **Testing**: Jest
@@ -28,31 +29,37 @@ This document outlines the system architecture of the Delivery App, including co
 ### Core Components
 
 #### 1. Authentication System
+
 - Handles user registration, login, password reset
 - Manages JWT token generation and verification
 - Manages role-based access control
 
 #### 2. User Management System
+
 - Manages different user types (Admin, Merchant, Truck Owner, Driver)
 - Handles role-specific operations and permissions
 - User profile management
 
 #### 3. Shipment Management System
+
 - Shipment creation and lifecycle management
 - Shipment status tracking and timeline updates
 - Location tracking and updates
 
 #### 4. Application Management System
+
 - Handles bids from truck owners for shipments
 - Application review and approval/rejection process
 - Automatic state transitions
 
 #### 5. Truck Management System
+
 - Truck registration and details management
 - Driver assignment and management
 - Truck availability tracking
 
 #### 6. Notification System
+
 - Status updates notifications
 - Email notifications for critical events
 - Push notifications (if mobile app is implemented)
@@ -60,19 +67,25 @@ This document outlines the system architecture of the Delivery App, including co
 ## Architecture Patterns
 
 ### MVC (Model-View-Controller)
+
 The application follows the MVC pattern:
+
 - **Models**: MongoDB schemas defined with Mongoose
 - **Views**: API responses (JSON) or React components (if frontend is implemented)
 - **Controllers**: Business logic for processing requests
 
 ### Repository Pattern
+
 For database operations, a repository layer abstracts data access.
 
 ### Service Layer
+
 Complex business logic is encapsulated in service classes.
 
 ### Middleware Pattern
+
 Express middleware for cross-cutting concerns:
+
 - Authentication middleware
 - Error handling middleware
 - Validation middleware
@@ -146,46 +159,55 @@ Express middleware for cross-cutting concerns:
 ## Security Measures
 
 ### Authentication
+
 - JWT tokens with appropriate expiration
 - Password hashing using bcrypt with salt rounds
 - Role-based access control
 
 ### Input Validation
+
 - Request validation using express-validator
 - Mongoose schema validation for data integrity
 
 ### API Security
+
 - Rate limiting to prevent abuse
 - CORS configuration to limit origins
 - Helmet middleware for HTTP headers security
 
 ### Error Handling
+
 - Centralized error handling
 - Sanitized error responses to prevent information leakage
 
 ## Scalability Considerations
 
 ### Horizontal Scaling
+
 - Stateless API design for load balancing
 - Session-less authentication (JWT)
 
 ### Database Optimization
+
 - Proper indexing for common queries
 - Pagination for large result sets
 - Mongoose schema optimization
 
 ### Caching
+
 - Response caching for frequently accessed data
 - Database query caching if needed
 
 ## Deployment
 
 ### Development Environment
+
 - Local Node.js server
 - Local MongoDB or cloud MongoDB instance
 - Environment variables for configuration
 
 ### Production Environment
+
 - Docker containers
 - MongoDB Atlas (or equivalent)
 - Proper logging and monitoring
@@ -194,11 +216,13 @@ Express middleware for cross-cutting concerns:
 ## Monitoring and Logging
 
 ### Logging
+
 - Winston for structured logging
 - Log levels (error, warn, info, debug)
 - Log rotation and storage
 
 ### Monitoring
+
 - API performance metrics
 - Error rate monitoring
 - Database performance monitoring
@@ -206,9 +230,11 @@ Express middleware for cross-cutting concerns:
 ## Backup and Recovery
 
 ### Database Backup
+
 - Regular automated backups
 - Point-in-time recovery options
 
 ### Disaster Recovery
+
 - Backup restoration procedures
-- Data integrity verification 
+- Data integrity verification

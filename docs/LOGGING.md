@@ -124,4 +124,4 @@ If logs are not being created:
 1. Check if the `logs` directory exists and has write permissions
 2. Verify the `LOG_LEVEL` setting is not too restrictive
 3. Ensure disk space is available
-4. Check for errors during application startup 
+4. Check for errors during application startup

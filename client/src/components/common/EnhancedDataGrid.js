@@ -24,11 +24,11 @@ import {
 import { DataGrid, GridToolbarContainer } from '@mui/x-data-grid';
 
 // Custom toolbar for the data grid
-const CustomToolbar = ({ 
-  onAdd, 
-  onRefresh, 
-  filterValue, 
-  onFilterChange, 
+const CustomToolbar = ({
+  onAdd,
+  onRefresh,
+  filterValue,
+  onFilterChange,
   title,
   exportOptions = [],
   hideAddButton = false,
@@ -70,7 +70,7 @@ const CustomToolbar = ({
                   <SearchIcon fontSize="small" />
                 </InputAdornment>
               ),
-              sx: { borderRadius: 2 }
+              sx: { borderRadius: 2 },
             }}
             sx={{ minWidth: 220 }}
           />
@@ -80,7 +80,7 @@ const CustomToolbar = ({
             </IconButton>
           </Tooltip>
         </Stack>
-        
+
         <Stack direction="row" spacing={1}>
           {exportOptions.length > 0 && (
             <>
@@ -93,23 +93,16 @@ const CustomToolbar = ({
               >
                 Export
               </Button>
-              <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleExportClose}
-              >
+              <Menu anchorEl={anchorEl} open={open} onClose={handleExportClose}>
                 {exportOptions.map((option) => (
-                  <MenuItem 
-                    key={option.label} 
-                    onClick={() => handleExportOption(option.handler)}
-                  >
+                  <MenuItem key={option.label} onClick={() => handleExportOption(option.handler)}>
                     {option.label}
                   </MenuItem>
                 ))}
               </Menu>
             </>
           )}
-          
+
           {!hideAddButton && (
             <Button
               variant="contained"
@@ -129,11 +122,11 @@ const CustomToolbar = ({
 
 // Custom no rows overlay
 const CustomNoRowsOverlay = ({ message = 'No data available' }) => (
-  <Box 
-    sx={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
+  <Box
+    sx={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
       justifyContent: 'center',
       height: '100%',
       padding: 2,
@@ -145,48 +138,50 @@ const CustomNoRowsOverlay = ({ message = 'No data available' }) => (
 );
 
 // Status chip component for consistent status display
-export const StatusChip = ({ status, statusMap }) => {
+export const StatusChip = ({ status, statusMap, label, color }) => {
   const theme = useTheme();
-  const { label, color } = statusMap[status] || { 
-    label: status, 
-    color: 'default' 
-  };
 
-  let chipColor;
-  switch (color) {
-    case 'success':
-      chipColor = theme.palette.success.main;
-      break;
-    case 'warning':
-      chipColor = theme.palette.warning.main;
-      break;
-    case 'error':
-      chipColor = theme.palette.error.main;
-      break;
-    case 'info':
-      chipColor = theme.palette.info.main;
-      break;
-    case 'primary':
-      chipColor = theme.palette.primary.main;
-      break;
-    case 'secondary':
-      chipColor = theme.palette.secondary.main;
-      break;
-    default:
-      chipColor = theme.palette.grey[500];
-  }
+  const resolvedStatus = status?.toString();
+  const mapEntry =
+    resolvedStatus && statusMap
+      ? statusMap[resolvedStatus] ||
+        statusMap[resolvedStatus.toUpperCase()] ||
+        statusMap[resolvedStatus.toLowerCase()]
+      : undefined;
+
+  const resolvedLabel = label || mapEntry?.label || resolvedStatus || '—';
+  const resolvedColor = color || mapEntry?.color || 'default';
+
+  const paletteColor = (() => {
+    switch (resolvedColor) {
+      case 'success':
+        return theme.palette.success.main;
+      case 'warning':
+        return theme.palette.warning.main;
+      case 'error':
+        return theme.palette.error.main;
+      case 'info':
+        return theme.palette.info.main;
+      case 'primary':
+        return theme.palette.primary.main;
+      case 'secondary':
+        return theme.palette.secondary.main;
+      default:
+        return theme.palette.grey[500];
+    }
+  })();
 
   return (
-    <Chip 
-      label={label} 
+    <Chip
+      label={resolvedLabel}
       size="small"
-      sx={{ 
-        backgroundColor: `${chipColor}20`,
-        color: chipColor,
+      sx={{
+        backgroundColor: `${paletteColor}20`,
+        color: paletteColor,
         fontWeight: 500,
         borderRadius: '4px',
-        border: `1px solid ${chipColor}40`,
-      }} 
+        border: `1px solid ${paletteColor}40`,
+      }}
     />
   );
 };
@@ -276,4 +271,4 @@ const EnhancedDataGrid = ({
   );
 };
 
-export default EnhancedDataGrid; 
+export default EnhancedDataGrid;

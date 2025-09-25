@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "create-admin": "node src/scripts/createAdminUser.js",
     "logs": "node src/scripts/log-utils.js",
     "logs:list": "node src/scripts/log-utils.js list",

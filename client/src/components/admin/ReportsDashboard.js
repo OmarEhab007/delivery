@@ -1,15 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { 
-  Container, Grid, Paper, Typography, FormControl, 
-  Select, MenuItem, InputLabel, Box, CircularProgress,
-  Card, CardContent, CardHeader, Divider
+import {
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel,
+  Box,
+  CircularProgress,
+  Card,
+  CardContent,
+  CardHeader,
+  Divider,
 } from '@mui/material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 
 // Custom colors for charts
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A05195', '#D45087', '#665191', '#2F4B7C'];
+const COLORS = [
+  '#0088FE',
+  '#00C49F',
+  '#FFBB28',
+  '#FF8042',
+  '#A05195',
+  '#D45087',
+  '#665191',
+  '#2F4B7C',
+];
 
 const ReportsDashboard = () => {
   // State for report data
@@ -19,14 +52,14 @@ const ReportsDashboard = () => {
   const [customerData, setCustomerData] = useState([]);
   const [efficiencyData, setEfficiencyData] = useState([]);
   const [geoData, setGeoData] = useState([]);
-  
+
   // State for filters
   const [timeframe, setTimeframe] = useState('monthly');
   const [entityType, setEntityType] = useState('driver');
   const [performanceTimeframe, setPerformanceTimeframe] = useState('allTime');
   const [customerSortBy, setCustomerSortBy] = useState('shipmentCount');
   const [geoAnalysisType, setGeoAnalysisType] = useState('originDestination');
-  
+
   // Loading states
   const [loading, setLoading] = useState({
     statusTrends: false,
@@ -34,7 +67,7 @@ const ReportsDashboard = () => {
     performance: false,
     customers: false,
     efficiency: false,
-    geo: false
+    geo: false,
   });
 
   // Error states
@@ -44,153 +77,142 @@ const ReportsDashboard = () => {
     performance: null,
     customers: null,
     efficiency: null,
-    geo: null
+    geo: null,
   });
 
   // Fetch status trends data
-  const fetchStatusTrends = async () => {
-    setLoading(prev => ({ ...prev, statusTrends: true }));
-    setErrors(prev => ({ ...prev, statusTrends: null }));
-    
+  const fetchStatusTrends = useCallback(async () => {
+    setLoading((prev) => ({ ...prev, statusTrends: true }));
+    setErrors((prev) => ({ ...prev, statusTrends: null }));
+
     try {
-      const response = await axios.get(`/api/reports/shipments/status-trends?timeframe=${timeframe}`);
+      const response = await axios.get(
+        `/api/reports/shipments/status-trends?timeframe=${timeframe}`
+      );
       setStatusTrends(response.data.data);
     } catch (error) {
-      console.error("Error fetching status trends:", error);
-      setErrors(prev => ({ 
-        ...prev, 
-        statusTrends: error.response?.data?.error || 'Failed to fetch status trend data' 
+      console.error('Error fetching status trends:', error);
+      setErrors((prev) => ({
+        ...prev,
+        statusTrends: error.response?.data?.error || 'Failed to fetch status trend data',
       }));
     } finally {
-      setLoading(prev => ({ ...prev, statusTrends: false }));
+      setLoading((prev) => ({ ...prev, statusTrends: false }));
     }
-  };
+  }, [timeframe]);
 
   // Fetch revenue data
-  const fetchRevenueData = async () => {
-    setLoading(prev => ({ ...prev, revenue: true }));
-    setErrors(prev => ({ ...prev, revenue: null }));
-    
+  const fetchRevenueData = useCallback(async () => {
+    setLoading((prev) => ({ ...prev, revenue: true }));
+    setErrors((prev) => ({ ...prev, revenue: null }));
+
     try {
       const response = await axios.get(`/api/reports/revenue?timeframe=${timeframe}`);
       setRevenueData(response.data.data);
     } catch (error) {
-      console.error("Error fetching revenue data:", error);
-      setErrors(prev => ({ 
-        ...prev, 
-        revenue: error.response?.data?.error || 'Failed to fetch revenue data' 
+      console.error('Error fetching revenue data:', error);
+      setErrors((prev) => ({
+        ...prev,
+        revenue: error.response?.data?.error || 'Failed to fetch revenue data',
       }));
     } finally {
-      setLoading(prev => ({ ...prev, revenue: false }));
+      setLoading((prev) => ({ ...prev, revenue: false }));
     }
-  };
+  }, [timeframe]);
 
   // Fetch performance data
-  const fetchPerformanceData = async () => {
-    setLoading(prev => ({ ...prev, performance: true }));
-    setErrors(prev => ({ ...prev, performance: null }));
-    
+  const fetchPerformanceData = useCallback(async () => {
+    setLoading((prev) => ({ ...prev, performance: true }));
+    setErrors((prev) => ({ ...prev, performance: null }));
+
     try {
       const response = await axios.get(
         `/api/reports/performance?entityType=${entityType}&timeframe=${performanceTimeframe}`
       );
       setPerformanceData(response.data.data);
     } catch (error) {
-      console.error("Error fetching performance data:", error);
-      setErrors(prev => ({ 
-        ...prev, 
-        performance: error.response?.data?.error || 'Failed to fetch performance data' 
+      console.error('Error fetching performance data:', error);
+      setErrors((prev) => ({
+        ...prev,
+        performance: error.response?.data?.error || 'Failed to fetch performance data',
       }));
     } finally {
-      setLoading(prev => ({ ...prev, performance: false }));
+      setLoading((prev) => ({ ...prev, performance: false }));
     }
-  };
+  }, [entityType, performanceTimeframe]);
 
   // Fetch customer data
-  const fetchCustomerData = async () => {
-    setLoading(prev => ({ ...prev, customers: true }));
-    setErrors(prev => ({ ...prev, customers: null }));
-    
+  const fetchCustomerData = useCallback(async () => {
+    setLoading((prev) => ({ ...prev, customers: true }));
+    setErrors((prev) => ({ ...prev, customers: null }));
+
     try {
       const response = await axios.get(`/api/reports/customers?sortBy=${customerSortBy}`);
       setCustomerData(response.data.data);
     } catch (error) {
-      console.error("Error fetching customer data:", error);
-      setErrors(prev => ({ 
-        ...prev, 
-        customers: error.response?.data?.error || 'Failed to fetch customer data' 
+      console.error('Error fetching customer data:', error);
+      setErrors((prev) => ({
+        ...prev,
+        customers: error.response?.data?.error || 'Failed to fetch customer data',
       }));
     } finally {
-      setLoading(prev => ({ ...prev, customers: false }));
+      setLoading((prev) => ({ ...prev, customers: false }));
     }
-  };
+  }, [customerSortBy]);
 
   // Fetch efficiency data
-  const fetchEfficiencyData = async () => {
-    setLoading(prev => ({ ...prev, efficiency: true }));
-    setErrors(prev => ({ ...prev, efficiency: null }));
-    
+  const fetchEfficiencyData = useCallback(async () => {
+    setLoading((prev) => ({ ...prev, efficiency: true }));
+    setErrors((prev) => ({ ...prev, efficiency: null }));
+
     try {
       const response = await axios.get(`/api/reports/efficiency?timeframe=${timeframe}`);
       setEfficiencyData(response.data.data);
     } catch (error) {
-      console.error("Error fetching efficiency data:", error);
-      setErrors(prev => ({ 
-        ...prev, 
-        efficiency: error.response?.data?.error || 'Failed to fetch efficiency data' 
+      console.error('Error fetching efficiency data:', error);
+      setErrors((prev) => ({
+        ...prev,
+        efficiency: error.response?.data?.error || 'Failed to fetch efficiency data',
       }));
     } finally {
-      setLoading(prev => ({ ...prev, efficiency: false }));
+      setLoading((prev) => ({ ...prev, efficiency: false }));
     }
-  };
+  }, [timeframe]);
 
   // Fetch geospatial data
-  const fetchGeoData = async () => {
-    setLoading(prev => ({ ...prev, geo: true }));
-    setErrors(prev => ({ ...prev, geo: null }));
-    
+  const fetchGeoData = useCallback(async () => {
+    setLoading((prev) => ({ ...prev, geo: true }));
+    setErrors((prev) => ({ ...prev, geo: null }));
+
     try {
       const response = await axios.get(`/api/reports/geo?analysisType=${geoAnalysisType}`);
       setGeoData(response.data.data);
     } catch (error) {
-      console.error("Error fetching geo data:", error);
-      setErrors(prev => ({ 
-        ...prev, 
-        geo: error.response?.data?.error || 'Failed to fetch geospatial data' 
+      console.error('Error fetching geo data:', error);
+      setErrors((prev) => ({
+        ...prev,
+        geo: error.response?.data?.error || 'Failed to fetch geospatial data',
       }));
     } finally {
-      setLoading(prev => ({ ...prev, geo: false }));
+      setLoading((prev) => ({ ...prev, geo: false }));
     }
-  };
-
-  // Effect to fetch data on component mount
-  useEffect(() => {
-    fetchStatusTrends();
-    fetchRevenueData();
-    fetchPerformanceData();
-    fetchCustomerData();
-    fetchEfficiencyData();
-    fetchGeoData();
-  }, []);
-
-  // Effects to refetch data when filters change
-  useEffect(() => {
-    fetchStatusTrends();
-    fetchRevenueData();
-    fetchEfficiencyData();
-  }, [timeframe]);
-
-  useEffect(() => {
-    fetchPerformanceData();
-  }, [entityType, performanceTimeframe]);
-
-  useEffect(() => {
-    fetchCustomerData();
-  }, [customerSortBy]);
-
-  useEffect(() => {
-    fetchGeoData();
   }, [geoAnalysisType]);
+
+  useEffect(() => {
+    fetchStatusTrends();
+    fetchRevenueData();
+    fetchPerformanceData();
+    fetchCustomerData();
+    fetchEfficiencyData();
+    fetchGeoData();
+  }, [
+    fetchStatusTrends,
+    fetchRevenueData,
+    fetchPerformanceData,
+    fetchCustomerData,
+    fetchEfficiencyData,
+    fetchGeoData,
+  ]);
 
   // Helper function to transform status trends data for charts
   const prepareStatusTrendsData = () => {
@@ -201,30 +223,30 @@ const ReportsDashboard = () => {
   // Helper to prepare data for performance chart
   const preparePerformanceData = () => {
     if (entityType === 'driver') {
-      return performanceData.map(driver => ({
+      return performanceData.map((driver) => ({
         name: driver.driverName,
         shipments: driver.totalShipments,
         distance: driver.totalDistance,
         rating: driver.averageRating * 20, // Scale to make it visible on chart
-        onTimeRate: driver.onTimeDeliveryRate * 100
+        onTimeRate: driver.onTimeDeliveryRate * 100,
       }));
     } else {
-      return performanceData.map(truck => ({
+      return performanceData.map((truck) => ({
         name: truck.truckRegistration,
         shipments: truck.totalShipments,
         distance: truck.totalDistance,
-        breakdownRate: truck.breakdownRate * 100
+        breakdownRate: truck.breakdownRate * 100,
       }));
     }
   };
 
   // Prepare data for customer insights chart
   const prepareCustomerData = () => {
-    return customerData.map(customer => ({
+    return customerData.map((customer) => ({
       name: customer.merchantName,
       shipments: customer.totalShipments,
       revenue: customer.totalRevenue,
-      avgValue: customer.avgOrderValue
+      avgValue: customer.avgOrderValue,
     }));
   };
 
@@ -247,7 +269,7 @@ const ReportsDashboard = () => {
       <Typography variant="h4" gutterBottom>
         Business Intelligence Dashboard
       </Typography>
-      
+
       {/* Time period filter for trends charts */}
       <Grid container spacing={3} mb={3}>
         <Grid item xs={12} md={4}>
@@ -265,7 +287,7 @@ const ReportsDashboard = () => {
           </FormControl>
         </Grid>
       </Grid>
-      
+
       {/* Revenue Analysis */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12}>
@@ -322,7 +344,7 @@ const ReportsDashboard = () => {
           </Paper>
         </Grid>
       </Grid>
-      
+
       {/* Shipment Status Trends */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12}>
@@ -357,23 +379,22 @@ const ReportsDashboard = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  {statusTrends.length > 0 && 
+                  {statusTrends.length > 0 &&
                     Object.keys(statusTrends[0]?.statuses || {}).map((status, index) => (
-                      <Bar 
+                      <Bar
                         key={status}
-                        dataKey={`statuses.${status}`} 
-                        name={status} 
-                        fill={COLORS[index % COLORS.length]} 
+                        dataKey={`statuses.${status}`}
+                        name={status}
+                        fill={COLORS[index % COLORS.length]}
                       />
-                    ))
-                  }
+                    ))}
                 </BarChart>
               </ResponsiveContainer>
             )}
           </Paper>
         </Grid>
       </Grid>
-      
+
       {/* Performance Metrics */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} md={4}>
@@ -452,7 +473,7 @@ const ReportsDashboard = () => {
           </Paper>
         </Grid>
       </Grid>
-      
+
       {/* Customer Insights */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} md={4}>
@@ -510,7 +531,7 @@ const ReportsDashboard = () => {
           </Paper>
         </Grid>
       </Grid>
-      
+
       {/* Operational Efficiency */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12}>
@@ -545,17 +566,32 @@ const ReportsDashboard = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="completionRate" stroke="#82ca9d" name="Completion Rate" />
-                  <Line type="monotone" dataKey="cancellationRate" stroke="#ff8042" name="Cancellation Rate" />
+                  <Line
+                    type="monotone"
+                    dataKey="completionRate"
+                    stroke="#82ca9d"
+                    name="Completion Rate"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="cancellationRate"
+                    stroke="#ff8042"
+                    name="Cancellation Rate"
+                  />
                   <Line type="monotone" dataKey="delayRate" stroke="#ffc658" name="Delay Rate" />
-                  <Line type="monotone" dataKey="avgDeliveryTime" stroke="#8884d8" name="Avg Delivery Time (days)" />
+                  <Line
+                    type="monotone"
+                    dataKey="avgDeliveryTime"
+                    stroke="#8884d8"
+                    name="Avg Delivery Time (days)"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}
           </Paper>
         </Grid>
       </Grid>
-      
+
       {/* Geospatial Analytics */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} md={4}>
@@ -598,7 +634,7 @@ const ReportsDashboard = () => {
                       {geoData.slice(0, 10).map((pair, index) => (
                         <Grid item xs={12} md={6} key={index}>
                           <Card>
-                            <CardHeader 
+                            <CardHeader
                               title={`${pair.origin} to ${pair.destination}`}
                               subheader={`${pair.shipmentCount} shipments`}
                             />
@@ -675,4 +711,4 @@ const ReportsDashboard = () => {
   );
 };
 
-export default ReportsDashboard; 
+export default ReportsDashboard;

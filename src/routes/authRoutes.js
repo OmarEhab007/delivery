@@ -125,18 +125,13 @@ router.post(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.post(
-  '/register/merchant',
-  [...registerValidation, body('role').equals('Merchant').withMessage('Role must be Merchant')],
-  authController.registerMerchant
-);
+router.post('/register/merchant', registerValidation, authController.registerMerchant);
 
 // Truck Owner registration
 router.post(
   '/register/truckOwner',
   [
     ...registerValidation,
-    body('role').equals('TruckOwner').withMessage('Role must be TruckOwner'),
     body('companyName').notEmpty().withMessage('Company name is required'),
     body('companyAddress').notEmpty().withMessage('Company address is required'),
   ],
@@ -150,21 +145,13 @@ router.post(
   restrictTo('TruckOwner'),
   [
     ...registerValidation,
-    body('role').equals('Driver').withMessage('Role must be Driver'),
     body('licenseNumber').notEmpty().withMessage('License number is required'),
   ],
   authController.registerDriver
 );
 
 // Test admin registration (for testing purposes only)
-router.post(
-  '/register/testadmin',
-  [
-    ...registerValidation,
-    body('role').optional().equals('Admin').withMessage('Role must be Admin'),
-  ],
-  authController.registerTestAdmin
-);
+router.post('/register/testadmin', registerValidation, authController.registerTestAdmin);
 
 /**
  * @swagger
@@ -227,6 +214,21 @@ router.post(
     body('password').notEmpty().withMessage('Password is required'),
   ],
   authController.login
+);
+
+router.post(
+  '/otp/request',
+  [body('phone').isMobilePhone().withMessage('Please provide a valid phone number')],
+  authController.requestOtp
+);
+
+router.post(
+  '/otp/verify',
+  [
+    body('phone').isMobilePhone().withMessage('Please provide a valid phone number'),
+    body('otp').isLength({ min: 4, max: 10 }).withMessage('OTP must be between 4 and 10 digits'),
+  ],
+  authController.verifyOtp
 );
 
 /**

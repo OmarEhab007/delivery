@@ -63,10 +63,12 @@ const cacheControl = (duration = 'medium', isPublic = true, mustRevalidate = fal
 
   // Return middleware function
   return (req, res, next) => {
-    // Debug log - ADDED FOR TROUBLESHOOTING
-    console.log(
-      `[DEBUG] Setting Cache-Control: ${cacheControlValue} for ${req.originalUrl || req.url}`
-    );
+    if (process.env.CACHE_DEBUG === 'true') {
+      logger.debug('Setting Cache-Control header', {
+        cacheValue,
+        path: req.originalUrl || req.url,
+      });
+    }
 
     // Set cache control header
     res.set('Cache-Control', cacheControlValue);
@@ -90,8 +92,11 @@ const cacheControl = (duration = 'medium', isPublic = true, mustRevalidate = fal
  */
 const noCache = () => {
   return (req, res, next) => {
-    // Debug log - ADDED FOR TROUBLESHOOTING
-    console.log(`[DEBUG] Setting no-cache headers for ${req.originalUrl || req.url}`);
+    if (process.env.CACHE_DEBUG === 'true') {
+      logger.debug('Applying no-cache headers', {
+        path: req.originalUrl || req.url,
+      });
+    }
 
     // Set no-cache headers
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

@@ -19,10 +19,11 @@ const { Shipment } = require('../../models/Shipment');
 const Truck = require('../../models/Truck');
 const { Application } = require('../../models/Application');
 const { Document } = require('../../models/Document');
+const logger = require('../../utils/logger');
 
 // Function to log with timestamp
-const log = (message) => {
-  console.log(`[${new Date().toISOString()}] ${message}`);
+const log = (message, meta = {}) => {
+  logger.info(message, meta);
 };
 
 // Create indexes for User collection
@@ -199,13 +200,11 @@ async function createIndexes() {
       };
     }
 
-    log('Index statistics:');
-    console.log(JSON.stringify(stats, null, 2));
+    log('Index statistics', stats);
 
     log('All database indexes created successfully');
   } catch (error) {
-    log(`Error creating indexes: ${error.message}`);
-    console.error(error);
+    logger.error('Error creating indexes', { error: error.message });
   } finally {
     await client.close();
     log('MongoDB connection closed');
@@ -219,9 +218,8 @@ if (require.main === module) {
       log('Database indexing completed');
       process.exit(0);
     })
-    .catch((err) => {
-      log(`Error in indexing script: ${err.message}`);
-      console.error(err);
+    .catch((error) => {
+      logger.error('Database indexing failed', { error: error.message });
       process.exit(1);
     });
 } else {

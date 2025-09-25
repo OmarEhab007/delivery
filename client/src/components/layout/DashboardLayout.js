@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { 
-  Box, 
-  Drawer, 
-  AppBar, 
-  Toolbar, 
-  Typography, 
-  List, 
-  ListItem, 
-  ListItemButton, 
-  ListItemIcon, 
-  ListItemText, 
-  Divider, 
-  IconButton, 
-  Avatar, 
-  Menu, 
-  MenuItem, 
-  useTheme, 
-  useMediaQuery
+import {
+  Box,
+  Drawer,
+  AppBar,
+  Toolbar,
+  Typography,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  IconButton,
+  Avatar,
+  Menu,
+  MenuItem,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -30,7 +30,7 @@ import {
   Logout as LogoutIcon,
   Person as ProfileIcon,
   ChevronLeft as ChevronLeftIcon,
-  BarChart as ReportsIcon
+  BarChart as ReportsIcon,
 } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -74,12 +74,14 @@ const DashboardLayout = () => {
 
   const drawer = (
     <>
-      <Toolbar sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        px: [1],
-      }}>
+      <Toolbar
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: [1],
+        }}
+      >
         <Typography
           variant="h6"
           component="div"
@@ -96,60 +98,62 @@ const DashboardLayout = () => {
       <Divider />
       <List>
         {menuItems
-          .filter(item => !item.role || item.role === currentUser?.role)
+          .filter((item) => !item.role || item.role === currentUser?.role)
           .map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton 
-              component={Link} 
-              to={item.path}
-              onClick={isMobile ? handleDrawerToggle : undefined}
-              sx={{
-                '&.Mui-selected': {
-                  backgroundColor: theme.palette.primary.light + '40',
-                },
-                '&.Mui-selected:hover': {
-                  backgroundColor: theme.palette.primary.light + '60',
-                },
-                '&:hover': {
-                  backgroundColor: theme.palette.primary.light + '20',
-                },
-                borderRadius: '0 24px 24px 0',
-                margin: '4px 8px 4px 0',
-                paddingLeft: '16px',
-              }}
-              selected={window.location.pathname === item.path}
-            >
-              <ListItemIcon
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                component={Link}
+                to={item.path}
+                onClick={isMobile ? handleDrawerToggle : undefined}
                 sx={{
-                  minWidth: 40,
-                  color: window.location.pathname === item.path 
-                    ? theme.palette.primary.main 
-                    : theme.palette.text.secondary,
+                  '&.Mui-selected': {
+                    backgroundColor: theme.palette.primary.light + '40',
+                  },
+                  '&.Mui-selected:hover': {
+                    backgroundColor: theme.palette.primary.light + '60',
+                  },
+                  '&:hover': {
+                    backgroundColor: theme.palette.primary.light + '20',
+                  },
+                  borderRadius: '0 24px 24px 0',
+                  margin: '4px 8px 4px 0',
+                  paddingLeft: '16px',
                 }}
+                selected={window.location.pathname === item.path}
               >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={item.text} 
-                primaryTypographyProps={{
-                  fontWeight: window.location.pathname === item.path ? 500 : 400,
-                  color: window.location.pathname === item.path 
-                    ? theme.palette.primary.main 
-                    : theme.palette.text.primary,
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
+                <ListItemIcon
+                  sx={{
+                    minWidth: 40,
+                    color:
+                      window.location.pathname === item.path
+                        ? theme.palette.primary.main
+                        : theme.palette.text.secondary,
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.text}
+                  primaryTypographyProps={{
+                    fontWeight: window.location.pathname === item.path ? 500 : 400,
+                    color:
+                      window.location.pathname === item.path
+                        ? theme.palette.primary.main
+                        : theme.palette.text.primary,
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
       </List>
     </>
   );
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <AppBar 
-        position="fixed" 
-        sx={{ 
+      <AppBar
+        position="fixed"
+        sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
           backgroundColor: 'white',
           color: 'text.primary',
@@ -166,13 +170,13 @@ const DashboardLayout = () => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            {menuItems.find(item => window.location.pathname === item.path)?.text || 'Dashboard'}
+            {menuItems.find((item) => window.location.pathname === item.path)?.text || 'Dashboard'}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <IconButton onClick={handleProfileMenuOpen} size="small">
-              <Avatar 
-                sx={{ 
-                  width: 40, 
+              <Avatar
+                sx={{
+                  width: 40,
                   height: 40,
                   backgroundColor: theme.palette.primary.main,
                 }}
@@ -187,10 +191,12 @@ const DashboardLayout = () => {
               transformOrigin={{ horizontal: 'right', vertical: 'top' }}
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-              <MenuItem onClick={() => {
-                handleProfileMenuClose();
-                navigate('/profile');
-              }}>
+              <MenuItem
+                onClick={() => {
+                  handleProfileMenuClose();
+                  navigate('/profile');
+                }}
+              >
                 <ListItemIcon>
                   <ProfileIcon fontSize="small" />
                 </ListItemIcon>
@@ -206,10 +212,7 @@ const DashboardLayout = () => {
           </Box>
         </Toolbar>
       </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-      >
+      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         {/* Mobile drawer */}
         <Drawer
           variant="temporary"
@@ -225,7 +228,7 @@ const DashboardLayout = () => {
         >
           {drawer}
         </Drawer>
-        
+
         {/* Desktop drawer */}
         <Drawer
           variant="permanent"
@@ -255,4 +258,4 @@ const DashboardLayout = () => {
   );
 };
 
-export default DashboardLayout; 
+export default DashboardLayout;

@@ -10,6 +10,7 @@ const { Shipment, ShipmentStatus } = require('../../models/Shipment');
 const { ApiError } = require('../../middleware/errorHandler');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
 const { asyncHandler } = require('../../middleware/asyncHandler');
+const metricScheduler = require('../../utils/metricScheduler');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -225,6 +226,14 @@ const updateShipmentStatus = asyncHandler(async (req, res, next) => {
 
   await shipment.save();
 
+  try {
+    await metricScheduler.updateShipmentStatusMetrics();
+  } catch (metricsError) {
+    logger.warn(
+      `Failed to refresh shipment status metrics after driver update: ${metricsError.message}`
+    );
+  }
+
   return ApiSuccess(res, {
     message: `Shipment status updated to ${status}`,
     shipment,
@@ -269,6 +278,14 @@ const startDelivery = asyncHandler(async (req, res, next) => {
 
   await shipment.addTimelineEntry(timelineEntry);
   await shipment.save();
+
+  try {
+    await metricScheduler.updateShipmentStatusMetrics();
+  } catch (metricsError) {
+    logger.warn(
+      `Failed to refresh shipment status metrics after starting delivery: ${metricsError.message}`
+    );
+  }
 
   return ApiSuccess(res, {
     message: 'Delivery started successfully',
@@ -326,6 +343,14 @@ const completeDelivery = asyncHandler(async (req, res, next) => {
 
   await shipment.addTimelineEntry(timelineEntry);
   await shipment.save();
+
+  try {
+    await metricScheduler.updateShipmentStatusMetrics();
+  } catch (metricsError) {
+    logger.warn(
+      `Failed to refresh shipment status metrics after completing delivery: ${metricsError.message}`
+    );
+  }
 
   return ApiSuccess(res, {
     message: 'Delivery completed successfully',

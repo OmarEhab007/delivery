@@ -30,6 +30,11 @@ const userSchema = new mongoose.Schema(
       enum: ['Admin', 'Merchant', 'TruckOwner', 'Driver'],
       required: [true, 'Please specify user role'],
     },
+    approvalStatus: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: 'APPROVED',
+    },
     // Admin-specific fields
     adminPermissions: {
       type: [String],
@@ -47,6 +52,23 @@ const userSchema = new mongoose.Schema(
     // Password reset fields
     passwordResetToken: String,
     passwordResetExpires: Date,
+    otp: {
+      codeHash: {
+        type: String,
+        select: false,
+      },
+      expiresAt: Date,
+      attemptCount: {
+        type: Number,
+        default: 0,
+      },
+      lastSentAt: Date,
+      resendCount: {
+        type: Number,
+        default: 0,
+      },
+      lastVerifiedAt: Date,
+    },
     // Merchant-specific fields
     // None for basic implementation
 

@@ -31,6 +31,11 @@
       "type": "string"
     },
     {
+      "key": "otpToken",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "shipmentId",
       "value": "",
       "type": "string"
@@ -62,6 +67,11 @@
     },
     {
       "key": "csrfToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "registrationRequestId",
       "value": "",
       "type": "string"
     }
@@ -158,9 +168,9 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Test Merchant\",\n    \"email\": \"merchant@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+1234567890\",\n    \"role\": \"Merchant\"\n}"
+              "raw": "{\n    \"name\": \"Test Merchant\",\n    \"email\": \"merchant@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+1234567890\"\n}"
             },
-            "description": "Register a new merchant user"
+            "description": "Submit a new merchant registration request for admin approval"
           },
           "response": []
         },
@@ -177,9 +187,9 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Test Truck Owner\",\n    \"email\": \"truckowner@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+1234567890\",\n    \"role\": \"TruckOwner\",\n    \"companyName\": \"Test Trucking Co.\",\n    \"companyAddress\": \"123 Truck St, City\"\n}"
+              "raw": "{\n    \"name\": \"Test Truck Owner\",\n    \"email\": \"truckowner@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+1234567890\",\n    \"companyName\": \"Test Trucking Co.\",\n    \"companyAddress\": \"123 Truck St, City\"\n}"
             },
-            "description": "Register a new truck owner user"
+            "description": "Submit a truck owner registration request for admin approval"
           },
           "response": []
         },
@@ -223,9 +233,9 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Test Driver\",\n    \"email\": \"driver@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+1234567890\",\n    \"role\": \"Driver\",\n    \"licenseNumber\": \"DL12345678\"\n}"
+              "raw": "{\n    \"name\": \"Test Driver\",\n    \"email\": \"driver@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+1234567890\",\n    \"licenseNumber\": \"DL12345678\"\n}"
             },
-            "description": "Register a new driver (must be done by a truck owner)"
+            "description": "Create a driver registration request (TruckOwner only). Driver cannot log in until admin approval."
           },
           "response": []
         },
@@ -350,6 +360,96 @@
               "raw": "{\n    \"email\": \"driver@example.com\",\n    \"password\": \"password123\"\n}"
             },
             "description": "Login as driver and save the token"
+          },
+          "response": []
+        },
+        {
+          "name": "Login via OTP - Request Code",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.collectionVariables.set(\"otpToken\", \"\");"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('OTP request accepted', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/otp/request",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone\": \"1234567890\"\n}"
+            },
+            "description": "Request a one-time passcode for phone login"
+          },
+          "response": []
+        },
+        {
+          "name": "Login via OTP - Verify Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"otpToken\", jsonData.token);",
+                  "if (jsonData.data && jsonData.data.user && jsonData.data.user.role) {",
+                  "    switch (jsonData.data.user.role) {",
+                  "        case 'Admin':",
+                  "            pm.collectionVariables.set('adminToken', jsonData.token);",
+                  "            break;",
+                  "        case 'Merchant':",
+                  "            pm.collectionVariables.set('merchantToken', jsonData.token);",
+                  "            break;",
+                  "        case 'TruckOwner':",
+                  "            pm.collectionVariables.set('truckOwnerToken', jsonData.token);",
+                  "            break;",
+                  "        case 'Driver':",
+                  "            pm.collectionVariables.set('driverToken', jsonData.token);",
+                  "            break;",
+                  "    }",
+                  "}",
+                  "pm.test('OTP verification succeeded', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(jsonData).to.have.property('token');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/otp/verify",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone\": \"1234567890\",\n    \"otp\": \"123456\"\n}"
+            },
+            "description": "Verify one-time passcode and retrieve JWT token"
           },
           "response": []
         },
@@ -604,14 +704,93 @@
               "response": []
             },
             {
+              "name": "Get Registration Requests",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/admin/registration-requests?state=PENDING&role=Merchant",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "registration-requests"],
+                  "query": [
+                    {
+                      "key": "state",
+                      "value": "PENDING"
+                    },
+                    {
+                      "key": "role",
+                      "value": "Merchant"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "description": "List pending user registration requests filtered by role"
+              },
+              "response": []
+            },
+            {
+              "name": "Approve Registration Request",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const jsonData = pm.response.json();",
+                      "if (jsonData.user && jsonData.user.id) {",
+                      "    pm.collectionVariables.set('userId', jsonData.user.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/admin/registration-requests/{{registrationRequestId}}/approve",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "description": "Approve a pending user registration request and create the user account"
+              },
+              "response": []
+            },
+            {
+              "name": "Reject Registration Request",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/admin/registration-requests/{{registrationRequestId}}/reject",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reason\": \"Missing required documentation\"\n}"
+                },
+                "description": "Reject a pending registration request with an optional reason"
+              },
+              "response": []
+            },
+            {
               "name": "Get User by ID",
               "event": [
                 {
                   "listen": "prerequest",
                   "script": {
-                    "exec": [
-                      "// Use the userId variable that might be set from previous requests"
-                    ],
+                    "exec": ["// Use the userId variable that might be set from previous requests"],
                     "type": "text/javascript"
                   }
                 }
@@ -833,9 +1012,9 @@
               "if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(pm.request.method)) {",
               "    const csrfToken = pm.collectionVariables.get('csrfToken');",
               "    if (!csrfToken) {",
-              "        console.warn('⚠️ WARNING: No CSRF token found. Protected requests will likely fail. Please run the \"Get CSRF Token\" request first.');",
+              "        console.warn('\u26a0\ufe0f WARNING: No CSRF token found. Protected requests will likely fail. Please run the \"Get CSRF Token\" request first.');",
               "    } else {",
-              "        console.log('✅ CSRF token available for request:', pm.request.url);",
+              "        console.log('\u2705 CSRF token available for request:', pm.request.url);",
               "    }",
               "}"
             ],
@@ -889,6 +1068,44 @@
           "response": []
         },
         {
+          "name": "Approve Shipment",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/admin/shipments/{{shipmentId}}/approve",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "description": "Approve a pending shipment so it becomes visible in the marketplace"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Shipment",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/admin/shipments/{{shipmentId}}/reject",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Incomplete shipment documentation\"\n}"
+            },
+            "description": "Reject a pending shipment and provide a reason. Shipment moves to REJECTED state."
+          },
+          "response": []
+        },
+        {
           "name": "Get My Shipments",
           "request": {
             "method": "GET",
@@ -913,7 +1130,7 @@
                 "value": "Bearer {{merchantToken}}"
               }
             ],
-            "description": "Get all shipments for the current merchant"
+            "description": "Get all shipments for the current merchant. Pending shipments remain hidden until approved."
           },
           "response": []
         },
@@ -2116,6 +2333,141 @@
         }
       ],
       "description": "Endpoints for monitoring system health, performance metrics, and error tracking"
+    },
+    {
+      "name": "Fixed-Price Shipments",
+      "description": "Requests covering the fixed-price shipment workflow for merchants and truck owners.",
+      "item": [
+        {
+          "name": "Create Fixed-Price Shipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": {\n    \"address\": \"Dubai Logistics City, UAE\",\n    \"country\": \"UAE\"\n  },\n  \"destination\": {\n    \"address\": \"King Abdullah Port, KSA\",\n    \"country\": \"KSA\"\n  },\n  \"cargoDetails\": {\n    \"description\": \"Industrial equipment\",\n    \"weight\": 12.5,\n    \"volume\": 35,\n    \"category\": \"Machinery\",\n    \"hazardous\": false\n  },\n  \"estimatedPickupDate\": \"2025-01-10T09:00:00Z\",\n  \"estimatedDeliveryDate\": \"2025-01-17T18:00:00Z\",\n  \"fixedPriceDetails\": {\n    \"amount\": 4200,\n    \"currency\": \"USD\",\n    \"autoAssign\": true,\n    \"requirements\": {\n      \"minTruckCapacity\": 15,\n      \"requiredFeatures\": [\n        \"GPS\",\n        \"TemperatureMonitoring\"\n      ],\n      \"maxDeliveryDays\": 7\n    }\n  }\n}"
+            },
+            "url": "{{baseUrl}}/shipments/fixed-price",
+            "description": "Merchant creates a shipment offered at a fixed price. Requires Merchant token."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Fixed-Price Shipments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/shipments/fixed-price/my",
+            "description": "List fixed-price shipments created by the authenticated merchant."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Fixed-Price Shipments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/shipments/available-fixed-price?page=1&limit=10",
+            "description": "Truck owner fetches available fixed-price shipments that are still open."
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Fixed-Price Shipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"truckId\": \"{{truckId}}\",\n  \"driverId\": \"{{driverId}}\",\n  \"acceptanceNote\": \"Driver and truck ready for pickup\"\n}"
+            },
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}/accept-fixed-price",
+            "description": "Assign a truck owner truck/driver to the shipment. Requires TruckOwner token."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Fixed-Price Details",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 4500,\n  \"currency\": \"USD\",\n  \"requirements\": {\n    \"maxDeliveryDays\": 5\n  }\n}"
+            },
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}/fixed-price-details",
+            "description": "Merchant updates pricing or requirements while shipment is still in REQUESTED status."
+          },
+          "response": []
+        },
+        {
+          "name": "Convert Fixed-Price to Bidding",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{merchantToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/shipments/{{shipmentId}}/convert-to-bidding",
+            "description": "Convert an open fixed-price shipment back into a bidding workflow."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Accepted Fixed-Price Shipments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{truckOwnerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/shipments/truck-owner/fixed-price-shipments",
+            "description": "Truck owner retrieves shipments already accepted under the fixed-price flow."
+          },
+          "response": []
+        }
+      ]
     }
   ]
-} 
+}

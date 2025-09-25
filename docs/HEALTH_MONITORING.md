@@ -7,6 +7,7 @@ The Delivery App includes a comprehensive health monitoring system to track the 
 The following endpoints are available for monitoring system health:
 
 ### Basic Health Check
+
 - **URL**: `/health`
 - **Method**: GET
 - **Authentication**: None
@@ -22,6 +23,7 @@ The following endpoints are available for monitoring system health:
   ```
 
 ### System Resources Health Check
+
 - **URL**: `/health/system`
 - **Method**: GET
 - **Authentication**: Admin only
@@ -66,6 +68,7 @@ The following endpoints are available for monitoring system health:
   ```
 
 ### Storage Health Check
+
 - **URL**: `/health/storage`
 - **Method**: GET
 - **Authentication**: Admin only
@@ -96,6 +99,7 @@ The following endpoints are available for monitoring system health:
   ```
 
 ### Database Health Check
+
 - **URL**: `/health/database`
 - **Method**: GET
 - **Authentication**: Admin only
@@ -140,6 +144,7 @@ The following endpoints are available for monitoring system health:
   ```
 
 ### Comprehensive Health Check
+
 - **URL**: `/health/comprehensive`
 - **Method**: GET
 - **Authentication**: Admin only
@@ -151,9 +156,15 @@ The following endpoints are available for monitoring system health:
     "timestamp": "2023-07-13T12:34:56.789Z",
     "version": "1.0.0",
     "checks": {
-      "system": { /* System check results */ },
-      "storage": { /* Storage check results */ },
-      "database": { /* Database check results */ },
+      "system": {
+        /* System check results */
+      },
+      "storage": {
+        /* Storage check results */
+      },
+      "database": {
+        /* Database check results */
+      },
       "externalApis": {
         "status": "healthy",
         "endpoints": {
@@ -183,6 +194,7 @@ The health check system uses the following status levels:
 Health checks can be configured using environment variables:
 
 ### Critical Thresholds
+
 ```
 # Critical thresholds for health checks
 HEALTH_CHECK_CRITICAL_DISK_PERCENT=95  # Disk usage percentage to consider critical
@@ -191,6 +203,7 @@ HEALTH_CHECK_CRITICAL_MEMORY_PERCENT=90 # Memory usage percentage to consider cr
 ```
 
 ### External API Monitoring
+
 ```
 # Format: JSON array of objects with name, url, timeout (ms), and maxResponseTime (ms) properties
 EXTERNAL_API_ENDPOINTS=[{"name":"Google Maps API","url":"https://maps.googleapis.com/maps/api/geocode/json?address=1600+Amphitheatre+Parkway,+Mountain+View,+CA&key=YOUR_API_KEY","timeout":5000,"maxResponseTime":2000}]
@@ -201,6 +214,7 @@ EXTERNAL_API_ENDPOINTS=[{"name":"Google Maps API","url":"https://maps.googleapis
 The health check endpoints can be integrated with various monitoring tools:
 
 ### Kubernetes
+
 Use the `/health` endpoint for liveness and readiness probes:
 
 ```yaml
@@ -220,9 +234,11 @@ readinessProbe:
 ```
 
 ### Prometheus & Grafana
+
 The health checks can be used to create custom Prometheus exporters and Grafana dashboards for monitoring system health metrics over time.
 
 ### Alert Systems
+
 The `/health/comprehensive` endpoint can be periodically polled to check for status levels other than "healthy" and trigger alerts when issues are detected.
 
 ## Best Practices
@@ -231,4 +247,4 @@ The `/health/comprehensive` endpoint can be periodically polled to check for sta
 2. **Alerting Thresholds**: Configure alerts based on critical system metrics.
 3. **Response Time Tracking**: Monitor the response time of health check endpoints as an indicator of system performance.
 4. **Trend Analysis**: Collect health data over time to identify trends and potential issues before they become critical.
-5. **Documentation**: Keep this documentation updated as new health check features are added. 
+5. **Documentation**: Keep this documentation updated as new health check features are added.

@@ -1,9 +1,10 @@
 const { validationResult } = require('express-validator');
 
-const { Shipment, ShipmentStatus } = require('../../models/Shipment');
+const { Shipment, ShipmentStatus, ShipmentApprovalState } = require('../../models/Shipment');
 const Truck = require('../../models/Truck');
 const { ApiError } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
+const metricScheduler = require('../../utils/metricScheduler');
 
 /**
  * Create a new shipment
@@ -21,13 +22,23 @@ exports.createShipment = async (req, res, next) => {
     // Set merchantId to current user id
     req.body.merchantId = req.user.id;
 
-    // Set initial status
-    req.body.status = ShipmentStatus.REQUESTED;
+    // Set initial status and approval metadata
+    req.body.status = ShipmentStatus.PENDING_APPROVAL;
+    req.body.approval = {
+      state: ShipmentApprovalState.PENDING,
+      submittedBy: req.user.id,
+      submittedAt: new Date(),
+    };
+
+    // Default to BIDDING if pricingType not specified
+    if (!req.body.pricingType) {
+      req.body.pricingType = 'BIDDING';
+    }
 
     // Add initial timeline entry
     const initialTimeline = {
-      status: ShipmentStatus.REQUESTED,
-      note: 'Shipment request created',
+      status: ShipmentStatus.PENDING_APPROVAL,
+      note: 'Shipment submitted for admin approval',
     };
 
     if (!req.body.timeline) {
@@ -38,6 +49,14 @@ exports.createShipment = async (req, res, next) => {
 
     // Create new shipment
     const shipment = await Shipment.create(req.body);
+
+    try {
+      await metricScheduler.updateShipmentStatusMetrics();
+    } catch (metricsError) {
+      logger.warn(
+        `Failed to refresh shipment status metrics after creation: ${metricsError.message}`
+      );
+    }
 
     res.status(201).json({
       status: 'success',
@@ -147,7 +166,13 @@ exports.updateShipment = async (req, res, next) => {
     }
 
     // Check if shipment status allows updates
-    if (![ShipmentStatus.REQUESTED, ShipmentStatus.CANCELLED].includes(shipment.status)) {
+    if (
+      ![
+        ShipmentStatus.PENDING_APPROVAL,
+        ShipmentStatus.REQUESTED,
+        ShipmentStatus.CANCELLED,
+      ].includes(shipment.status)
+    ) {
       return next(new ApiError(`Cannot update shipment with status: ${shipment.status}`, 400));
     }
 
@@ -156,6 +181,14 @@ exports.updateShipment = async (req, res, next) => {
       new: true,
       runValidators: true,
     });
+
+    try {
+      await metricScheduler.updateShipmentStatusMetrics();
+    } catch (metricsError) {
+      logger.warn(
+        `Failed to refresh shipment status metrics after update: ${metricsError.message}`
+      );
+    }
 
     res.status(200).json({
       status: 'success',
@@ -188,7 +221,13 @@ exports.cancelShipment = async (req, res, next) => {
     }
 
     // Check if shipment status allows cancellation
-    if (![ShipmentStatus.REQUESTED, ShipmentStatus.CONFIRMED].includes(shipment.status)) {
+    if (
+      ![
+        ShipmentStatus.PENDING_APPROVAL,
+        ShipmentStatus.REQUESTED,
+        ShipmentStatus.CONFIRMED,
+      ].includes(shipment.status)
+    ) {
       return next(new ApiError(`Cannot cancel shipment with status: ${shipment.status}`, 400));
     }
 
@@ -197,6 +236,14 @@ exports.cancelShipment = async (req, res, next) => {
       status: ShipmentStatus.CANCELLED,
       note: req.body.reason || 'Cancelled by merchant',
     });
+
+    try {
+      await metricScheduler.updateShipmentStatusMetrics();
+    } catch (metricsError) {
+      logger.warn(
+        `Failed to refresh shipment status metrics after cancellation: ${metricsError.message}`
+      );
+    }
 
     res.status(200).json({
       status: 'success',
@@ -294,6 +341,13 @@ exports.addTimelineEntry = async (req, res, next) => {
 
     if (!shipment) {
       return next(new ApiError('No shipment found with that ID', 404));
+    }
+
+    // Shipments pending approval cannot be updated via timeline
+    if (shipment.status === ShipmentStatus.PENDING_APPROVAL) {
+      return next(
+        new ApiError('Shipment is pending admin approval and cannot be updated yet', 400)
+      );
     }
 
     // For TruckOwner, check if one of their trucks is assigned

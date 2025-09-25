@@ -14,6 +14,9 @@ const EventTypes = {
   SHIPMENT_STATUS_UPDATED: 'SHIPMENT_STATUS_UPDATED',
   SHIPMENT_DELIVERED: 'SHIPMENT_DELIVERED',
   PAYMENT_UPLOADED: 'PAYMENT_UPLOADED',
+  FIXED_PRICE_SHIPMENT_AVAILABLE: 'FIXED_PRICE_SHIPMENT_AVAILABLE',
+  FIXED_PRICE_SHIPMENT_ACCEPTED: 'FIXED_PRICE_SHIPMENT_ACCEPTED',
+  ASSIGNED_TO_SHIPMENT: 'ASSIGNED_TO_SHIPMENT',
 };
 
 /**
@@ -102,6 +105,24 @@ const createNotificationContent = (eventType, data, recipient) => {
       return {
         message: `Payment receipt uploaded for shipment #${data.shipmentId}. The shipment is now confirmed.`,
         mediaUrls: [data.receiptUrl],
+      };
+
+    case EventTypes.FIXED_PRICE_SHIPMENT_AVAILABLE:
+      return {
+        message: `New FIXED-PRICE shipment available! Route: ${data.origin} to ${data.destination}. Price: ${data.currency} ${data.price}. Cargo: ${data.cargo}. First-come-first-served - Accept now in the app!`,
+        mediaUrls: [],
+      };
+
+    case EventTypes.FIXED_PRICE_SHIPMENT_ACCEPTED:
+      return {
+        message: `Your fixed-price shipment #${data.shipmentId} has been accepted by ${data.truckOwnerName}. Truck: ${data.truckDetails}, Driver: ${data.driverName}. Price: ${data.currency} ${data.price}`,
+        mediaUrls: [],
+      };
+
+    case EventTypes.ASSIGNED_TO_SHIPMENT:
+      return {
+        message: `You have been assigned to shipment #${data.shipmentId}. Route: ${data.origin} to ${data.destination}. Cargo: ${data.cargo}. Please prepare for pickup.`,
+        mediaUrls: [],
       };
 
     default:

@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
 require('dotenv').config();
+const logger = require('../utils/logger');
 
 // Convert fs methods to promise-based
 const readdir = promisify(fs.readdir);
@@ -57,7 +58,7 @@ async function main() {
     // Make sure logs directory exists
     if (!fs.existsSync(LOG_DIR)) {
       fs.mkdirSync(LOG_DIR, { recursive: true });
-      console.log(`Created logs directory: ${LOG_DIR}`);
+      logger.info(`Created logs directory: ${LOG_DIR}`);
     }
 
     switch (action) {
@@ -86,11 +87,11 @@ async function main() {
 
       case ACTIONS.HELP:
       default:
-        console.log(helpText);
+        printHelp();
         break;
     }
   } catch (error) {
-    console.error(`Error: ${error.message}`);
+    logger.error(`Error: ${error.message}`);
     process.exit(1);
   }
 }
@@ -121,22 +122,22 @@ async function listLogs() {
       .filter((file) => !file.isAudit)
       .sort((a, b) => new Date(b.modified) - new Date(a.modified));
 
-    // Print table
-    console.log('\nLog Files:');
-    console.log('=========================================================');
-    console.log('Filename                       Size       Last Modified');
-    console.log('=========================================================');
+    if (files.length === 0) {
+      logger.info('No log files found in logs directory.');
+      return;
+    }
 
+    logger.info('Log Files Summary');
+    logger.info('=========================================================');
+    logger.info('Filename                       Size       Last Modified');
+    logger.info('=========================================================');
     sortedFiles.forEach((file) => {
-      const name = file.name.padEnd(30);
-      const size = file.size.padEnd(10);
-      console.log(`${name} ${size} ${file.modified}`);
+      logger.info(`${file.name.padEnd(30)} ${file.size.padStart(10)} ${file.modified}`);
     });
-
-    console.log('=========================================================');
-    console.log(`Total: ${sortedFiles.length} log files\n`);
+    logger.info('=========================================================');
+    logger.info(`Total: ${sortedFiles.length} log files`);
   } catch (error) {
-    console.error(`Failed to list logs: ${error.message}`);
+    logger.error(`Failed to list logs: ${error.message}`);
     throw error;
   }
 }
@@ -148,18 +149,14 @@ async function listLogs() {
  */
 async function tailLog(file, lines = 10) {
   if (!file) {
-    console.error('Error: Log file name required');
-    console.log('Available log files:');
-    await listLogs();
+    logger.error('Please specify a file to tail.');
     return;
   }
 
   const logFile = path.join(LOG_DIR, file);
 
   if (!fs.existsSync(logFile)) {
-    console.error(`Error: Log file not found: ${file}`);
-    console.log('Available log files:');
-    await listLogs();
+    logger.error(`Error: Log file not found: ${file}`);
     return;
   }
 
@@ -168,10 +165,10 @@ async function tailLog(file, lines = 10) {
     if (process.platform !== 'win32') {
       const { execSync } = require('child_process');
       const result = execSync(`tail -n ${lines} "${logFile}"`, { encoding: 'utf8' });
-      console.log(`\nLast ${lines} lines of ${file}:`);
-      console.log('=========================================================');
-      console.log(result);
-      console.log('=========================================================');
+      logger.info(`Tailing ${file} (last ${lines} lines)`);
+      logger.info('=========================================================');
+      logger.info(result);
+      logger.info('=========================================================');
       return;
     }
 
@@ -180,12 +177,12 @@ async function tailLog(file, lines = 10) {
     const allLines = content.split('\n');
     const lastLines = allLines.slice(-lines);
 
-    console.log(`\nLast ${lines} lines of ${file}:`);
-    console.log('=========================================================');
-    console.log(lastLines.join('\n'));
-    console.log('=========================================================');
+    logger.info(`Tailing ${file} (last ${lines} lines)`);
+    logger.info('=========================================================');
+    logger.info(lastLines.join('\n'));
+    logger.info('=========================================================');
   } catch (error) {
-    console.error(`Failed to read log file: ${error.message}`);
+    logger.error(`Failed to read log file: ${error.message}`);
     throw error;
   }
 }
@@ -197,11 +194,11 @@ async function tailLog(file, lines = 10) {
 async function cleanLogs(days = 30) {
   try {
     if (days < 1) {
-      console.error('Error: Days must be positive');
+      logger.error('Error: Days must be positive');
       return;
     }
 
-    console.log(`Cleaning log files older than ${days} days...`);
+    logger.info(`Cleaning log files older than ${days} days...`);
 
     const files = await readdir(LOG_DIR);
     const now = new Date();
@@ -223,13 +220,13 @@ async function cleanLogs(days = 30) {
       if (stats.mtime < cutoff) {
         await unlink(filePath);
         deleted++;
-        console.log(`Deleted: ${file}`);
+        logger.info(`Deleted: ${file}`);
       }
     }
 
-    console.log(`\nResults: ${deleted} files deleted, ${skipped} files skipped`);
+    logger.info(`Results: ${deleted} files deleted, ${skipped} files skipped`);
   } catch (error) {
-    console.error(`Failed to clean logs: ${error.message}`);
+    logger.error(`Failed to clean logs: ${error.message}`);
     throw error;
   }
 }
@@ -238,16 +235,14 @@ async function cleanLogs(days = 30) {
  * Force log rotation
  */
 async function forceRotate() {
-  console.log('Feature not implemented yet');
-  console.log('Winston will automatically rotate logs based on your configuration.');
+  logger.info('Feature not implemented yet. Winston rotates logs automatically.');
 }
 
 /**
  * Archive logs to zip file
  */
 async function archiveLogs() {
-  console.log('Feature not implemented yet');
-  console.log('You can implement archiving logs to a zip file here.');
+  logger.info('Feature not implemented yet. Add compression/archival logic here.');
 }
 
 /**
@@ -266,6 +261,11 @@ function formatBytes(bytes, decimals = 2) {
 
   return `${parseFloat((bytes / k ** i).toFixed(dm))} ${sizes[i]}`;
 }
+
+const printHelp = () => {
+  const helpText = `Usage: npm run logs [command]\n\nCommands:\n  npm run logs              Show help\n  npm run logs:list         List available log files\n  npm run logs:tail <file>  Tail a specific log file\n  npm run logs:clean 7      Delete log files older than N days`;
+  logger.info(helpText);
+};
 
 // Run the script
 main();

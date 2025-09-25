@@ -199,6 +199,15 @@ const createTruck = asyncHandler(async (req, res, next) => {
     status: 'Available',
   });
 
+  try {
+    const { updateTruckStatusMetrics } = require('../../utils/metricScheduler');
+    await updateTruckStatusMetrics();
+  } catch (metricsError) {
+    console.warn(
+      `Failed to refresh truck status metrics after admin creation: ${metricsError.message}`
+    );
+  }
+
   return ApiSuccess(
     res,
     {
@@ -234,6 +243,15 @@ const changeTruckStatus = asyncHandler(async (req, res, next) => {
 
   truck.status = status;
   await truck.save();
+
+  try {
+    const { updateTruckStatusMetrics } = require('../../utils/metricScheduler');
+    await updateTruckStatusMetrics();
+  } catch (metricsError) {
+    console.warn(
+      `Failed to refresh truck status metrics after admin status change: ${metricsError.message}`
+    );
+  }
 
   return ApiSuccess(res, {
     message: 'Truck status updated successfully',

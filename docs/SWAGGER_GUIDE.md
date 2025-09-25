@@ -3,11 +3,13 @@
 ## Accessing the Documentation
 
 The interactive API documentation is available at:
+
 ```
 http://localhost:5000/api-docs
 ```
 
 This interface allows you to:
+
 - Browse all available API endpoints
 - See details of request parameters and response formats
 - Test API endpoints directly from the browser
@@ -16,6 +18,7 @@ This interface allows you to:
 ## Swagger JSON Export
 
 The raw OpenAPI specification is available at:
+
 ```
 http://localhost:5000/api-docs-json/json
 ```
@@ -148,7 +151,9 @@ Use tags to group related endpoints:
 The following route sets have been documented with Swagger annotations:
 
 ### Driver Routes
+
 Driver-specific endpoints for delivery management:
+
 - GET `/api/driver/profile` - Get driver profile
 - GET `/api/driver/truck` - Get current truck assignment
 - GET `/api/driver/shipments/active` - Get active shipments
@@ -158,7 +163,9 @@ Driver-specific endpoints for delivery management:
 - PATCH/POST `/api/driver/location` - Update driver's current location
 
 ### Truck Owner Routes
+
 Endpoints for truck owners to manage their fleet:
+
 - GET `/api/truck-owner/shipments` - Get all assigned shipments
 - GET `/api/truck-owner/shipments/available` - Get available shipments for bidding
 - PATCH `/api/truck-owner/shipments/:shipmentId/assign` - Assign shipment to driver
@@ -168,7 +175,9 @@ Endpoints for truck owners to manage their fleet:
 - PATCH `/api/truck-owner/drivers/:id` - Update driver details
 
 ### Admin Routes
+
 Admin-specific endpoints for system management:
+
 - GET `/api/admin/dashboard` - Get admin dashboard statistics
 - GET/POST `/api/admin/users` - Get all users or create a new user
 - GET/PUT/DELETE `/api/admin/users/:id` - Manage user by ID
@@ -187,18 +196,22 @@ The API documentation includes comprehensive schemas for all models in the syste
 ### Core Models
 
 - **User**: Authentication and user management with role-specific fields
+
   - Supports Admin, Merchant, TruckOwner, and Driver roles
   - Includes specialized fields per role (e.g., driverLicense for Driver)
 
 - **Truck**: Vehicle management with detailed specifications
+
   - Complete tracking of maintenance, registration, and insurance
   - Integration with driver assignments and current status
 
 - **Shipment**: End-to-end shipping workflow
+
   - Origin and destination with address and coordinates
   - Cargo details, timeline tracking, and delivery confirmation
 
 - **Application**: Bidding and application system
+
   - Connects truck owners with available shipments
   - Manages the bidding process and assignment workflow
 
@@ -236,4 +249,4 @@ You can reference the schemas in your endpoint documentation using:
 
 ### Schema Validation
 
-The documented schemas match the Mongoose models used in the application, providing consistent validation between the API documentation and actual implementation 
+The documented schemas match the Mongoose models used in the application, providing consistent validation between the API documentation and actual implementation

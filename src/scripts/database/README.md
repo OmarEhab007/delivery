@@ -37,6 +37,7 @@ node src/scripts/database/createIndexes.js
 #### Index Strategies by Collection:
 
 ##### User Collection
+
 - Email (unique)
 - Role-based queries
 - Verification status
@@ -44,6 +45,7 @@ node src/scripts/database/createIndexes.js
 - Driver availability
 
 ##### Shipment Collection
+
 - Status-based queries
 - Merchant/Driver/Truck filtering
 - Location-based queries
@@ -51,18 +53,21 @@ node src/scripts/database/createIndexes.js
 - Specialized business queries (hazardous cargo, payment status)
 
 ##### Truck Collection
+
 - Owner/Driver association
 - Availability and status filtering
 - Capacity-based queries
 - Document expiration dates
 
 ##### Application Collection
+
 - Shipment association
 - Status-based filtering
 - Price-based sorting
 - Unique constraints
 
 ##### Document Collection
+
 - Entity association
 - Verification status
 - Expiration tracking
@@ -137,4 +142,4 @@ This directory may include additional scripts for database management:
 - Data migration scripts
 - Consistency checks
 - Performance optimization tools
-- Backup and restore utilities 
+- Backup and restore utilities

@@ -5,6 +5,12 @@ const { Shipment } = require('../../models/Shipment');
 const { ApiError } = require('../../middleware/errorHandler');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
 const { asyncHandler } = require('../../middleware/asyncHandler');
+const {
+  UserRegistrationRequest,
+  UserRegistrationState,
+} = require('../../models/UserRegistrationRequest');
+const db = require('../../utils/db');
+const logger = require('../../utils/logger');
 
 /**
  * Get all users in the system
@@ -371,6 +377,199 @@ const getDashboardStats = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * Get all user registration requests
+ * @route GET /api/admin/registration-requests
+ * @access Private (Admin only)
+ */
+const getUserRegistrationRequests = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const skip = (page - 1) * limit;
+  const filter = {};
+  if (req.query.state) {
+    filter.state = req.query.state;
+  }
+  if (req.query.role) {
+    filter.role = req.query.role;
+  }
+
+  const requests = await UserRegistrationRequest.find(filter)
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 })
+    .populate('submittedBy', 'name email role');
+
+  const total = await UserRegistrationRequest.countDocuments(filter);
+
+  return ApiSuccess(res, {
+    requests,
+    pagination: {
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      limit,
+    },
+  });
+});
+
+/**
+ * Approve a user registration request
+ * @route PUT /api/admin/registration-requests/:id/approve
+ * @access Private (Admin only)
+ */
+const approveUserRegistrationRequest = asyncHandler(async (req, res, next) => {
+  const request = await UserRegistrationRequest.findById(req.params.id);
+
+  if (!request) {
+    return next(new ApiError('User registration request not found', 404));
+  }
+
+  if (request.state !== UserRegistrationState.PENDING) {
+    return next(new ApiError('Registration request is not pending', 400));
+  }
+
+  const { payload, role } = request;
+
+  const userExists = await User.findOne({ email: payload.email });
+  if (userExists) {
+    return next(new ApiError('User with this email already exists', 400));
+  }
+
+  const userData = {
+    name: payload.name,
+    email: payload.email,
+    password: payload.password,
+    phone: payload.phone,
+    role,
+    approvalStatus: 'APPROVED',
+  };
+
+  if (role === 'TruckOwner') {
+    userData.companyName = payload.companyName;
+    userData.companyAddress = payload.companyAddress;
+  }
+
+  if (role === 'Driver') {
+    userData.licenseNumber = payload.licenseNumber;
+    userData.ownerId = payload.ownerId;
+  }
+  const transactionsSupported = await db.supportsTransactions();
+
+  const adminId = req.user._id;
+
+  try {
+    const result = transactionsSupported
+      ? await approveRegistrationWithTransaction({ request, userData, adminId })
+      : await approveRegistrationWithoutTransaction({ request, userData, adminId });
+
+    return ApiSuccess(res, {
+      message: 'Registration request approved successfully',
+      user: result.user.toObject({ getters: true, virtuals: true, versionKey: false }),
+      fallback: result.fallback,
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+const approveRegistrationWithTransaction = async ({ request, userData, adminId }) => {
+  const session = await User.startSession();
+
+  try {
+    session.startTransaction();
+
+    const [user] = await User.create([userData], { session });
+
+    await updateApprovedRequest({ request, adminId, session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return { user, fallback: false };
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
+const approveRegistrationWithoutTransaction = async ({ request, userData, adminId }) => {
+  const user = await User.create(userData);
+
+  try {
+    await updateApprovedRequest({ request, adminId });
+  } catch (error) {
+    logger.warn(
+      `Failed to update registration request ${request._id} after creating user ${user._id}. Rolling back user creation.`
+    );
+    await User.deleteOne({ _id: user._id });
+    throw error;
+  }
+
+  return { user, fallback: true };
+};
+
+const updateApprovedRequest = async ({ request, adminId, session }) => {
+  const reviewedAt = new Date();
+
+  const updateOperations = {
+    $set: {
+      state: UserRegistrationState.APPROVED,
+      reviewedBy: adminId,
+      reviewedAt,
+    },
+    $unset: {
+      'payload.password': '',
+    },
+  };
+
+  const options = {};
+  if (session) {
+    options.session = session;
+  }
+
+  await UserRegistrationRequest.updateOne({ _id: request._id }, updateOperations, options);
+
+  request.state = UserRegistrationState.APPROVED;
+  request.reviewedBy = adminId;
+  request.reviewedAt = reviewedAt;
+  if (request.payload) {
+    delete request.payload.password;
+  }
+};
+
+/**
+ * Reject a user registration request
+ * @route PUT /api/admin/registration-requests/:id/reject
+ * @access Private (Admin only)
+ */
+const rejectUserRegistrationRequest = asyncHandler(async (req, res, next) => {
+  const { reason } = req.body;
+
+  const request = await UserRegistrationRequest.findById(req.params.id);
+
+  if (!request) {
+    return next(new ApiError('User registration request not found', 404));
+  }
+
+  if (request.state !== UserRegistrationState.PENDING) {
+    return next(new ApiError('Registration request is not pending', 400));
+  }
+
+  request.state = UserRegistrationState.REJECTED;
+  request.reviewedBy = req.user._id;
+  request.reviewedAt = new Date();
+  request.rejectionReason = reason;
+
+  await request.save();
+
+  return ApiSuccess(res, {
+    message: 'Registration request rejected successfully',
+    request,
+  });
+});
+
 // Helper function to convert timestamp to "X time ago" format
 const getTimeAgo = (timestamp) => {
   const now = new Date();
@@ -480,4 +679,7 @@ module.exports = {
   deleteUser,
   getDashboardStats,
   createUser,
+  getUserRegistrationRequests,
+  approveUserRegistrationRequest,
+  rejectUserRegistrationRequest,
 };

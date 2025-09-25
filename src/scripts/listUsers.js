@@ -4,46 +4,45 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const mongoose = require('mongoose');
 
 const User = require('../models/User');
+const logger = require('../utils/logger');
 
 const listUsers = async () => {
   try {
-    // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('Connected to MongoDB');
+    logger.info('Connected to MongoDB for listUsers');
 
-    // Find all users
-    const users = await User.find().select('name email role adminPermissions active').sort('name');
+    const users = await User.find()
+      .select('name email role adminPermissions active')
+      .sort('name');
 
     if (users.length === 0) {
-      console.log('No users found in the system.');
+      logger.info('No users found in the system.');
       return;
     }
 
-    console.log('=== User List ===');
-    console.log('Total users:', users.length);
-    console.log('=================');
+    logger.info('User list summary', { totalUsers: users.length });
 
-    // Group users by role
-    const roleGroups = {};
-    users.forEach((user) => {
-      if (!roleGroups[user.role]) {
-        roleGroups[user.role] = [];
+    const roleGroups = users.reduce((acc, user) => {
+      if (!acc[user.role]) {
+        acc[user.role] = [];
       }
-      roleGroups[user.role].push(user);
-    });
+      acc[user.role].push(user);
+      return acc;
+    }, {});
 
-    // Display users by role
-    for (const [role, roleUsers] of Object.entries(roleGroups)) {
-      console.log(`\n--- ${role}s (${roleUsers.length}) ---`);
+    Object.entries(roleGroups).forEach(([role, roleUsers]) => {
+      logger.info('Role group', { role, count: roleUsers.length });
       roleUsers.forEach((user) => {
-        console.log(`- ${user.name} <${user.email}> ${user.active ? '' : '[INACTIVE]'}`);
-        if (role === 'Admin' && user.adminPermissions && user.adminPermissions.length > 0) {
-          console.log(`  Permissions: ${user.adminPermissions.join(', ')}`);
-        }
+        logger.info('User detail', {
+          name: user.name,
+          email: user.email,
+          active: user.active,
+          permissions: user.adminPermissions,
+        });
       });
-    }
+    });
   } catch (error) {
-    console.error('Error:', error);
+    logger.error('Error listing users', { error: error.message });
   } finally {
     await mongoose.connection.close();
     process.exit(0);

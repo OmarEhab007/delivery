@@ -17,7 +17,8 @@ const getAllApplications = asyncHandler(async (req, res, next) => {
   const filter = {};
 
   if (req.query.status) filter.status = req.query.status;
-  if (req.query.truckOwnerId) filter.truckOwnerId = req.query.truckOwnerId;
+  if (req.query.truckOwnerId) filter.ownerId = req.query.truckOwnerId;
+  if (req.query.ownerId) filter.ownerId = req.query.ownerId;
   if (req.query.assignedTruckId) filter.assignedTruckId = req.query.assignedTruckId;
 
   // Date range filtering
@@ -28,7 +29,7 @@ const getAllApplications = asyncHandler(async (req, res, next) => {
   }
 
   const applications = await Application.find(filter)
-    .populate('truckOwnerId', 'name email phone companyName')
+    .populate('ownerId', 'name email phone companyName companyAddress')
     .populate('assignedTruckId')
     .skip(skip)
     .limit(limit)
@@ -54,7 +55,7 @@ const getAllApplications = asyncHandler(async (req, res, next) => {
  */
 const getApplicationById = asyncHandler(async (req, res, next) => {
   const application = await Application.findById(req.params.id)
-    .populate('truckOwnerId', 'name email phone companyName companyAddress')
+    .populate('ownerId', 'name email phone companyName companyAddress')
     .populate('assignedTruckId');
 
   if (!application) {
@@ -150,7 +151,7 @@ const getApplicationStats = asyncHandler(async (req, res, next) => {
     createdAt: { $gte: last7Days },
   })
     .sort({ createdAt: -1 })
-    .populate('truckOwnerId', 'name email')
+    .populate('ownerId', 'name email')
     .populate('assignedTruckId');
 
   return ApiSuccess(res, {

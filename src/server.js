@@ -18,12 +18,14 @@ const documentService = require('./services/documentService');
 const ensureLogDirectory = require('./utils/ensureLogDir');
 const { requestLogger } = require('./middleware/loggingMiddleware');
 const { apiLimiter, authLimiter, sensitiveOpLimiter } = require('./middleware/rateLimiters');
+const validateEnv = require('./utils/validateEnv');
 const { compressionWithLogging } = require('./middleware/compressionMiddleware');
 const { cacheControl, noCache, staticCache } = require('./middleware/cacheControlMiddleware');
 const { csrfProtection, handleCSRFError, addCSRFHeaders } = require('./middleware/csrfProtection');
 const { configureSecurityHeaders, handleCSPReports } = require('./middleware/securityHeaders');
 // Import Swagger configuration
 const { swaggerServe, swaggerSetup } = require('./config/swagger');
+const validateEnv = require('./utils/validateEnv');
 
 // Import monitoring utilities
 const metrics = require('./utils/metrics');
@@ -37,6 +39,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const truckRoutes = require('./routes/truckRoutes');
 const shipmentRoutes = require('./routes/shipmentRoutes');
+const fixedPriceShipmentRoutes = require('./routes/fixedPriceShipmentRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const driverRoutes = require('./routes/driverRoutes');
@@ -73,6 +76,9 @@ if (process.env.NODE_ENV !== 'test') {
       // Set up Morgan with the log stream
       app.use(morgan('combined', { stream: accessLogStream }));
 
+      // Validate environment configuration before continuing
+      validateEnv();
+
       // Connect to MongoDB and initialize
       return connectDB();
     })
@@ -107,14 +113,17 @@ if (process.env.NODE_ENV !== 'test') {
 
 // Middleware
 // app.use(securityHeadersMiddleware);
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL // Use environment variable in production
-    : 'http://localhost:3001', // Use hardcoded localhost in development
-  credentials: true, // Allow cookies and other credentials
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
-}));
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? process.env.FRONTEND_URL // Use environment variable in production
+        : 'http://localhost:3001', // Use hardcoded localhost in development
+    credentials: true, // Allow cookies and other credentials
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  })
+);
 
 // Compression middleware with logging
 app.use(
@@ -180,8 +189,10 @@ app.use((req, res, next) => {
   const originalSetHeader = res.setHeader;
   res.setHeader = function (name, value) {
     if (name.toLowerCase() === 'cache-control') {
-      // Log that we're setting a cache-control header
-      console.log(`Setting Cache-Control: ${value} for ${req.path}`);
+      logger.debug('Setting Cache-Control header', {
+        route: req.path,
+        value,
+      });
     }
     return originalSetHeader.call(this, name, value);
   };
@@ -235,23 +246,31 @@ csrfProtectedPaths.forEach((path) => {
   app.all(path, csrfProtection);
 });
 
-// Add Swagger documentation route
-app.use('/api-docs', swaggerServe, swaggerSetup);
-// Add Swagger specification export route
-app.use('/api-docs-json', swaggerRoutes);
+// Add Swagger documentation routes (restricted by default)
+if (process.env.ENABLE_SWAGGER !== 'false') {
+  const swaggerGuards = [authenticateToken, restrictTo('Admin')];
+  app.use('/api-docs', swaggerGuards, swaggerServe, swaggerSetup);
+  app.use('/api-docs-json', swaggerGuards, swaggerRoutes);
+}
 
 // General API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/trucks', truckRoutes);
 app.use('/api/shipments', shipmentRoutes);
+app.use('/api/shipments', fixedPriceShipmentRoutes); // Fixed-price shipment routes
 app.use('/api/applications', applicationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/truck-owner', truckOwnerRoutes);
 // Add metrics routes
-app.use('/api/metrics', metricsRoutes);
+app.use(
+  '/api/metrics',
+  authenticateToken,
+  restrictTo('Admin'),
+  metricsRoutes
+);
 // Add reporting routes
 app.use('/api/reports', reportingRoutes);
 // Add other routes as they are developed
@@ -331,9 +350,8 @@ if (process.env.NODE_ENV !== 'test') {
     testServer.close(() => {
       httpServer
         .listen(PORT, () => {
-          logger.info(`✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-          console.log(`✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-          console.log(`📊 Metrics available at: http://localhost:${PORT}/api/metrics`);
+          logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+          logger.info('Metrics endpoint available', { url: `/api/metrics` });
         })
         .on('error', (err) => {
           logger.error(`Error starting server: ${err.message}`, { error: err });

@@ -5,6 +5,7 @@ const { Shipment } = require('../../models/Shipment');
 const { Application } = require('../../models/Application');
 const User = require('../../models/User');
 const { Truck } = require('../../models/Truck');
+const metricScheduler = require('../../utils/metricScheduler');
 
 /**
  * Get all shipments assigned to a truck owner (via accepted applications)
@@ -124,6 +125,13 @@ const assignShipmentToDriver = asyncHandler(async (req, res, next) => {
 
   await shipment.save();
 
+  try {
+    await metricScheduler.updateTruckStatusMetrics();
+    await metricScheduler.updateShipmentStatusMetrics();
+  } catch (metricsError) {
+    console.warn(`Failed to refresh metrics after shipment assignment: ${metricsError.message}`);
+  }
+
   return ApiSuccess(res, {
     message: 'Shipment successfully assigned to driver',
     shipment,
@@ -183,6 +191,7 @@ const getAvailableShipments = asyncHandler(async (req, res, next) => {
   const filter = {
     status: 'REQUESTED', // Only shipments in REQUESTED status are available for applications
     active: true,
+    pricingType: 'BIDDING', // Only show bidding shipments here, fixed-price have their own endpoint
   };
 
   if (originCountry) {

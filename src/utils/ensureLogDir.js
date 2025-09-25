@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
+const logger = require('./logger');
 
 // Convert fs methods to promise-based
 const mkdir = promisify(fs.mkdir);
@@ -29,7 +30,7 @@ const ensureLogDirectory = async () => {
     // Create directory if it doesn't exist
     if (!dirExists) {
       await mkdir(logDir, { recursive: true });
-      console.log(`Created logs directory: ${logDir}`);
+      logger.info(`Created logs directory: ${logDir}`);
     }
 
     // Set permissions (rwxr-xr-x)
@@ -44,13 +45,13 @@ const ensureLogDirectory = async () => {
       // Remove test file
       await fs.promises.unlink(testFilePath);
     } catch (error) {
-      console.error(`Cannot write to logs directory: ${error.message}`);
+      logger.error(`Cannot write to logs directory: ${error.message}`);
       throw new Error(`Log directory exists but is not writable: ${logDir}`);
     }
 
     return true;
   } catch (error) {
-    console.error(`Error ensuring log directory: ${error.message}`);
+    logger.error(`Error ensuring log directory: ${error.message}`);
     throw error;
   }
 };

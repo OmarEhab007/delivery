@@ -38,14 +38,15 @@ const ProtectedRoute = ({ children, requiredRole }) => {
           alignItems: 'center',
           height: '80vh',
           padding: 3,
-          textAlign: 'center'
+          textAlign: 'center',
         }}
       >
         <Typography variant="h4" color="error" gutterBottom>
           Access Denied
         </Typography>
         <Typography variant="body1">
-          You don't have permission to access this page. This feature requires {requiredRole} privileges.
+          You don't have permission to access this page. This feature requires {requiredRole}{' '}
+          privileges.
         </Typography>
       </Box>
     );
@@ -55,4 +56,4 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   return children ? children : <Outlet />;
 };
 
-export default ProtectedRoute; 
+export default ProtectedRoute;

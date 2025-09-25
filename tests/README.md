@@ -11,24 +11,28 @@ The test suite uses an in-memory MongoDB server for testing to ensure tests are 
 The tests are organized by module:
 
 1. **Authentication Module** (`auth.test.js`)
+
    - User registration
    - User login
    - Profile management
    - Password management
 
 2. **Fleet Management Module** (`fleet.test.js`)
+
    - Truck registration
    - Truck management (CRUD operations)
    - Driver assignment
    - Truck search and filtering
 
 3. **Shipment Management Module** (`shipment.test.js`)
+
    - Shipment creation
    - Shipment management (CRUD operations)
    - Shipment status updates
    - Shipment search and filtering
 
 4. **Application/Bid System Module** (`application.test.js`)
+
    - Application submission
    - Application management
    - Application approval workflow
@@ -45,6 +49,7 @@ The tests are organized by module:
 ## Test Utilities
 
 The `utils/testUtils.js` file contains helper functions for creating test data:
+
 - Creating test users with different roles
 - Generating JWT tokens
 - Creating test trucks, shipments, and applications
@@ -80,6 +85,7 @@ npm test
 ## Test Coverage
 
 The test suite covers the following aspects of each module:
+
 - API endpoint functionality
 - Data validation
 - Authorization and access control
@@ -128,9 +134,10 @@ Even if tests cannot be directly executed due to environment or configuration is
 ## Adding New Tests
 
 When adding new features, please follow these guidelines:
+
 1. Create test data using the utility functions in `utils/testUtils.js`
 2. Structure tests with descriptive `describe` and `it` blocks
 3. Test both success and failure scenarios
 4. Test authorization and permissions
 5. Ensure tests are isolated and do not depend on other tests
-6. For complex workflows, consider adding them to the end-to-end tests 
+6. For complex workflows, consider adding them to the end-to-end tests

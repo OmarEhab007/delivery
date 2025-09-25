@@ -1,4 +1,4 @@
-const { Shipment } = require('../../models/Shipment');
+const { Shipment, ShipmentStatus, ShipmentApprovalState } = require('../../models/Shipment');
 const { ApiError } = require('../../middleware/errorHandler');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
 const { asyncHandler } = require('../../middleware/asyncHandler');
@@ -17,6 +17,7 @@ const getAllShipments = asyncHandler(async (req, res, next) => {
   const filter = {};
 
   if (req.query.status) filter.status = req.query.status;
+  if (req.query.approvalState) filter['approval.state'] = req.query.approvalState;
   if (req.query.merchantId) filter.merchantId = req.query.merchantId;
   if (req.query.assignedTruckId) filter.assignedTruckId = req.query.assignedTruckId;
   if (req.query.assignedDriverId) filter.assignedDriverId = req.query.assignedDriverId;
@@ -139,16 +140,7 @@ const changeShipmentStatus = asyncHandler(async (req, res, next) => {
     return next(new ApiError('Status is required', 400));
   }
 
-  const validStatuses = [
-    'REQUESTED',
-    'CONFIRMED',
-    'IN_TRANSIT',
-    'AT_BORDER',
-    'DELIVERED',
-    'COMPLETED',
-    'CANCELLED',
-  ];
-  if (!validStatuses.includes(status)) {
+  if (!Object.values(ShipmentStatus).includes(status)) {
     return next(new ApiError('Invalid status', 400));
   }
 
@@ -171,6 +163,68 @@ const changeShipmentStatus = asyncHandler(async (req, res, next) => {
 
   return ApiSuccess(res, {
     message: 'Shipment status updated successfully',
+    shipment,
+  });
+});
+
+const approveShipment = asyncHandler(async (req, res, next) => {
+  const shipment = await Shipment.findById(req.params.id);
+
+  if (!shipment) {
+    return next(new ApiError('Shipment not found', 404));
+  }
+
+  if (shipment.approval.state !== ShipmentApprovalState.PENDING) {
+    return next(new ApiError('Shipment is not pending approval', 400));
+  }
+
+  shipment.status = ShipmentStatus.REQUESTED;
+  shipment.approval.state = ShipmentApprovalState.APPROVED;
+  shipment.approval.reviewedBy = req.user._id;
+  shipment.approval.reviewedAt = new Date();
+  shipment.approval.rejectionReason = undefined;
+
+  await shipment.addTimelineEntry({
+    status: ShipmentStatus.REQUESTED,
+    note: 'Shipment approved by admin',
+  });
+
+  await shipment.save();
+
+  return ApiSuccess(res, {
+    message: 'Shipment approved successfully',
+    shipment,
+  });
+});
+
+const rejectShipment = asyncHandler(async (req, res, next) => {
+  const { reason } = req.body;
+
+  const shipment = await Shipment.findById(req.params.id);
+
+  if (!shipment) {
+    return next(new ApiError('Shipment not found', 404));
+  }
+
+  if (shipment.approval.state !== ShipmentApprovalState.PENDING) {
+    return next(new ApiError('Shipment is not pending approval', 400));
+  }
+
+  shipment.status = ShipmentStatus.REJECTED;
+  shipment.approval.state = ShipmentApprovalState.REJECTED;
+  shipment.approval.reviewedBy = req.user._id;
+  shipment.approval.reviewedAt = new Date();
+  shipment.approval.rejectionReason = reason;
+
+  await shipment.addTimelineEntry({
+    status: ShipmentStatus.REJECTED,
+    note: reason ? `Shipment rejected by admin: ${reason}` : 'Shipment rejected by admin',
+  });
+
+  await shipment.save();
+
+  return ApiSuccess(res, {
+    message: 'Shipment rejected successfully',
     shipment,
   });
 });
@@ -266,4 +320,6 @@ module.exports = {
   deleteShipment,
   changeShipmentStatus,
   assignShipmentToDriver,
+  approveShipment,
+  rejectShipment,
 };

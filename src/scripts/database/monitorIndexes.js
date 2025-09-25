@@ -12,26 +12,23 @@
 const mongoose = require('mongoose');
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
+const logger = require('../../utils/logger');
 
-// Function to log with timestamp
-const log = (message) => {
-  console.log(`[${new Date().toISOString()}] ${message}`);
+const log = (message, meta = {}) => {
+  logger.info(message, meta);
 };
 
-// Monitor index usage for a collection
 async function monitorCollectionIndexes(db, collectionName) {
   try {
-    log(`Analyzing indexes for collection: ${collectionName}`);
+    log('Analyzing collection indexes', { collectionName });
 
-    // Get index statistics
     const indexStats = await db
       .collection(collectionName)
       .aggregate([{ $indexStats: {} }])
       .toArray();
 
-    // If no index stats available
     if (!indexStats || indexStats.length === 0) {
-      log(`No index statistics available for ${collectionName}`);
+      log('No index statistics available', { collectionName });
       return {
         collectionName,
         indexCount: 0,
@@ -39,7 +36,6 @@ async function monitorCollectionIndexes(db, collectionName) {
       };
     }
 
-    // Process index statistics
     const processedStats = indexStats.map((stat) => ({
       name: stat.name,
       key: JSON.stringify(stat.key),
@@ -47,19 +43,16 @@ async function monitorCollectionIndexes(db, collectionName) {
       since: stat.accesses.since,
     }));
 
-    // Identify unused indexes (except _id which is required)
     const unusedIndexes = processedStats
       .filter((stat) => stat.ops === 0 && stat.name !== '_id_')
       .map((stat) => stat.name);
 
-    // Get the most used indexes
     const sortedByUsage = [...processedStats].sort((a, b) => b.ops - a.ops);
     const mostUsedIndexes = sortedByUsage.slice(0, 5).map((stat) => ({
       name: stat.name,
       ops: stat.ops,
     }));
 
-    // Calculate usage ratio for reporting
     const totalOps = processedStats.reduce((acc, stat) => acc + stat.ops, 0);
     const usageData = processedStats.map((stat) => ({
       name: stat.name,
@@ -68,7 +61,6 @@ async function monitorCollectionIndexes(db, collectionName) {
       usagePercentage: totalOps > 0 ? `${((stat.ops / totalOps) * 100).toFixed(2)}%` : '0%',
     }));
 
-    // Return analysis
     return {
       collectionName,
       indexCount: processedStats.length,
@@ -78,7 +70,10 @@ async function monitorCollectionIndexes(db, collectionName) {
       allIndexes: usageData,
     };
   } catch (error) {
-    log(`Error analyzing indexes for ${collectionName}: ${error.message}`);
+    logger.error('Error analyzing collection indexes', {
+      collectionName,
+      error: error.message,
+    });
     return {
       collectionName,
       error: error.message,
@@ -86,9 +81,8 @@ async function monitorCollectionIndexes(db, collectionName) {
   }
 }
 
-// Main function to monitor all collection indexes
 async function monitorIndexes() {
-  log('Starting index usage monitoring...');
+  log('Starting index usage monitoring');
 
   const client = new MongoClient(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -97,27 +91,20 @@ async function monitorIndexes() {
 
   try {
     await client.connect();
-    log('Connected to MongoDB');
+    log('Connected to MongoDB for index monitoring');
 
     const db = client.db();
-
-    // Get all collections
     const collections = await db.listCollections().toArray();
     const collectionNames = collections.map((coll) => coll.name);
 
-    log(`Found ${collectionNames.length} collections`);
+    log('Collections discovered', { count: collectionNames.length });
 
-    // Monitor indexes for each collection
     const results = [];
     for (const collName of collectionNames) {
       const stats = await monitorCollectionIndexes(db, collName);
       results.push(stats);
     }
 
-    // Generate report
-    log('Index Usage Report:');
-
-    // Summary section
     const summary = {
       totalCollections: results.length,
       collectionsWithUnusedIndexes: results.filter(
@@ -130,69 +117,58 @@ async function monitorIndexes() {
       timestamp: new Date().toISOString(),
     };
 
-    log('Summary:');
-    console.log(JSON.stringify(summary, null, 2));
+    log('Index usage summary', summary);
 
-    // Detailed results for collections with unused indexes
     const collectionsWithUnusedIndexes = results.filter(
       (r) => r.unusedIndexes && r.unusedIndexes.length > 0
     );
     if (collectionsWithUnusedIndexes.length > 0) {
-      log('\nCollections with unused indexes:');
       collectionsWithUnusedIndexes.forEach((coll) => {
-        log(`- ${coll.collectionName}: ${coll.unusedIndexes.join(', ')}`);
-      });
-
-      log('\nRecommendation: Consider dropping these unused indexes to improve write performance.');
-      log('Example command:');
-      collectionsWithUnusedIndexes.forEach((coll) => {
-        coll.unusedIndexes.forEach((idx) => {
-          log(`db.${coll.collectionName}.dropIndex("${idx}")`);
+        log('Unused indexes detected', {
+          collectionName: coll.collectionName,
+          indexes: coll.unusedIndexes,
         });
       });
+
+      log('Recommendation', {
+        message: 'Consider dropping unused indexes to improve write performance.',
+      });
     } else {
-      log('\nNo unused indexes found. All indexes appear to be in use.');
+      log('No unused indexes found across collections');
     }
 
-    // Highest usage indexes
-    log('\nMost used indexes by collection:');
     results.forEach((coll) => {
       if (coll.mostUsedIndexes && coll.mostUsedIndexes.length > 0) {
-        log(`\n${coll.collectionName}:`);
-        coll.mostUsedIndexes.forEach((idx) => {
-          log(`- ${idx.name}: ${idx.ops} operations`);
+        log('Most used indexes', {
+          collectionName: coll.collectionName,
+          indexes: coll.mostUsedIndexes,
         });
       }
     });
 
-    // Return compiled results
     return {
       summary,
       details: results,
     };
   } catch (error) {
-    log(`Error monitoring indexes: ${error.message}`);
-    console.error(error);
+    logger.error('Error monitoring indexes', { error: error.message });
     return { error: error.message };
   } finally {
     await client.close();
-    log('MongoDB connection closed');
+    log('MongoDB connection closed after monitoring');
   }
 }
 
-// If script is run directly (not imported)
 if (require.main === module) {
   monitorIndexes()
-    .then((results) => {
-      log('Index monitoring completed');
+    .then(() => {
+      log('Index monitoring completed successfully');
       process.exit(0);
     })
     .catch((err) => {
-      log(`Error in monitoring script: ${err.message}`);
-      console.error(err);
+      logger.error('Index monitoring failed', { error: err.message });
       process.exit(1);
     });
 } else {
-  // Export for use in other files
   module.exports = monitorIndexes;
 }

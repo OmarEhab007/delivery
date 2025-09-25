@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 // Shipment status enum
 const ShipmentStatus = {
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
   REQUESTED: 'REQUESTED',
   CONFIRMED: 'CONFIRMED',
   ASSIGNED: 'ASSIGNED',
@@ -13,6 +14,13 @@ const ShipmentStatus = {
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
   DELAYED: 'DELAYED',
+  REJECTED: 'REJECTED',
+};
+
+const ShipmentApprovalState = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
 };
 
 // Timeline entry schema
@@ -59,6 +67,49 @@ const shipmentSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Shipment must belong to a merchant'],
     },
+    pricingType: {
+      type: String,
+      enum: ['BIDDING', 'FIXED_PRICE'],
+      default: 'BIDDING',
+      required: true,
+    },
+    fixedPriceDetails: {
+      amount: {
+        type: Number,
+        required: function () {
+          return this.pricingType === 'FIXED_PRICE';
+        },
+        min: [0, 'Price must be a positive number'],
+      },
+      currency: {
+        type: String,
+        default: 'USD',
+      },
+      autoAssign: {
+        type: Boolean,
+        default: true,
+      },
+      requirements: {
+        minTruckCapacity: {
+          type: Number,
+          min: 0,
+        },
+        requiredFeatures: [String],
+        maxDeliveryDays: {
+          type: Number,
+          min: 1,
+        },
+      },
+    },
+    autoAssignedAt: Date,
+    autoAssignmentDetails: {
+      truckOwnerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      assignedAt: Date,
+      acceptanceNote: String,
+    },
     origin: {
       address: {
         type: String,
@@ -101,7 +152,29 @@ const shipmentSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: Object.values(ShipmentStatus),
-      default: ShipmentStatus.REQUESTED,
+      default: ShipmentStatus.PENDING_APPROVAL,
+    },
+    approval: {
+      state: {
+        type: String,
+        enum: Object.values(ShipmentApprovalState),
+        default: ShipmentApprovalState.PENDING,
+      },
+      submittedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      submittedAt: {
+        type: Date,
+        default: Date.now,
+      },
+      reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      reviewedAt: Date,
+      rejectionReason: String,
     },
     selectedApplicationId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -271,6 +344,19 @@ const shipmentSchema = new mongoose.Schema(
   }
 );
 
+shipmentSchema.pre('validate', function (next) {
+  if (
+    this.status === ShipmentStatus.PENDING_APPROVAL &&
+    this.approval.state !== ShipmentApprovalState.PENDING
+  ) {
+    this.approval.state = ShipmentApprovalState.PENDING;
+  }
+  if (this.status === ShipmentStatus.REJECTED) {
+    this.approval.state = ShipmentApprovalState.REJECTED;
+  }
+  next();
+});
+
 // Indexes
 shipmentSchema.index({ merchantId: 1 });
 shipmentSchema.index({ status: 1 });
@@ -278,6 +364,8 @@ shipmentSchema.index({ assignedTruckId: 1 });
 shipmentSchema.index({ assignedDriverId: 1 });
 shipmentSchema.index({ 'origin.country': 1, 'destination.country': 1 });
 shipmentSchema.index({ currentLocation: '2dsphere' });
+shipmentSchema.index({ pricingType: 1, status: 1 }); // For filtering fixed-price shipments
+shipmentSchema.index({ 'fixedPriceDetails.amount': 1 }); // For price range queries
 
 // Helper method to add timeline entry
 shipmentSchema.methods.addTimelineEntry = function (entry) {
@@ -400,4 +488,5 @@ const Shipment = mongoose.model('Shipment', shipmentSchema);
 module.exports = {
   Shipment,
   ShipmentStatus,
+  ShipmentApprovalState,
 };

@@ -16,18 +16,16 @@ import {
   Tab,
   Tabs,
   Avatar,
-  IconButton
 } from '@mui/material';
 import {
   Save as SaveIcon,
   VpnKey as PasswordIcon,
   SettingsApplications as SettingsIcon,
-  PhotoCamera as CameraIcon
+  PhotoCamera as CameraIcon,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useSnackbar } from 'notistack';
-import axios from 'axios';
 import { auth } from '../api/api';
 
 // Password validation schema
@@ -38,14 +36,14 @@ const passwordSchema = Yup.object({
     .required('New password is required'),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref('newPassword'), null], 'Passwords must match')
-    .required('Confirm password is required')
+    .required('Confirm password is required'),
 });
 
 // Profile validation schema
 const profileSchema = Yup.object({
   name: Yup.string().required('Name is required'),
   email: Yup.string().email('Invalid email address').required('Email is required'),
-  phone: Yup.string().required('Phone number is required')
+  phone: Yup.string().required('Phone number is required'),
 });
 
 // Tab panel component
@@ -72,7 +70,7 @@ const Settings = () => {
     name: '',
     email: '',
     phone: '',
-    role: ''
+    role: '',
   });
   const [systemSettings, setSystemSettings] = useState({
     enableNotifications: true,
@@ -95,7 +93,7 @@ const Settings = () => {
             name: user.name || '',
             email: user.email || '',
             phone: user.phone || '',
-            role: user.role || ''
+            role: user.role || '',
           });
           // If user has a profile picture, set it
           if (user.profilePicture) {
@@ -118,7 +116,7 @@ const Settings = () => {
     initialValues: {
       name: userData.name,
       email: userData.email,
-      phone: userData.phone
+      phone: userData.phone,
     },
     validationSchema: profileSchema,
     enableReinitialize: true,
@@ -127,13 +125,13 @@ const Settings = () => {
         setLoading(true);
         // Mock API call for updating user profile - would use a real endpoint in production
         // await axios.put('/api/users/profile', values);
-        
+
         // Update local state to simulate successful update
         setUserData({
           ...userData,
-          ...values
+          ...values,
         });
-        
+
         enqueueSnackbar('Profile updated successfully', { variant: 'success' });
       } catch (error) {
         console.error('Error updating profile:', error);
@@ -141,7 +139,7 @@ const Settings = () => {
       } finally {
         setLoading(false);
       }
-    }
+    },
   });
 
   // Password form
@@ -149,7 +147,7 @@ const Settings = () => {
     initialValues: {
       currentPassword: '',
       newPassword: '',
-      confirmPassword: ''
+      confirmPassword: '',
     },
     validationSchema: passwordSchema,
     onSubmit: async (values) => {
@@ -160,9 +158,9 @@ const Settings = () => {
         //   currentPassword: values.currentPassword,
         //   newPassword: values.newPassword
         // });
-        
+
         enqueueSnackbar('Password changed successfully', { variant: 'success' });
-        
+
         // Reset form
         passwordFormik.resetForm();
       } catch (error) {
@@ -171,7 +169,7 @@ const Settings = () => {
       } finally {
         setLoading(false);
       }
-    }
+    },
   });
 
   // Tab change handler
@@ -183,7 +181,7 @@ const Settings = () => {
   const handleSettingChange = (setting) => (event) => {
     setSystemSettings({
       ...systemSettings,
-      [setting]: event.target.checked
+      [setting]: event.target.checked,
     });
   };
 
@@ -192,13 +190,13 @@ const Settings = () => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         setProfileImage(e.target.result);
       };
-      
+
       reader.readAsDataURL(file);
-      
+
       // Would upload file to server in real implementation
       // const formData = new FormData();
       // formData.append('profilePicture', file);
@@ -210,7 +208,7 @@ const Settings = () => {
   const handleSaveSettings = () => {
     // Would save settings to server in real implementation
     // axios.post('/api/admin/settings', systemSettings);
-    
+
     enqueueSnackbar('Settings saved successfully', { variant: 'success' });
   };
 
@@ -227,32 +225,41 @@ const Settings = () => {
       <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold' }}>
         Settings
       </Typography>
-      
+
       <Paper sx={{ mb: 3 }}>
-        <Tabs 
-          value={tabValue} 
+        <Tabs
+          value={tabValue}
           onChange={handleTabChange}
           indicatorColor="primary"
           textColor="primary"
           variant="fullWidth"
         >
-          <Tab label="Profile" icon={<Avatar sx={{ width: 24, height: 24 }} />} iconPosition="start" />
+          <Tab
+            label="Profile"
+            icon={<Avatar sx={{ width: 24, height: 24 }} />}
+            iconPosition="start"
+          />
           <Tab label="Security" icon={<PasswordIcon />} iconPosition="start" />
           <Tab label="System Settings" icon={<SettingsIcon />} iconPosition="start" />
         </Tabs>
-        
+
         {/* Profile Tab */}
         <TabPanel value={tabValue} index={0}>
           <form onSubmit={profileFormik.handleSubmit}>
             <Grid container spacing={3}>
-              <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Grid
+                item
+                xs={12}
+                md={4}
+                sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+              >
                 <Avatar
                   src={profileImage}
                   sx={{
                     width: 150,
                     height: 150,
                     mb: 2,
-                    boxShadow: 3
+                    boxShadow: 3,
                   }}
                 />
                 <input
@@ -276,7 +283,7 @@ const Settings = () => {
                   Recommended: 200x200px, Max 2MB
                 </Typography>
               </Grid>
-              
+
               <Grid item xs={12} md={8}>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
@@ -284,7 +291,7 @@ const Settings = () => {
                       Personal Information
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
@@ -298,7 +305,7 @@ const Settings = () => {
                       helperText={profileFormik.touched.name && profileFormik.errors.name}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
@@ -313,7 +320,7 @@ const Settings = () => {
                       helperText={profileFormik.touched.email && profileFormik.errors.email}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
@@ -327,7 +334,7 @@ const Settings = () => {
                       helperText={profileFormik.touched.phone && profileFormik.errors.phone}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
@@ -339,7 +346,7 @@ const Settings = () => {
                     />
                   </Grid>
                 </Grid>
-                
+
                 <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
                   <Button
                     type="submit"
@@ -355,7 +362,7 @@ const Settings = () => {
             </Grid>
           </form>
         </TabPanel>
-        
+
         {/* Security Tab */}
         <TabPanel value={tabValue} index={1}>
           <form onSubmit={passwordFormik.handleSubmit}>
@@ -365,13 +372,13 @@ const Settings = () => {
                   Change Password
                 </Typography>
               </Grid>
-              
+
               <Grid item xs={12}>
                 <Alert severity="info" sx={{ mb: 2 }}>
                   Strong passwords include a mix of letters, numbers, and special characters.
                 </Alert>
               </Grid>
-              
+
               <Grid item xs={12}>
                 <TextField
                   fullWidth
@@ -382,11 +389,16 @@ const Settings = () => {
                   value={passwordFormik.values.currentPassword}
                   onChange={passwordFormik.handleChange}
                   onBlur={passwordFormik.handleBlur}
-                  error={passwordFormik.touched.currentPassword && Boolean(passwordFormik.errors.currentPassword)}
-                  helperText={passwordFormik.touched.currentPassword && passwordFormik.errors.currentPassword}
+                  error={
+                    passwordFormik.touched.currentPassword &&
+                    Boolean(passwordFormik.errors.currentPassword)
+                  }
+                  helperText={
+                    passwordFormik.touched.currentPassword && passwordFormik.errors.currentPassword
+                  }
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
@@ -397,11 +409,15 @@ const Settings = () => {
                   value={passwordFormik.values.newPassword}
                   onChange={passwordFormik.handleChange}
                   onBlur={passwordFormik.handleBlur}
-                  error={passwordFormik.touched.newPassword && Boolean(passwordFormik.errors.newPassword)}
-                  helperText={passwordFormik.touched.newPassword && passwordFormik.errors.newPassword}
+                  error={
+                    passwordFormik.touched.newPassword && Boolean(passwordFormik.errors.newPassword)
+                  }
+                  helperText={
+                    passwordFormik.touched.newPassword && passwordFormik.errors.newPassword
+                  }
                 />
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
@@ -412,11 +428,16 @@ const Settings = () => {
                   value={passwordFormik.values.confirmPassword}
                   onChange={passwordFormik.handleChange}
                   onBlur={passwordFormik.handleBlur}
-                  error={passwordFormik.touched.confirmPassword && Boolean(passwordFormik.errors.confirmPassword)}
-                  helperText={passwordFormik.touched.confirmPassword && passwordFormik.errors.confirmPassword}
+                  error={
+                    passwordFormik.touched.confirmPassword &&
+                    Boolean(passwordFormik.errors.confirmPassword)
+                  }
+                  helperText={
+                    passwordFormik.touched.confirmPassword && passwordFormik.errors.confirmPassword
+                  }
                 />
               </Grid>
-              
+
               <Grid item xs={12}>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <Button
@@ -432,16 +453,16 @@ const Settings = () => {
               </Grid>
             </Grid>
           </form>
-          
+
           <Divider sx={{ my: 4 }} />
-          
+
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>
                 Login Sessions
               </Typography>
             </Grid>
-            
+
             <Grid item xs={12}>
               <Card variant="outlined">
                 <CardContent>
@@ -457,7 +478,7 @@ const Settings = () => {
                   <Typography variant="body2" color="text.secondary">
                     Device: Chrome on MacOS
                   </Typography>
-                  
+
                   <Box sx={{ mt: 2 }}>
                     <Button variant="outlined" color="error" size="small">
                       Logout from all devices
@@ -468,7 +489,7 @@ const Settings = () => {
             </Grid>
           </Grid>
         </TabPanel>
-        
+
         {/* System Settings Tab */}
         <TabPanel value={tabValue} index={2}>
           <Grid container spacing={3}>
@@ -477,7 +498,7 @@ const Settings = () => {
                 Notification Settings
               </Typography>
             </Grid>
-            
+
             <Grid item xs={12}>
               <FormControlLabel
                 control={
@@ -490,7 +511,7 @@ const Settings = () => {
                 label="Enable Notifications"
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <FormControlLabel
                 control={
@@ -504,7 +525,7 @@ const Settings = () => {
                 label="Email Notifications"
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <FormControlLabel
                 control={
@@ -518,17 +539,17 @@ const Settings = () => {
                 label="SMS Notifications"
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Divider sx={{ my: 2 }} />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>
                 Display Settings
               </Typography>
             </Grid>
-            
+
             <Grid item xs={12}>
               <FormControlLabel
                 control={
@@ -541,17 +562,17 @@ const Settings = () => {
                 label="Dark Mode"
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Divider sx={{ my: 2 }} />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>
                 Security Settings
-        </Typography>
+              </Typography>
             </Grid>
-            
+
             <Grid item xs={12}>
               <FormControlLabel
                 control={
@@ -564,22 +585,24 @@ const Settings = () => {
                 label="Auto Logout on Inactivity"
               />
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
                 type="number"
                 label="Logout Time (minutes)"
                 value={systemSettings.logoutTime}
-                onChange={(e) => setSystemSettings({
-                  ...systemSettings,
-                  logoutTime: e.target.value
-                })}
+                onChange={(e) =>
+                  setSystemSettings({
+                    ...systemSettings,
+                    logoutTime: e.target.value,
+                  })
+                }
                 disabled={!systemSettings.autoLogout}
                 InputProps={{ inputProps: { min: 1, max: 120 } }}
               />
             </Grid>
-            
+
             <Grid item xs={12}>
               <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
@@ -599,4 +622,4 @@ const Settings = () => {
   );
 };
 
-export default Settings; 
+export default Settings;

@@ -253,4 +253,4 @@ router.get('/efficiency', reportingController.getOperationalEfficiency);
  */
 router.get('/geo', reportingController.getGeospatialAnalytics);
 
-module.exports = router; 
+module.exports = router;

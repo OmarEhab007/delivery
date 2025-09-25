@@ -13,25 +13,30 @@ The end-to-end tests simulate real-world user journeys through the application. 
 Our main end-to-end test (`simplified-e2e.test.js`) covers the following key scenarios:
 
 ### 1. User Creation
+
 - Create different user types: Merchant, Truck Owner, and Driver
 - Verify user role-specific properties
 - Establish proper ownership relationships
 
 ### 2. Fleet Management
+
 - Create trucks with appropriate properties
 - Assign drivers to trucks
 - Verify truck-driver relationships
 
 ### 3. Shipment Creation
+
 - Create shipments with origin, destination, and cargo details
 - Verify initial shipment state is REQUESTED
 
 ### 4. Application Process
+
 - Submit applications to handle shipments
 - Accept applications
 - Assign shipments to trucks, drivers, and owners
 
 ### 5. Shipment Execution (Status Transitions)
+
 - Test the complete shipment lifecycle:
   - REQUESTED → ASSIGNED → LOADING → IN_TRANSIT → DELIVERED → COMPLETED
 - Verify each state transition works correctly
@@ -45,6 +50,7 @@ Our main end-to-end test (`simplified-e2e.test.js`) covers the following key sce
 ```
 
 This script:
+
 - Sets up the test environment
 - Runs the end-to-end tests
 - Saves the output to a timestamped log file in tests/logs
@@ -70,7 +76,7 @@ const merchant = await User.create({
   password: hashedPassword,
   phone: '+1234567890',
   role: 'Merchant',
-  isVerified: true
+  isVerified: true,
 });
 ```
 
@@ -105,4 +111,4 @@ If tests are failing, check:
 1. MongoDB connection and model definitions
 2. Test environment variables
 3. Schema validation rules
-4. MongoDB memory server configuration 
+4. MongoDB memory server configuration

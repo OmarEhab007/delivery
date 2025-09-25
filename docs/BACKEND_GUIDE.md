@@ -83,7 +83,7 @@ const jwt = require('jsonwebtoken');
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN
+    expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
 
@@ -93,7 +93,7 @@ const verifyToken = (token) => {
 
 module.exports = {
   signToken,
-  verifyToken
+  verifyToken,
 };
 ```
 
@@ -186,14 +186,15 @@ const handleValidationErrorDB = (err) => {
 
 const handleJWTError = () => new AppError('Invalid token. Please log in again.', 401);
 
-const handleJWTExpiredError = () => new AppError('Your token has expired. Please log in again.', 401);
+const handleJWTExpiredError = () =>
+  new AppError('Your token has expired. Please log in again.', 401);
 
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({
     status: err.status,
     error: err,
     message: err.message,
-    stack: err.stack
+    stack: err.stack,
   });
 };
 
@@ -202,14 +203,14 @@ const sendErrorProd = (err, res) => {
   if (err.isOperational) {
     res.status(err.statusCode).json({
       status: err.status,
-      message: err.message
+      message: err.message,
     });
   } else {
     // Programming or other unknown error: don't leak error details
     console.error('ERROR 💥', err);
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong'
+      message: 'Something went wrong',
     });
   }
 };
@@ -255,7 +256,7 @@ router.post(
     body('origin.address').notEmpty().withMessage('Origin address is required'),
     body('destination.address').notEmpty().withMessage('Destination address is required'),
     body('cargoDetails.description').notEmpty().withMessage('Cargo description is required'),
-    body('cargoDetails.weight').isNumeric().withMessage('Cargo weight must be a number')
+    body('cargoDetails.weight').isNumeric().withMessage('Cargo weight must be a number'),
   ],
   shipmentController.createShipment
 );
@@ -284,20 +285,20 @@ exports.createShipment = async (req, res, next) => {
     // Create shipment with the current user as merchant
     const shipment = await Shipment.create({
       ...req.body,
-      merchantId: req.user.id
+      merchantId: req.user.id,
     });
 
     // Add initial timeline entry
     await shipment.addTimelineEntry({
       status: 'REQUESTED',
-      note: 'Shipment created'
+      note: 'Shipment created',
     });
 
     res.status(201).json({
       status: 'success',
       data: {
-        shipment
-      }
+        shipment,
+      },
     });
   } catch (error) {
     next(error);
@@ -322,20 +323,20 @@ class ShipmentRepository {
 
   async findByIdAndPopulate(id, options = {}) {
     const query = Shipment.findById(id);
-    
+
     if (options.applications) {
       query.populate('applications');
     }
-    
+
     return query;
   }
 
   async findByMerchant(merchantId, filters = {}) {
     const query = {
       merchantId,
-      active: true
+      active: true,
     };
-    
+
     if (filters.status) {
       if (Array.isArray(filters.status)) {
         query.status = { $in: filters.status };
@@ -343,7 +344,7 @@ class ShipmentRepository {
         query.status = filters.status;
       }
     }
-    
+
     return Shipment.find(query).sort({ createdAt: -1 });
   }
 
@@ -354,7 +355,7 @@ class ShipmentRepository {
   async update(id, data) {
     return Shipment.findByIdAndUpdate(id, data, {
       new: true,
-      runValidators: true
+      runValidators: true,
     });
   }
 
@@ -366,9 +367,9 @@ class ShipmentRepository {
         $push: {
           timeline: {
             status,
-            createdAt: new Date()
-          }
-        }
+            createdAt: new Date(),
+          },
+        },
       },
       { new: true }
     );
@@ -392,19 +393,21 @@ const logger = winston.createLogger({
   defaultMeta: { service: 'delivery-app' },
   transports: [
     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' })
-  ]
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+  ],
 });
 
 if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.simple()
-  }));
+  logger.add(
+    new winston.transports.Console({
+      format: winston.format.simple(),
+    })
+  );
 }
 
 const requestLogger = (req, res, next) => {
   const start = Date.now();
-  
+
   res.on('finish', () => {
     const duration = Date.now() - start;
     logger.info({
@@ -412,16 +415,16 @@ const requestLogger = (req, res, next) => {
       url: req.originalUrl,
       status: res.statusCode,
       duration,
-      ip: req.ip
+      ip: req.ip,
     });
   });
-  
+
   next();
 };
 
 module.exports = {
   logger,
-  requestLogger
+  requestLogger,
 };
 ```
 
@@ -438,7 +441,7 @@ describe('User Model', () => {
   beforeAll(async () => {
     await mongoose.connect(process.env.MONGODB_URI_TEST, {
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
     });
   });
 
@@ -456,11 +459,11 @@ describe('User Model', () => {
       email: 'test@example.com',
       password: 'password123',
       phone: '1234567890',
-      role: 'Merchant'
+      role: 'Merchant',
     };
 
     const user = await User.create(userData);
-    
+
     // Password should be hashed
     expect(user.password).not.toBe(userData.password);
   });
@@ -471,15 +474,15 @@ describe('User Model', () => {
       email: 'test@example.com',
       password: 'password123',
       phone: '1234567890',
-      role: 'Merchant'
+      role: 'Merchant',
     };
 
     const user = await User.create(userData);
-    
+
     // Should match the correct password
     const isMatch = await user.comparePassword('password123');
     expect(isMatch).toBe(true);
-    
+
     // Should not match incorrect password
     const isNotMatch = await user.comparePassword('wrongpassword');
     expect(isNotMatch).toBe(false);
@@ -505,7 +508,7 @@ describe('Shipment API', () => {
   beforeAll(async () => {
     await mongoose.connect(process.env.MONGODB_URI_TEST, {
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
     });
   });
 
@@ -523,7 +526,7 @@ describe('Shipment API', () => {
       email: 'merchant@example.com',
       password: 'password123',
       phone: '1234567890',
-      role: 'Merchant'
+      role: 'Merchant',
     });
 
     token = signToken(merchant._id);
@@ -534,17 +537,17 @@ describe('Shipment API', () => {
       const shipmentData = {
         origin: {
           address: 'Origin Address',
-          country: 'USA'
+          country: 'USA',
         },
         destination: {
           address: 'Destination Address',
-          country: 'Canada'
+          country: 'Canada',
         },
         cargoDetails: {
           description: 'Test Cargo',
           weight: 1000,
-          volume: 10
-        }
+          volume: 10,
+        },
       };
 
       const response = await request(app)
@@ -564,12 +567,12 @@ describe('Shipment API', () => {
         // Missing required fields
         origin: {},
         destination: {
-          address: 'Destination Address'
+          address: 'Destination Address',
         },
         cargoDetails: {
-          description: 'Test Cargo'
+          description: 'Test Cargo',
           // Missing weight
-        }
+        },
       };
 
       const response = await request(app)
@@ -600,13 +603,13 @@ describe('Shipment API', () => {
 
    ```javascript
    const rateLimit = require('express-rate-limit');
-   
+
    const apiLimiter = rateLimit({
      windowMs: 15 * 60 * 1000, // 15 minutes
      max: 100, // Limit each IP to 100 requests per windowMs
-     message: 'Too many requests from this IP, please try again after 15 minutes'
+     message: 'Too many requests from this IP, please try again after 15 minutes',
    });
-   
+
    app.use('/api', apiLimiter);
    ```
 
@@ -615,26 +618,30 @@ describe('Shipment API', () => {
 5. **Secure Cookies**: Use secure cookies when deploying to production.
 
    ```javascript
-   app.use(session({
-     secret: process.env.SESSION_SECRET,
-     resave: false,
-     saveUninitialized: false,
-     cookie: {
-       secure: process.env.NODE_ENV === 'production',
-       httpOnly: true,
-       sameSite: 'strict'
-     }
-   }));
+   app.use(
+     session({
+       secret: process.env.SESSION_SECRET,
+       resave: false,
+       saveUninitialized: false,
+       cookie: {
+         secure: process.env.NODE_ENV === 'production',
+         httpOnly: true,
+         sameSite: 'strict',
+       },
+     })
+   );
    ```
 
 6. **CORS Configuration**: Configure CORS properly.
 
    ```javascript
    const cors = require('cors');
-   app.use(cors({
-     origin: process.env.CLIENT_URL,
-     credentials: true
-   }));
+   app.use(
+     cors({
+       origin: process.env.CLIENT_URL,
+       credentials: true,
+     })
+   );
    ```
 
 ## Deployment
@@ -678,4 +685,4 @@ docker-compose up
 1. **ESLint**: Use ESLint for code quality.
 2. **Prettier**: Use Prettier for code formatting.
 3. **Husky**: Use Husky for pre-commit hooks.
-4. **Jest**: Write unit and integration tests. 
+4. **Jest**: Write unit and integration tests.

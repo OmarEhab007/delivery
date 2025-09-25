@@ -38,4 +38,4 @@ If you need to manually create an admin user, you can run the following script:
 node src/scripts/createAdminUser.js
 ```
 
-This script will check if an admin user already exists, and if not, create one using the environment variables or default values. 
+This script will check if an admin user already exists, and if not, create one using the environment variables or default values.

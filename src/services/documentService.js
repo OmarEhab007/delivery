@@ -80,9 +80,9 @@ const getSubdirectory = (entityType) => {
 // Save file to storage and create document record
 const saveDocument = async (file, documentData) => {
   try {
-    console.log('Starting saveDocument with file:', file ? 'File exists' : 'No file provided');
-    logger.info(`Starting saveDocument with file: ${file ? file.originalname : 'No file provided'}`);
-    console.log('Document data:', JSON.stringify(documentData, null, 2));
+    logger.info(
+      `Starting saveDocument with file: ${file ? file.originalname : 'No file provided'}`
+    );
     logger.info(`Document data: ${JSON.stringify(documentData)}`);
 
     if (!file) {
@@ -108,18 +108,15 @@ const saveDocument = async (file, documentData) => {
 
     // Generate secure filename
     const secureFilename = generateSecureFilename(file.originalname);
-    console.log('Generated secure filename:', secureFilename);
     logger.info(`Generated secure filename: ${secureFilename}`);
 
     // Determine storage path
     const subdir = getSubdirectory(entityType);
     const entityDir = path.join(UPLOAD_DIR, subdir, entityId.toString());
-    console.log('Entity directory:', entityDir);
     logger.info(`Entity directory: ${entityDir}`);
 
     // Create entity directory if it doesn't exist
     if (!fs.existsSync(entityDir)) {
-      console.log('Creating entity directory:', entityDir);
       logger.info(`Creating entity directory: ${entityDir}`);
       try {
         await mkdir(entityDir, { recursive: true });
@@ -134,9 +131,7 @@ const saveDocument = async (file, documentData) => {
     // Complete file path
     const filePath = path.join(entityDir, secureFilename);
     const relativeFilePath = path.join(subdir, entityId.toString(), secureFilename);
-    console.log('Absolute file path:', filePath);
     logger.info(`Absolute file path: ${filePath}`);
-    console.log('Relative file path:', relativeFilePath);
     logger.info(`Relative file path: ${relativeFilePath}`);
 
     // Write file to disk
@@ -144,19 +139,16 @@ const saveDocument = async (file, documentData) => {
       // Check if file has buffer or needs to be read from path
       let fileContent;
       if (file.buffer) {
-        console.log('Writing file buffer of size:', file.buffer.length);
         logger.info(`Writing file buffer of size: ${file.buffer.length}`);
         fileContent = file.buffer;
       } else if (file.path && fs.existsSync(file.path)) {
-        console.log('Reading file from path:', file.path);
         logger.info(`Reading file from path: ${file.path}`);
         fileContent = await readFile(file.path);
       } else {
         throw new Error('File has no buffer and path is invalid or missing');
       }
-      
+
       await writeFile(filePath, fileContent);
-      console.log('File successfully written to disk');
       logger.info('File successfully written to disk');
 
       // Set proper permissions
@@ -165,7 +157,6 @@ const saveDocument = async (file, documentData) => {
       // Verify file was created
       if (fs.existsSync(filePath)) {
         const stats = await stat(filePath);
-        console.log('File stats:', stats.size, 'bytes');
         logger.info(`File stats: ${stats.size} bytes`);
       } else {
         console.error('File not found after writing!');

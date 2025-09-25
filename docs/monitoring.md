@@ -65,23 +65,27 @@ Supported levels: `error`, `warn`, `info`, `debug`, `silly`
 The system tracks the following metrics:
 
 ### HTTP Metrics
+
 - `http_request_duration_seconds` - Histogram of request durations
 - `http_requests_total` - Counter of total requests by method, route and status code
 - `http_connections_active` - Gauge of active HTTP connections
 
 ### Database Metrics
+
 - `database_operations_total` - Counter of database operations
 - `database_operation_duration_seconds` - Histogram of database operation durations
 
 ### Business Metrics
+
 - `shipments_by_status` - Gauge of shipments per status
 - `trucks_by_status` - Gauge of trucks per status
-- `job_queue_size` - Gauge of job queue sizes
 
 ### Error Metrics
+
 - `application_errors_total` - Counter of application errors
 
 ### System Metrics (Default Prometheus metrics)
+
 - CPU, memory, and Node.js metrics
 
 ## Distributed Tracing
@@ -91,6 +95,7 @@ The application implements distributed tracing using correlation IDs. Each reque
 ### Trace Headers
 
 The system adds the following headers to responses:
+
 - `X-Trace-ID` - Unique trace identifier
 - `X-Span-ID` - Span identifier for this service
 
@@ -99,6 +104,7 @@ When making service-to-service calls, propagate these headers to maintain the tr
 ## Database Monitoring
 
 MongoDB operations are automatically wrapped with monitoring:
+
 - Performance metrics for each query
 - Slow query detection
 - Query counts by collection and operation type
@@ -106,6 +112,7 @@ MongoDB operations are automatically wrapped with monitoring:
 ## Error Tracking
 
 Errors are tracked with:
+
 - Error fingerprinting for grouping similar errors
 - Frequency tracking
 - Context information
@@ -113,9 +120,10 @@ Errors are tracked with:
 
 ## Periodic Metric Collection
 
-The system automatically collects and updates metrics on a scheduled basis:
-- Shipment status metrics: Every 5 minutes
-- Truck status metrics: Every 5 minutes
+The system automatically collects and updates metrics on a scheduled basis via `metricScheduler`:
+
+- Shipment status metrics: Every 5 minutes (also refreshed immediately on shipment create/update/cancel and driver updates)
+- Truck status metrics: Every 5 minutes (also refreshed after admin/owner truck updates and shipment assignments)
 - Database statistics: Every 15 minutes
 
 ## Integration with External Systems
@@ -149,4 +157,4 @@ For visualization, connect Grafana to your Prometheus instance and create dashbo
 
 ## Health Checks
 
-Enhanced health check endpoints at `/health/*` provide detailed health status for different system components. 
+Enhanced health check endpoints at `/health/*` provide detailed health status for different system components.

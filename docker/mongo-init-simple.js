@@ -1,21 +1,38 @@
 // This script initializes MongoDB with basic users and collections
-// Simple version without replica set configuration
+// Simple version without replica set configuration. Values are driven from
+// environment variables that are provided by docker-compose.prod.yml.
 
 print('Starting simplified MongoDB initialization...');
 
-// Set up admin user
-try {
-  print('Setting up admin user...');
-  const adminDb = db.getSiblingDB('admin');
+function usersListContains(usersResult, username) {
+  if (!usersResult) {
+    return false;
+  }
 
-  // Check if user already exists to avoid duplicate user error
+  if (Array.isArray(usersResult)) {
+    return usersResult.some((user) => user.user === username);
+  }
+
+  if (Array.isArray(usersResult.users)) {
+    return usersResult.users.some((user) => user.user === username);
+  }
+
+  return false;
+}
+
+const rootUsername = process.env.MONGO_INITDB_ROOT_USERNAME || 'admin';
+const rootPassword = process.env.MONGO_INITDB_ROOT_PASSWORD || 'password';
+
+try {
+  print(`Ensuring admin user "${rootUsername}" exists...`);
+  const adminDb = db.getSiblingDB('admin');
   const adminUsers = adminDb.getUsers();
-  const adminExists = adminUsers.users.some((user) => user.user === 'admin');
+  const adminExists = usersListContains(adminUsers, rootUsername);
 
   if (!adminExists) {
     adminDb.createUser({
-      user: 'admin',
-      pwd: 'password',
+      user: rootUsername,
+      pwd: rootPassword,
       roles: [{ role: 'root', db: 'admin' }],
     });
     print('Admin user created successfully.');
@@ -23,23 +40,25 @@ try {
     print('Admin user already exists.');
   }
 } catch (userErr) {
-  print(`Error setting up admin user: ${userErr}`);
+  print(`Error ensuring admin user: ${userErr}`);
 }
 
-// Set up application database and user
-try {
-  print('Setting up application database and user...');
-  const appDb = db.getSiblingDB('delivery-app');
+const appDbName = process.env.APP_DB_NAME || 'delivery-app';
+const appDbUser = process.env.APP_DB_USER || 'app_user';
+const appDbPassword = process.env.APP_DB_PASSWORD || 'app_password';
 
-  // Check if user already exists
+try {
+  print(`Ensuring application database "${appDbName}" and user exist...`);
+  const appDb = db.getSiblingDB(appDbName);
+
   const appUsers = appDb.getUsers();
-  const appUserExists = appUsers.users.some((user) => user.user === 'app_user');
+  const appUserExists = usersListContains(appUsers, appDbUser);
 
   if (!appUserExists) {
     appDb.createUser({
-      user: 'app_user',
-      pwd: 'app_password',
-      roles: [{ role: 'readWrite', db: 'delivery-app' }],
+      user: appDbUser,
+      pwd: appDbPassword,
+      roles: [{ role: 'readWrite', db: appDbName }],
     });
     print('Application user created successfully.');
   } else {
@@ -47,17 +66,19 @@ try {
   }
 
   // Create initial collections if they don't exist
-  if (!appDb.getCollectionNames().includes('users')) {
+  const existingCollections = appDb.getCollectionNames();
+
+  if (!existingCollections.includes('users')) {
     appDb.createCollection('users');
     print('Created users collection.');
   }
 
-  if (!appDb.getCollectionNames().includes('shipments')) {
+  if (!existingCollections.includes('shipments')) {
     appDb.createCollection('shipments');
     print('Created shipments collection.');
   }
 
-  if (!appDb.getCollectionNames().includes('trucks')) {
+  if (!existingCollections.includes('trucks')) {
     appDb.createCollection('trucks');
     print('Created trucks collection.');
   }

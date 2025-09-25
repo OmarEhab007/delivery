@@ -33,18 +33,15 @@ const Login = () => {
       password: '',
     },
     validationSchema: Yup.object({
-      email: Yup.string()
-        .email('Invalid email address')
-        .required('Email is required'),
-      password: Yup.string()
-        .required('Password is required'),
+      email: Yup.string().email('Invalid email address').required('Email is required'),
+      password: Yup.string().required('Password is required'),
     }),
     onSubmit: async (values, { setSubmitting }) => {
       setError(''); // Clear previous errors
-      
+
       try {
         const result = await login(values.email, values.password);
-        
+
         if (result.success) {
           navigate('/dashboard');
         } else {
@@ -89,10 +86,7 @@ const Login = () => {
               mb: 3,
             }}
           >
-            <AdminIcon
-              color="primary"
-              sx={{ fontSize: 64, mb: 2 }}
-            />
+            <AdminIcon color="primary" sx={{ fontSize: 64, mb: 2 }} />
             <Typography variant="h4" component="h1" gutterBottom fontWeight="500">
               Admin Login
             </Typography>
@@ -157,17 +151,13 @@ const Login = () => {
               color="primary"
               size="large"
               disabled={formik.isSubmitting}
-              sx={{ 
-                py: 1.5, 
+              sx={{
+                py: 1.5,
                 mb: 2,
                 fontWeight: 500,
               }}
             >
-              {formik.isSubmitting ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                'Sign In'
-              )}
+              {formik.isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
             </Button>
           </form>
         </CardContent>
@@ -176,4 +166,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

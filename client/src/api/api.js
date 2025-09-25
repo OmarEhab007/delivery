@@ -1,7 +1,20 @@
 import axios from 'axios';
 
-// Set base URL
-axios.defaults.baseURL = 'http://localhost:3000';
+// Configure the base URL. If REACT_APP_API_URL is not provided we rely on the
+// CRA dev server proxy and stay relative so requests still work. We also strip
+// any trailing slash or `/api` suffix so that requests defined with `/api/...`
+// paths do not end up doubled.
+const rawBaseUrl = process.env.REACT_APP_API_URL || '';
+let cleanedBaseUrl = rawBaseUrl.trim();
+
+if (cleanedBaseUrl) {
+  cleanedBaseUrl = cleanedBaseUrl.replace(/\/+$/, '');
+  if (cleanedBaseUrl.toLowerCase().endsWith('/api')) {
+    cleanedBaseUrl = cleanedBaseUrl.slice(0, -4) || '/';
+  }
+
+  axios.defaults.baseURL = cleanedBaseUrl === '/' ? '' : cleanedBaseUrl;
+}
 
 // Create an instance with default config
 const api = axios.create({
@@ -37,12 +50,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // Add CSRF token for non-GET requests if available
     if (csrfToken && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
       config.headers['X-CSRF-Token'] = csrfToken;
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -62,40 +75,45 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // Clear local storage
       localStorage.removeItem('auth_token');
-      
+
       // Redirect to login page
       window.location.href = '/login';
     }
-    
+
     // Special handling for CSRF errors
-    if (error.response && 
-        error.response.status === 403 && 
-        (error.response.data.error === 'invalid csrf token' || 
-         error.response.data.message === 'Invalid or expired CSRF token. Please refresh the page and try again.')) {
+    if (
+      error.response &&
+      error.response.status === 403 &&
+      (error.response.data.error === 'invalid csrf token' ||
+        error.response.data.message ===
+          'Invalid or expired CSRF token. Please refresh the page and try again.')
+    ) {
       // Try to get a new CSRF token and retry the request once
-      return getCsrfToken().then(() => {
-        // Create a new request with the same config but updated CSRF token
-        const config = error.config;
-        if (csrfToken) {
-          config.headers['X-CSRF-Token'] = csrfToken;
-        }
-        return axios(config);
-      }).catch(retryError => {
-        console.error('Failed to retry request after CSRF error:', retryError);
-        return Promise.reject(retryError);
-      });
+      return getCsrfToken()
+        .then(() => {
+          // Create a new request with the same config but updated CSRF token
+          const config = error.config;
+          if (csrfToken) {
+            config.headers['X-CSRF-Token'] = csrfToken;
+          }
+          return axios(config);
+        })
+        .catch((retryError) => {
+          console.error('Failed to retry request after CSRF error:', retryError);
+          return Promise.reject(retryError);
+        });
     }
-    
+
     return Promise.reject(error);
   }
 );
 
 // Auth API calls
 export const auth = {
-  login: (email, password) => api.post('/api/auth/login', { email, password }),
-  logout: () => api.post('/api/auth/logout'),
-  getProfile: () => api.get('/api/auth/me'),
-  getCsrfToken: () => api.get('/api/auth/csrf-token'),
+  login: (email, password) => api.post('auth/login', { email, password }),
+  logout: () => api.post('auth/logout'),
+  getProfile: () => api.get('auth/me'),
+  getCsrfToken: () => api.get('auth/csrf-token'),
 };
 
 // Users API calls
@@ -107,6 +125,12 @@ export const users = {
   delete: (id) => api.delete(`/api/admin/users/${id}`),
 };
 
+export const registrationRequests = {
+  getAll: (params) => api.get('/api/admin/registration-requests', { params }),
+  approve: (id) => api.patch(`/api/admin/registration-requests/${id}/approve`),
+  reject: (id, reason) => api.patch(`/api/admin/registration-requests/${id}/reject`, { reason }),
+};
+
 // Shipments API calls
 export const shipments = {
   // Admin endpoints
@@ -115,21 +139,23 @@ export const shipments = {
   update: (id, shipmentData) => api.put(`/api/admin/shipments/${id}`, shipmentData),
   delete: (id) => api.delete(`/api/admin/shipments/${id}`),
   changeStatus: (id, status) => api.patch(`/api/admin/shipments/${id}/status`, { status }),
-  
+  approve: (id) => api.patch(`/api/admin/shipments/${id}/approve`),
+  reject: (id, reason) => api.patch(`/api/admin/shipments/${id}/reject`, { reason }),
+
   // Merchant endpoints
   create: (shipmentData) => api.post('/api/shipments', shipmentData),
   getMerchantShipments: (params) => api.get('/api/shipments', { params }),
   getMerchantShipmentById: (id) => api.get(`/api/shipments/${id}`),
   updateMerchantShipment: (id, shipmentData) => api.patch(`/api/shipments/${id}`, shipmentData),
   cancelShipment: (id, reason) => api.patch(`/api/shipments/${id}/cancel`, { reason }),
-  
+
   // Safe create shipment with CSRF token
   safeCreateShipment: async (shipmentData) => {
     // Make sure we have a CSRF token first
     await getCsrfToken();
     // Then create the shipment
     return api.post('/api/shipments', shipmentData);
-  }
+  },
 };
 
 // Applications API calls
@@ -156,4 +182,13 @@ export const dashboard = {
   getStats: () => api.get('/api/admin/dashboard'),
 };
 
-export default api; 
+// Reports API calls
+export const reports = {
+  getStatusTrends: (params) => api.get('/api/reports/shipments/status-trends', { params }),
+  getRevenue: (params) => api.get('/api/reports/revenue', { params }),
+  getPerformance: (params) => api.get('/api/reports/performance', { params }),
+  getCustomers: (params) => api.get('/api/reports/customers', { params }),
+  getEfficiency: (params) => api.get('/api/reports/efficiency', { params }),
+};
+
+export default api;

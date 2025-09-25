@@ -9,11 +9,11 @@ const logger = require('../utils/logger');
 
 // Default values if environment variables are not set
 const DEFAULT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const DEFAULT_MAX_REQUESTS = 100;
+const DEFAULT_MAX_REQUESTS = 300;
 const DEFAULT_AUTH_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const DEFAULT_AUTH_MAX_REQUESTS = 100; // Increased from 10 to 100 for development
+const DEFAULT_AUTH_MAX_REQUESTS = 50;
 const DEFAULT_SENSITIVE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const DEFAULT_SENSITIVE_MAX_REQUESTS = 5;
+const DEFAULT_SENSITIVE_MAX_REQUESTS = 25;
 
 /**
  * General API rate limiter

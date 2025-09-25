@@ -3,6 +3,7 @@
 This guide explains how to use the document management system for the Delivery App.
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Document Types](#document-types)
 3. [Entity Types](#entity-types)
@@ -15,6 +16,7 @@ This guide explains how to use the document management system for the Delivery A
 ## Overview
 
 The Document Management System allows you to:
+
 - Upload and store documents securely on your own servers
 - Link documents to different entities (Shipments, Applications, Trucks, Users)
 - Verify documents for regulatory compliance
@@ -26,18 +28,18 @@ The Document Management System allows you to:
 
 The system supports the following document types:
 
-| Document Type | Description | Typical Entity |
-|---------------|-------------|----------------|
-| SHIPPING_INVOICE | Invoice for a shipment | Shipment |
-| BILL_OF_LADING | Transport document for cargo | Shipment |
-| CUSTOMS_DECLARATION | Customs forms for international shipping | Shipment |
-| PROOF_OF_DELIVERY | Signed delivery confirmation | Shipment |
-| DRIVER_LICENSE | Driver's license document | User (Driver) |
-| VEHICLE_REGISTRATION | Vehicle registration certificate | Truck |
-| INSURANCE_CERTIFICATE | Insurance policy document | Truck/User |
-| HAZARDOUS_MATERIALS_CERT | Hazardous materials handling certification | User/Shipment |
-| PAYMENT_RECEIPT | Payment confirmation | Shipment/Application |
-| OTHER | Any other document type | Any |
+| Document Type            | Description                                | Typical Entity       |
+| ------------------------ | ------------------------------------------ | -------------------- |
+| SHIPPING_INVOICE         | Invoice for a shipment                     | Shipment             |
+| BILL_OF_LADING           | Transport document for cargo               | Shipment             |
+| CUSTOMS_DECLARATION      | Customs forms for international shipping   | Shipment             |
+| PROOF_OF_DELIVERY        | Signed delivery confirmation               | Shipment             |
+| DRIVER_LICENSE           | Driver's license document                  | User (Driver)        |
+| VEHICLE_REGISTRATION     | Vehicle registration certificate           | Truck                |
+| INSURANCE_CERTIFICATE    | Insurance policy document                  | Truck/User           |
+| HAZARDOUS_MATERIALS_CERT | Hazardous materials handling certification | User/Shipment        |
+| PAYMENT_RECEIPT          | Payment confirmation                       | Shipment/Application |
+| OTHER                    | Any other document type                    | Any                  |
 
 ## Entity Types
 
@@ -73,7 +75,7 @@ To upload multiple documents to the same entity:
 1. Use the `POST /api/documents/upload-multiple` endpoint
 2. Include multiple files using the same form field name 'documents'
 3. Specify the entity information (entityType and entityId)
-4. For each file, include a metadata field in the format `fileData_FILENAME` 
+4. For each file, include a metadata field in the format `fileData_FILENAME`
    where FILENAME matches the exact name of the uploaded file
 
 ## Retrieving Documents
@@ -87,6 +89,7 @@ GET /api/documents/entity/{entityType}/{entityId}
 ```
 
 For example:
+
 ```
 GET /api/documents/entity/Shipment/60d5ec9af682d43b4cd4a111
 ```
@@ -115,6 +118,7 @@ Documents can be verified by admin or manager users:
 2. Include optional verification notes in the request body
 
 When a document is verified:
+
 - The document's `isVerified` flag is set to true
 - The verification date and verifier are recorded
 - The referring entity's document entry is also updated as verified
@@ -122,16 +126,16 @@ When a document is verified:
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/documents/upload` | POST | Upload a single document |
-| `/api/documents/upload-multiple` | POST | Upload multiple documents |
-| `/api/documents/{id}` | GET | Get document metadata |
-| `/api/documents/{id}/download` | GET | Download document file |
-| `/api/documents/entity/{entityType}/{entityId}` | GET | Get all documents for an entity |
-| `/api/documents/{id}` | DELETE | Delete a document |
-| `/api/documents/{id}/verify` | PATCH | Verify a document |
-| `/api/documents/{id}` | PATCH | Update document metadata |
+| Endpoint                                        | Method | Description                     |
+| ----------------------------------------------- | ------ | ------------------------------- |
+| `/api/documents/upload`                         | POST   | Upload a single document        |
+| `/api/documents/upload-multiple`                | POST   | Upload multiple documents       |
+| `/api/documents/{id}`                           | GET    | Get document metadata           |
+| `/api/documents/{id}/download`                  | GET    | Download document file          |
+| `/api/documents/entity/{entityType}/{entityId}` | GET    | Get all documents for an entity |
+| `/api/documents/{id}`                           | DELETE | Delete a document               |
+| `/api/documents/{id}/verify`                    | PATCH  | Verify a document               |
+| `/api/documents/{id}`                           | PATCH  | Update document metadata        |
 
 ## Examples
 
@@ -208,4 +212,4 @@ uploads/
           └── {filename}
 ```
 
-The system generates secure filenames to prevent conflicts and ensure security. 
+The system generates secure filenames to prevent conflicts and ensure security.

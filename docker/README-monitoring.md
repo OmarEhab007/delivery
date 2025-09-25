@@ -19,18 +19,22 @@ The monitoring stack consists of:
 We've set up five comprehensive dashboards:
 
 1. **Main Overview Dashboard**
+
    - System overview with key performance indicators
    - Quick view of critical metrics
 
 2. **HTTP API Performance Dashboard**
+
    - Request rates, durations, and status codes
    - Endpoint performance comparison
 
 3. **Database Performance Dashboard**
+
    - MongoDB operation metrics
    - Query performance and collection statistics
 
 4. **Business Metrics Dashboard**
+
    - Shipment status distribution
    - Truck status monitoring
    - Other business-relevant KPIs
@@ -81,4 +85,4 @@ To add custom metrics:
 
 - Metrics data is stored in Docker volumes and will persist between restarts
 - The open metrics endpoint (/api/metrics/open) is designed for Prometheus and should be protected if exposed externally
-- For production deployment, you should configure authentication for Prometheus 
+- For production deployment, you should configure authentication for Prometheus

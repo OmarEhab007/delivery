@@ -5,6 +5,7 @@ This document outlines the development roadmap and implementation priorities for
 ## Project Setup and Configuration (COMPLETED)
 
 The basic project structure has been set up with:
+
 - Express.js application with directory structure
 - MongoDB connection configuration
 - Authentication middleware using JWT
@@ -17,6 +18,7 @@ The basic project structure has been set up with:
 ### Phase 1: Complete Core Infrastructure (NEXT)
 
 #### 1. User Management (Priority: High)
+
 - Complete password reset functionality
 - Implement user profile management endpoints
 - Add validation and security measures
@@ -24,6 +26,7 @@ The basic project structure has been set up with:
 - **Estimated Time**: 1-2 days
 
 #### 2. Fleet Management (Priority: High)
+
 - Implement CRUD operations for trucks
 - Create validation for truck registration
 - Build endpoints for truck owners to manage their fleet
@@ -31,6 +34,7 @@ The basic project structure has been set up with:
 - **Estimated Time**: 2-3 days
 
 #### 3. Shipment Management (Priority: High)
+
 - Implement CRUD operations for shipments
 - Build shipment status workflow logic
 - Create shipment search and filtering
@@ -40,6 +44,7 @@ The basic project structure has been set up with:
 ### Phase 2: Business Logic Implementation
 
 #### 4. Application/Bid System (Priority: Medium)
+
 - Implement application submission endpoints
 - Create application approval/rejection workflow
 - Build notification triggers for status changes
@@ -47,6 +52,7 @@ The basic project structure has been set up with:
 - **Estimated Time**: 2 days
 
 #### 5. Document Management (Priority: Medium)
+
 - Set up AWS S3 integration
 - Implement document upload/download endpoints
 - Add document validation and security
@@ -54,6 +60,7 @@ The basic project structure has been set up with:
 - **Estimated Time**: 2 days
 
 #### 6. Notifications (Priority: Medium)
+
 - Set up Twilio integration for WhatsApp
 - Implement event-based notification system
 - Create message templates
@@ -63,6 +70,7 @@ The basic project structure has been set up with:
 ### Phase 3: Real-time Features and Enhancements
 
 #### 7. Real-time Tracking (Priority: Medium)
+
 - Set up Socket.io for real-time updates
 - Implement tracking service
 - Create secure connection mechanisms
@@ -70,6 +78,7 @@ The basic project structure has been set up with:
 - **Estimated Time**: 2-3 days
 
 #### 8. Search and Filtering (Priority: Low)
+
 - Implement advanced search capabilities
 - Create filtering for all main entities
 - Add pagination and sorting
@@ -79,6 +88,7 @@ The basic project structure has been set up with:
 ### Phase 4: Testing, Documentation, and Deployment
 
 #### 9. Testing (Priority: High)
+
 - Write unit tests for core modules
 - Create integration tests for API endpoints
 - Implement test data generation
@@ -86,6 +96,7 @@ The basic project structure has been set up with:
 - **Estimated Time**: 2-3 days
 
 #### 10. API Documentation (Priority: Medium)
+
 - Create Swagger/OpenAPI documentation
 - Document all endpoints and parameters
 - Add usage examples
@@ -93,6 +104,7 @@ The basic project structure has been set up with:
 - **Estimated Time**: 1-2 days
 
 #### 11. Deployment (Priority: Medium)
+
 - Optimize Docker configuration
 - Create production deployment scripts
 - Set up monitoring and logging
@@ -102,6 +114,7 @@ The basic project structure has been set up with:
 ## Implementation Guidelines for Cursor AI
 
 ### Development Approach
+
 1. Follow a modular approach - complete one module before moving to the next
 2. Build incrementally - implement core functionality before adding advanced features
 3. Focus on code quality and reusability
@@ -109,7 +122,9 @@ The basic project structure has been set up with:
 5. Document code with JSDoc comments
 
 ### Implementation Order
+
 For each module, follow this implementation sequence:
+
 1. Complete the model (if not already done)
 2. Implement service layer business logic
 3. Create controller methods
@@ -118,7 +133,9 @@ For each module, follow this implementation sequence:
 6. Document the API endpoints
 
 ### Code Review Checklist
+
 Before marking a task as complete, ensure:
+
 - All required validations are in place
 - Error handling is comprehensive
 - Security considerations are addressed
@@ -137,18 +154,21 @@ Before marking a task as complete, ensure:
 ## Technical Details to Consider
 
 ### Authentication & Authorization
+
 - All protected routes should use the `protect` middleware
 - Role-based access control using the `restrictTo` middleware
 - Input validation for all endpoints
 - Secure password handling and storage
 
 ### Database Operations
+
 - Use Mongoose features for validation
 - Implement proper error handling for database operations
 - Create indexes for frequently queried fields
 - Use transactions for operations that modify multiple collections
 
 ### API Design
+
 - Follow RESTful principles
 - Use consistent response formats
 - Include proper HTTP status codes
@@ -156,6 +176,7 @@ Before marking a task as complete, ensure:
 - Add filtering capabilities where appropriate
 
 ### Security Considerations
+
 - Validate all user inputs
 - Implement rate limiting for sensitive endpoints
 - Secure file uploads with validation

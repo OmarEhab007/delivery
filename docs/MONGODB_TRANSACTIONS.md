@@ -5,6 +5,7 @@ This document explains how to enable and use MongoDB transactions in the Deliver
 ## Transaction Support Requirements
 
 MongoDB transactions require either:
+
 - A replica set deployment
 - A sharded cluster with shards deployed as replica sets
 
@@ -20,11 +21,12 @@ You have two options:
 
 ### Option 1: Disable Transactions (Recommended for Development)
 
-This application includes a fallback mechanism that will automatically detect whether transactions are supported and use an alternative approach when they're not. 
+This application includes a fallback mechanism that will automatically detect whether transactions are supported and use an alternative approach when they're not.
 
 To explicitly disable transactions for development:
 
 1. Set the `USE_MONGODB_TRANSACTIONS` environment variable to `false` in your docker-compose.yml or .env file:
+
    ```
    USE_MONGODB_TRANSACTIONS=false
    ```
@@ -38,6 +40,7 @@ For production environments, we recommend using a replica set configuration to s
 #### Using Docker Compose
 
 1. Edit the docker-compose.yml file and uncomment the following lines:
+
    ```yaml
    # For enabling transactions, uncomment these lines to run as a replica set
    command: mongod --replSet rs0 --bind_ip_all
@@ -46,6 +49,7 @@ For production environments, we recommend using a replica set configuration to s
    ```
 
 2. Set the `USE_MONGODB_TRANSACTIONS` environment variable to `true`:
+
    ```
    USE_MONGODB_TRANSACTIONS=true
    ```
@@ -61,11 +65,13 @@ For production environments, we recommend using a replica set configuration to s
 If you're running MongoDB directly (not via Docker):
 
 1. Start MongoDB with the `--replSet` option:
+
    ```
    mongod --replSet rs0 --bind_ip_all
    ```
 
 2. Connect to MongoDB and initialize the replica set:
+
    ```
    mongo
    > rs.initiate()
@@ -87,6 +93,6 @@ When the application starts, it will log whether transactions are supported:
 
 ## Recommendation
 
-For development and testing, using the fallback mode (Option 1) is simpler and requires no special MongoDB configuration. 
+For development and testing, using the fallback mode (Option 1) is simpler and requires no special MongoDB configuration.
 
-For production deployments, using a properly configured replica set (Option 2) is recommended for full data consistency. 
+For production deployments, using a properly configured replica set (Option 2) is recommended for full data consistency.
