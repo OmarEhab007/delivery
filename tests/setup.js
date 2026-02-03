@@ -12,9 +12,18 @@ process.env.NODE_ENV = 'test';
 jest.setTimeout(30000);
 
 let mongoServer;
+const externalMongoUri = process.env.TEST_MONGODB_URI;
 
 // Connect to the in-memory database before running any tests
 beforeAll(async () => {
+  if (externalMongoUri) {
+    await mongoose.connect(externalMongoUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    return;
+  }
+
   mongoServer = await MongoMemoryServer.create({
     instance: {
       ip: '127.0.0.1',
@@ -41,5 +50,7 @@ afterEach(async () => {
 afterAll(async () => {
   await mongoose.connection.dropDatabase();
   await mongoose.connection.close();
-  await mongoServer.stop();
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
 });
