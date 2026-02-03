@@ -11,6 +11,8 @@ const { Document } = require('../models/Document');
 const router = express.Router();
 
 // Create a separate router for our debug routes
+// SEC-003: Debug routes require Admin authentication or are disabled in production
+// OWASP A01:2021 - Broken Access Control
 const debugRouter = express.Router();
 
 /**
@@ -19,6 +21,8 @@ const debugRouter = express.Router();
  *   get:
  *     summary: Debug documents model (development only)
  *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Debug information
@@ -31,8 +35,17 @@ const debugRouter = express.Router();
  *                   type: boolean
  *                 data:
  *                   type: object
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Forbidden - Admin access required
  */
-debugRouter.get('/debug', documentController.debugModels);
+// Only enable debug routes in non-production or require Admin authentication
+if (process.env.NODE_ENV !== 'production') {
+  debugRouter.get('/debug', documentController.debugModels);
+} else {
+  debugRouter.get('/debug', protect, restrictTo('Admin'), documentController.debugModels);
+}
 
 /**
  * @swagger
@@ -76,7 +89,9 @@ debugRouter.get('/debug', documentController.debugModels);
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-debugRouter.get('/debug-file/:id', async (req, res) => {
+// SEC-003: Debug file route requires Admin auth in production
+// OWASP A01:2021 - Broken Access Control
+const debugFileHandler = async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
     if (!document) {
@@ -103,7 +118,13 @@ debugRouter.get('/debug-file/:id', async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
+};
+
+if (process.env.NODE_ENV !== 'production') {
+  debugRouter.get('/debug-file/:id', debugFileHandler);
+} else {
+  debugRouter.get('/debug-file/:id', protect, restrictTo('Admin'), debugFileHandler);
+}
 
 // Apply authentication middleware to protected routes
 router.use(protect);

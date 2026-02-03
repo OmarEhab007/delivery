@@ -157,7 +157,9 @@ router.delete('/deleteMe', protect, userController.deleteMe);
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.get('/', protect, userController.getAllUsers);
+// SEC-005: Restrict user listing to Admin only
+// OWASP A01:2021 - Broken Access Control
+router.get('/', protect, restrictTo('Admin'), userController.getAllUsers);
 
 /**
  * @swagger

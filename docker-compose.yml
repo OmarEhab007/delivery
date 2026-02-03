@@ -6,19 +6,21 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+    # SEC-009: Use environment variable references instead of hardcoded secrets
+    # OWASP A05:2021 - Security Misconfiguration
     environment:
-      - NODE_ENV=development
-      - MONGODB_URI=mongodb://mongodb:27017/delivery-app
-      - PORT=3000
-      - JWT_SECRET=your_jwt_secret_key_here
-      - JWT_EXPIRES_IN=1d
-      - JWT_COOKIE_EXPIRES_IN=1
-      - COOKIE_SECRET=your_cookie_secret_key_here
-      - USE_MONGODB_TRANSACTIONS=false
-      - ADMIN_NAME=Admin User
-      - ADMIN_EMAIL=admin@deliveryapp.com
-      - ADMIN_PASSWORD=admin123456
-      - ADMIN_PHONE=1234567890
+      - NODE_ENV=${NODE_ENV:-development}
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/delivery-app}
+      - PORT=${PORT:-3000}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1d}
+      - JWT_COOKIE_EXPIRES_IN=${JWT_COOKIE_EXPIRES_IN:-1}
+      - COOKIE_SECRET=${COOKIE_SECRET}
+      - USE_MONGODB_TRANSACTIONS=${USE_MONGODB_TRANSACTIONS:-false}
+      - ADMIN_NAME=${ADMIN_NAME:-Admin User}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@deliveryapp.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - ADMIN_PHONE=${ADMIN_PHONE:-1234567890}
     restart: on-failure
     networks:
       - app-network
@@ -67,9 +69,10 @@ services:
     container_name: grafana
     ports:
       - '3002:3000'
+    # SEC-009: Use environment variable references for Grafana credentials
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana

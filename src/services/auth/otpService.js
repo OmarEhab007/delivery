@@ -13,6 +13,12 @@ const getSecret = () => {
     return process.env.OTP_SECRET;
   }
 
+  // SEC-012: Require OTP_SECRET in production, no hardcoded fallback
+  // OWASP A02:2021 - Cryptographic Failures
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('OTP_SECRET environment variable must be set in production');
+  }
+
   if (process.env.JWT_SECRET) {
     logger.warn('OTP_SECRET is not set. Falling back to JWT_SECRET for OTP hashing.');
     return process.env.JWT_SECRET;
