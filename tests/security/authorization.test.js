@@ -334,8 +334,8 @@ describe('Authorization Security Tests', () => {
         .get('/api/admin/dashboard')
         .set('Authorization', 'Bearer invalidtoken123');
 
-      // Should fail authentication - either 401 or 500 for JWT decode error
-      expect([401, 500]).toContain(response.status);
+      // Should fail authentication with 401 for invalid token
+      expect(response.status).toBe(401);
     });
 
     it('should reject requests with expired token', async () => {
@@ -351,8 +351,8 @@ describe('Authorization Security Tests', () => {
         .get('/api/admin/dashboard')
         .set('Authorization', `Bearer ${expiredToken}`);
 
-      // Should fail authentication - either 401 or 500 for JWT decode error
-      expect([401, 500]).toContain(response.status);
+      // Should fail authentication with 401 for expired token
+      expect(response.status).toBe(401);
     });
 
     it('should reject requests with malformed authorization header', async () => {

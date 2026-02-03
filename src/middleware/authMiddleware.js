@@ -34,6 +34,13 @@ const protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    // Handle JWT-specific errors with proper 401 status
+    if (error.name === 'JsonWebTokenError') {
+      return next(new ApiError('Invalid token. Please log in again.', 401));
+    }
+    if (error.name === 'TokenExpiredError') {
+      return next(new ApiError('Your token has expired. Please log in again.', 401));
+    }
     next(error);
   }
 };

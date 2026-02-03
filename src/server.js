@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const mongoSanitize = require('express-mongo-sanitize');
 const { Server } = require('socket.io');
 
 require('dotenv').config();
@@ -138,6 +139,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.COOKIE_SECRET || 'delivery-app-secret'));
+
+// NoSQL injection protection - sanitize user-supplied data
+app.use(mongoSanitize());
 
 // Add CSRF-related security headers to all responses
 app.use(addCSRFHeaders);
