@@ -269,6 +269,17 @@ const shipmentSchema = new mongoose.Schema(
         },
       },
     ],
+    integrationReference: {
+      credentialId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'IntegrationCredential',
+      },
+      referenceId: {
+        type: String,
+        trim: true,
+      },
+      receivedAt: Date,
+    },
     // Driver-related fields
     startOdometer: Number,
     endOdometer: Number,
@@ -377,6 +388,44 @@ shipmentSchema.pre('validate', function (next) {
   next();
 });
 
+shipmentSchema.pre('save', async function (next) {
+  if (this.isNew || !this.isModified('status')) {
+    return next();
+  }
+
+  try {
+    const previous = await this.constructor.findById(this._id).select('status');
+    this.$locals.previousStatus = previous ? previous.status : null;
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+});
+
+shipmentSchema.post('save', function (doc) {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
+  const previousStatus = doc?.$locals?.previousStatus;
+  if (!previousStatus || previousStatus === doc.status) {
+    return;
+  }
+
+  const { emitShipmentStatusEvent } = require('../services/integration/webhookService');
+  const { evaluateAutomationRules } = require('../services/automation/automationService');
+
+  emitShipmentStatusEvent({ shipment: doc, previousStatus }).catch((error) => {
+    // eslint-disable-next-line no-console
+    console.error('Failed to emit webhook event for shipment status change', error);
+  });
+
+  evaluateAutomationRules(doc, { previousStatus }).catch((error) => {
+    // eslint-disable-next-line no-console
+    console.error('Failed to evaluate automation rules for shipment', error);
+  });
+});
+
 // Indexes
 shipmentSchema.index({ merchantId: 1 });
 shipmentSchema.index({ status: 1 });
@@ -386,6 +435,10 @@ shipmentSchema.index({ 'origin.country': 1, 'destination.country': 1 });
 shipmentSchema.index({ currentLocation: '2dsphere' });
 shipmentSchema.index({ pricingType: 1, status: 1 }); // For filtering fixed-price shipments
 shipmentSchema.index({ 'fixedPriceDetails.amount': 1 }); // For price range queries
+shipmentSchema.index(
+  { 'integrationReference.credentialId': 1, 'integrationReference.referenceId': 1 },
+  { unique: true, sparse: true }
+);
 
 // Helper method to add timeline entry
 shipmentSchema.methods.addTimelineEntry = function (entry) {

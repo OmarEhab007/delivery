@@ -1,3 +1,5 @@
+require('./utils/polyfills');
+
 const { createServer } = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -50,6 +52,9 @@ const truckOwnerRoutes = require('./routes/truckOwnerRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const metricsRoutes = require('./routes/metricsRoutes');
 const reportingRoutes = require('./routes/reportingRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const integrationRoutes = require('./routes/integrationRoutes');
+const automationRoutes = require('./routes/automationRoutes');
 const swaggerRoutes = require('./routes/swaggerRoutes');
 // Add other route imports as they are developed
 
@@ -269,6 +274,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/truck-owner', truckOwnerRoutes);
+app.use('/api/integrations', integrationRoutes);
+app.use('/api/automation', automationRoutes);
 // Add metrics routes
 app.use(
   '/api/metrics',
@@ -276,7 +283,9 @@ app.use(
   restrictTo('Admin'),
   metricsRoutes
 );
-// Add reporting routes
+// Add analytics routes (merchant + admin)
+app.use('/api/reports', analyticsRoutes);
+// Add reporting routes (admin-only)
 app.use('/api/reports', reportingRoutes);
 // Add other routes as they are developed
 
