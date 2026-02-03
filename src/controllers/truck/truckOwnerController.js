@@ -4,7 +4,7 @@ const { ApiSuccess } = require('../../middleware/apiSuccess');
 const { Shipment } = require('../../models/Shipment');
 const { Application } = require('../../models/Application');
 const User = require('../../models/User');
-const { Truck } = require('../../models/Truck');
+const Truck = require('../../models/Truck');
 const metricScheduler = require('../../utils/metricScheduler');
 
 /**
@@ -101,7 +101,7 @@ const assignShipmentToDriver = asyncHandler(async (req, res, next) => {
     }
 
     // Check if truck is available
-    if (truck.status !== 'Available') {
+    if (truck.status !== 'AVAILABLE') {
       return next(new ApiError('Truck is not available for assignment', 400));
     }
 
@@ -165,7 +165,7 @@ const getAvailableDrivers = asyncHandler(async (req, res, next) => {
 const getAvailableTrucks = asyncHandler(async (req, res, next) => {
   const trucks = await Truck.find({
     ownerId: req.user.id,
-    status: 'Available',
+    status: 'AVAILABLE',
   });
 
   return ApiSuccess(res, {

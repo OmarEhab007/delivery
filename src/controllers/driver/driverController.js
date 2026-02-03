@@ -11,6 +11,7 @@ const { ApiError } = require('../../middleware/errorHandler');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
 const { asyncHandler } = require('../../middleware/asyncHandler');
 const metricScheduler = require('../../utils/metricScheduler');
+const logger = require('../../utils/logger');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({

@@ -196,7 +196,7 @@ const createTruck = asyncHandler(async (req, res, next) => {
     driverId,
     specifications,
     documents,
-    status: 'Available',
+    status: 'AVAILABLE',
   });
 
   try {
@@ -230,7 +230,7 @@ const changeTruckStatus = asyncHandler(async (req, res, next) => {
     return next(new ApiError('Status is required', 400));
   }
 
-  const validStatuses = ['Available', 'Unavailable', 'InMaintenance', 'OnRoute'];
+  const validStatuses = ['AVAILABLE', 'IN_SERVICE', 'IN_MAINTENANCE', 'OUT_OF_SERVICE'];
   if (!validStatuses.includes(status)) {
     return next(new ApiError('Invalid status', 400));
   }

@@ -426,7 +426,7 @@ const verifyDocument = catchAsync(async (req, res) => {
   const { notes } = req.body;
 
   // Check if user has permission to verify documents (admin, manager, etc.)
-  if (!['admin', 'manager'].includes(req.user.role)) {
+  if (!['Admin', 'manager'].includes(req.user.role)) {
     throw createCustomError('Not authorized to verify documents', 403);
   }
 

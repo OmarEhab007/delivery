@@ -25,7 +25,8 @@ const { csrfProtection, handleCSRFError, addCSRFHeaders } = require('./middlewar
 const { configureSecurityHeaders, handleCSPReports } = require('./middleware/securityHeaders');
 // Import Swagger configuration
 const { swaggerServe, swaggerSetup } = require('./config/swagger');
-const validateEnv = require('./utils/validateEnv');
+// Import auth middleware for swagger guards
+const { authenticateToken, restrictTo } = require('./middleware/authMiddleware');
 
 // Import monitoring utilities
 const metrics = require('./utils/metrics');
@@ -104,15 +105,15 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Configure security headers with enhanced CSP
-// const securityHeadersMiddleware = configureSecurityHeaders({
-//   logHeaders: process.env.NODE_ENV === 'development',
-//   cspDirectives: {
-//     // Customize CSP directives here if needed, or use defaults from the middleware
-//   },
-// });
+const securityHeadersMiddleware = configureSecurityHeaders({
+  logHeaders: process.env.NODE_ENV === 'development',
+  cspDirectives: {
+    // Customize CSP directives here if needed, or use defaults from the middleware
+  },
+});
 
 // Middleware
-// app.use(securityHeadersMiddleware);
+app.use(securityHeadersMiddleware);
 app.use(
   cors({
     origin:
@@ -170,9 +171,9 @@ app.use(handleCSRFError);
 //   handleCSPReports()
 // );
 
-// Comment out these lines to disable auth rate limiting during development
-// app.use('/api/auth/login', authLimiter);
-// app.use('/api/auth/register', authLimiter);
+// Apply auth rate limiting
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // API Routes with specific rate limits
 app.use('/api/users/reset-password', sensitiveOpLimiter);

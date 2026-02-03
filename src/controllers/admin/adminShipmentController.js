@@ -76,10 +76,10 @@ const getShipmentById = asyncHandler(async (req, res, next) => {
 const updateShipment = asyncHandler(async (req, res, next) => {
   const {
     status,
-    pickupLocation,
-    deliveryLocation,
-    cargo,
-    price,
+    origin,
+    destination,
+    cargoDetails,
+    pricing,
     notes,
     merchantId,
     assignedTruckId,
@@ -94,10 +94,10 @@ const updateShipment = asyncHandler(async (req, res, next) => {
 
   // Update fields if provided
   if (status) shipment.status = status;
-  if (pickupLocation) shipment.pickupLocation = pickupLocation;
-  if (deliveryLocation) shipment.deliveryLocation = deliveryLocation;
-  if (cargo) shipment.cargo = cargo;
-  if (price) shipment.price = price;
+  if (origin) shipment.origin = origin;
+  if (destination) shipment.destination = destination;
+  if (cargoDetails) shipment.cargoDetails = cargoDetails;
+  if (pricing) shipment.pricing = pricing;
   if (notes) shipment.notes = notes;
   if (merchantId) shipment.merchantId = merchantId;
   if (assignedTruckId) shipment.assignedTruckId = assignedTruckId;
@@ -286,7 +286,7 @@ const assignShipmentToDriver = asyncHandler(async (req, res, next) => {
     }
 
     // Check if truck is available
-    if (truck.status !== 'Available') {
+    if (truck.status !== 'AVAILABLE') {
       return next(new ApiError('Truck is not available for assignment', 400));
     }
 
