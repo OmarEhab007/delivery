@@ -73,7 +73,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "100 * mongodb_connections_current{state=\"in_use\"} / mongodb_connections_current{state=\"total\"}",
+          "expr": "100 * mongodb_connections_current{state=\"in_use\"} / (mongodb_connections_current{state=\"total\"} > 0)",
           "legendFormat": "Pool Utilization",
           "range": true,
           "refId": "A"

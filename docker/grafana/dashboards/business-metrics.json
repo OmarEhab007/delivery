@@ -852,7 +852,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "100 * sum(trucks_by_status{status=\"in_transit\"}) / sum(trucks_by_status)",
+          "expr": "100 * sum(trucks_by_status{status=\"in_transit\"}) / clamp_min(sum(trucks_by_status), 1)",
           "legendFormat": "Fleet Utilization",
           "range": true,
           "refId": "A"

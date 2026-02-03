@@ -122,7 +122,7 @@ groups:
       # Triggers when p99 event loop lag exceeds 100ms for 5 minutes
       # ---------------------------------------------------------------------
       - alert: HighEventLoopLag
-        expr: nodejs_eventloop_lag_seconds{percentile="p99"} > 0.1
+        expr: nodejs_eventloop_lag_p99_seconds > 0.1
         for: 5m
         labels:
           severity: warning

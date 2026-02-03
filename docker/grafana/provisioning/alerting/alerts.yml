@@ -17,7 +17,7 @@ groups:
               to: 0
             datasourceUid: prometheus
             model:
-              expr: sum(rate(http_requests_total{status_code=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))
+              expr: sum(rate(http_requests_total{status_code=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) or vector(0)
               intervalMs: 1000
               maxDataPoints: 43200
           - refId: C
@@ -185,7 +185,7 @@ groups:
               to: 0
             datasourceUid: prometheus
             model:
-              expr: mongodb_connections_current{state="in_use"} / mongodb_connections_current{state="total"}
+              expr: mongodb_connections_current{state="in_use"} / (mongodb_connections_current{state="total"} > 0)
               intervalMs: 1000
               maxDataPoints: 43200
           - refId: C

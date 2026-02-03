@@ -127,10 +127,11 @@ const connectDB = async (retryCount = 0) => {
     });
 
     // Set up periodic connection pool metrics collection (every 30 seconds)
+    let poolMetricsInterval = null;
     if (process.env.NODE_ENV !== 'test') {
       // Lazy load metrics to avoid circular dependency
       const { updateMongoConnectionMetrics } = require('../utils/metrics');
-      setInterval(() => {
+      poolMetricsInterval = setInterval(() => {
         try {
           const pool = mongoose.connection.client?.topology?.s?.pool;
           if (pool) {
@@ -150,6 +151,10 @@ const connectDB = async (retryCount = 0) => {
     // Handle process termination
     process.on('SIGINT', async () => {
       try {
+        // Clear the pool metrics interval to prevent callbacks after connection close
+        if (poolMetricsInterval) {
+          clearInterval(poolMetricsInterval);
+        }
         await mongoose.connection.close();
         logger.info('MongoDB connection closed due to app termination');
         process.exit(0);
