@@ -6,6 +6,127 @@ This document describes the database schema for the Delivery App system. The app
 
 ## Models
 
+### RefreshToken
+
+The RefreshToken model implements secure refresh token rotation for JWT authentication.
+
+```javascript
+const refreshTokenSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    tokenHash: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    expiresAt: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    isRevoked: {
+      type: Boolean,
+      default: false,
+    },
+    revokedAt: {
+      type: Date,
+    },
+    userAgent: {
+      type: String,
+    },
+    ipAddress: {
+      type: String,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+```
+
+#### Indexes
+
+- `userId` - For finding user's tokens
+- `tokenHash` - Unique index for token lookup
+- `expiresAt` - TTL index for automatic cleanup
+- `{ userId: 1, isRevoked: 1 }` - For finding active user tokens
+
+#### Static Methods
+
+- `hashToken(token)` - Hash a refresh token using SHA256
+- `generateToken()` - Generate a cryptographically secure random token
+- `createToken(userId, options)` - Create and save a new refresh token
+- `findByToken(token)` - Find a valid, non-revoked token
+- `revokeToken(token)` - Mark a token as revoked
+- `revokeAllUserTokens(userId)` - Revoke all tokens for a user
+- `cleanupExpired()` - Remove expired and revoked tokens
+
+#### Security Features
+
+- Tokens are hashed before storage (SHA256)
+- Automatic expiration with TTL index
+- Token rotation on refresh
+- Tracking of user agent and IP address
+- Revocation support for logout and password changes
+
+### UserRegistrationRequest
+
+The UserRegistrationRequest model stores pending registration requests that require admin approval.
+
+```javascript
+const userRegistrationRequestSchema = new mongoose.Schema(
+  {
+    role: {
+      type: String,
+      enum: ['Merchant', 'TruckOwner', 'Driver'],
+      required: true,
+    },
+    state: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: 'PENDING',
+    },
+    submittedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    payload: {
+      type: mongoose.Schema.Types.Mixed,
+      required: true,
+    },
+    rejectionReason: {
+      type: String,
+    },
+    processedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    processedAt: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+```
+
+#### Indexes
+
+- `role` - For filtering by role
+- `state` - For filtering by status
+- `submittedBy` - For finding requests submitted by a user
+
+#### Static Methods
+
+- `approveRequest(requestId, adminId)` - Approve a registration request and create user
+- `rejectRequest(requestId, adminId, reason)` - Reject a registration request
+
 ### User
 
 The User model represents different types of users in the system with role-based fields.
@@ -84,21 +205,28 @@ const userSchema = new mongoose.Schema(
     // Password reset fields
     passwordResetToken: String,
     passwordResetExpires: Date,
-    // Common fields
-    active: {
-      type: Boolean,
-      default: true,
+    otp: {
+      codeHash: {
+        type: String,
+        select: false,
+      },
+      expiresAt: Date,
+      attemptCount: {
+        type: Number,
+        default: 0,
+      },
+      lastSentAt: Date,
+      resendCount: {
+        type: Number,
+        default: 0,
+      },
+      lastVerifiedAt: Date,
     },
-  },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-  }
-);
-```
-
-#### Virtual Fields
+    approvalStatus: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: 'APPROVED',
+    },
 
 - `trucks`: References trucks owned by a truck owner
 - `drivers`: References drivers under a truck owner

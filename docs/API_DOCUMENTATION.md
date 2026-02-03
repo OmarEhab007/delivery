@@ -12,15 +12,45 @@ https://api.delivery-app.com/api/v1
 
 ## Authentication
 
-Most API endpoints require authentication using JSON Web Tokens (JWT). The token should be included in the `Authorization` header of each request:
+Most API endpoints require authentication using JSON Web Tokens (JWT). The application implements a secure refresh token rotation system for enhanced security.
 
+### Token Types
+
+The application uses two types of tokens:
+
+1. **Access Token** (Short-lived: 15 minutes)
+   - Used for API authentication
+   - Included in the `Authorization` header: `Authorization: Bearer <access_token>`
+
+2. **Refresh Token** (Long-lived: 7 days)
+   - Used to obtain new access tokens
+   - Stored securely on the client
+   - Automatically rotated on each refresh for security
+
+### Authentication Flow
+
+1. **Login**: Receive both access and refresh tokens
+2. **API Access**: Use access token in Authorization header
+3. **Token Refresh**: When access token expires, use refresh token to get new tokens
+4. **Refresh Rotation**: Old refresh token is revoked, new one issued (security best practice)
+5. **Logout**: Revoke the refresh token
+
+### Getting Tokens
+
+To obtain authentication tokens, use the login endpoint as described in the Auth API section. The response includes both tokens:
+
+```json
+{
+  "status": "success",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "a1b2c3d4e5f6...",
+  "expiresIn": "15m",
+  "refreshExpiresIn": "7d",
+  "data": {
+    "user": { /* user object */ }
+  }
+}
 ```
-Authorization: Bearer <token>
-```
-
-### Getting a Token
-
-To obtain an authentication token, use the login endpoint as described in the Auth API section.
 
 ## Common Response Formats
 
@@ -93,6 +123,7 @@ Register different types of users in the system.
 - **URL**: `/auth/register/merchant`
 - **Method**: `POST`
 - **Auth required**: No
+- **Description**: Submit a merchant registration request. The account requires admin approval before login.
 - **Request Body**:
   ```json
   {
@@ -103,20 +134,14 @@ Register different types of users in the system.
     "role": "Merchant"
   }
   ```
-- **Success Response**: `201 Created`
+- **Success Response**: `202 Accepted`
   ```json
   {
     "status": "success",
+    "message": "Registration submitted for admin approval",
     "data": {
-      "user": {
-        "_id": "user_id",
-        "name": "Merchant Name",
-        "email": "merchant@example.com",
-        "phone": "1234567890",
-        "role": "Merchant",
-        "createdAt": "2023-01-01T00:00:00.000Z"
-      },
-      "token": "jwt_token"
+      "requestId": "request_id",
+      "state": "PENDING"
     }
   }
   ```
@@ -126,6 +151,7 @@ Register different types of users in the system.
 - **URL**: `/auth/register/truckOwner`
 - **Method**: `POST`
 - **Auth required**: No
+- **Description**: Submit a truck owner registration request. The account requires admin approval before login.
 - **Request Body**:
   ```json
   {
@@ -138,22 +164,14 @@ Register different types of users in the system.
     "companyAddress": "123 Transportation Ave"
   }
   ```
-- **Success Response**: `201 Created`
+- **Success Response**: `202 Accepted`
   ```json
   {
     "status": "success",
+    "message": "Registration submitted for admin approval",
     "data": {
-      "user": {
-        "_id": "user_id",
-        "name": "Owner Name",
-        "email": "owner@example.com",
-        "phone": "1234567890",
-        "role": "TruckOwner",
-        "companyName": "Trucking Company",
-        "companyAddress": "123 Transportation Ave",
-        "createdAt": "2023-01-01T00:00:00.000Z"
-      },
-      "token": "jwt_token"
+      "requestId": "request_id",
+      "state": "PENDING"
     }
   }
   ```
@@ -163,6 +181,7 @@ Register different types of users in the system.
 - **URL**: `/auth/register/driver`
 - **Method**: `POST`
 - **Auth required**: Yes (Truck Owner only)
+- **Description**: Submit a driver registration request. The account requires admin approval before login.
 - **Request Body**:
   ```json
   {
@@ -174,21 +193,14 @@ Register different types of users in the system.
     "licenseNumber": "DL123456"
   }
   ```
-- **Success Response**: `201 Created`
+- **Success Response**: `202 Accepted`
   ```json
   {
     "status": "success",
+    "message": "Driver registration submitted for admin approval",
     "data": {
-      "user": {
-        "_id": "user_id",
-        "name": "Driver Name",
-        "email": "driver@example.com",
-        "phone": "1234567890",
-        "role": "Driver",
-        "ownerId": "owner_user_id",
-        "licenseNumber": "DL123456",
-        "createdAt": "2023-01-01T00:00:00.000Z"
-      }
+      "requestId": "request_id",
+      "state": "PENDING"
     }
   }
   ```
@@ -209,16 +221,65 @@ Register different types of users in the system.
   ```json
   {
     "status": "success",
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "a1b2c3d4e5f6g7h8i9j0...",
+    "expiresIn": "15m",
+    "refreshExpiresIn": "7d",
     "data": {
       "user": {
         "_id": "user_id",
         "name": "User Name",
         "email": "user@example.com",
         "role": "Merchant"
-        // Other user fields based on role
-      },
-      "token": "jwt_token"
+      }
     }
+  }
+  ```
+
+#### Refresh Access Token
+
+- **URL**: `/auth/refresh`
+- **Method**: `POST`
+- **Auth required**: No (uses refresh token)
+- **Description**: Get a new access token using a valid refresh token. The old refresh token is revoked and a new one is issued (token rotation).
+- **Request Body**:
+  ```json
+  {
+    "refreshToken": "a1b2c3d4e5f6g7h8i9j0..."
+  }
+  ```
+- **Success Response**: `200 OK`
+  ```json
+  {
+    "status": "success",
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "new_refresh_token...",
+    "expiresIn": "15m",
+    "refreshExpiresIn": "7d"
+  }
+  ```
+- **Error Responses**:
+  - `400 Bad Request`: Refresh token not provided
+  - `401 Unauthorized`: Invalid or expired refresh token
+  - `403 Forbidden`: User account is inactive
+
+#### Logout
+
+- **URL**: `/auth/logout`
+- **Method**: `POST`
+- **Auth required**: No (but refresh token recommended)
+- **Description**: Revoke the refresh token to prevent further use
+- **Request Body**:
+  ```json
+  {
+    "refreshToken": "a1b2c3d4e5f6g7h8i9j0..."
+  }
+  ```
+- **Success Response**: `200 OK`
+  ```json
+  {
+    "status": "success",
+    "message": "Logged out successfully"
   }
   ```
 
@@ -246,6 +307,7 @@ Register different types of users in the system.
 - **URL**: `/auth/otp/verify`
 - **Method**: `POST`
 - **Auth required**: No
+- **Description**: Verify OTP code and authenticate user. Returns both access and refresh tokens.
 - **Request Body**:
   ```json
   {
@@ -257,17 +319,23 @@ Register different types of users in the system.
   ```json
   {
     "status": "success",
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "a1b2c3d4e5f6g7h8i9j0...",
+    "expiresIn": "15m",
+    "refreshExpiresIn": "7d",
     "data": {
       "user": {
         "_id": "user_id",
         "name": "User Name",
         "phone": "+15551234567",
         "role": "Merchant"
-      },
-      "token": "jwt_token"
+      }
     }
   }
   ```
+- **Error Responses**:
+  - `400 Bad Request`: Invalid or expired OTP
+  - `423 Locked (429)`: Maximum OTP attempts exceeded
 
 #### Get Current User
 
