@@ -330,8 +330,7 @@ const TruckOwnerPortal = () => {
         headerName: 'Origin',
         flex: 1,
         minWidth: 180,
-        valueGetter: (params) =>
-          params.row.origin?.address || params.row.origin?.country || '-',
+        valueGetter: (params) => params.row.origin?.address || params.row.origin?.country || '-',
       },
       {
         field: 'destination',
@@ -407,8 +406,9 @@ const TruckOwnerPortal = () => {
         headerName: 'Status',
         flex: 0.6,
         minWidth: 120,
-        renderCell: (params) =>
-          <StatusChip status={params.value} statusMap={applicationStatusMap} />,
+        renderCell: (params) => (
+          <StatusChip status={params.value} statusMap={applicationStatusMap} />
+        ),
       },
       {
         field: 'driver',
@@ -444,7 +444,8 @@ const TruckOwnerPortal = () => {
         flex: 1,
         valueGetter: (params) => {
           const origin = params.row.origin?.country || params.row.origin?.address || '-';
-          const destination = params.row.destination?.country || params.row.destination?.address || '-';
+          const destination =
+            params.row.destination?.country || params.row.destination?.address || '-';
           return `${origin} -> ${destination}`;
         },
       },
@@ -497,11 +498,7 @@ const TruckOwnerPortal = () => {
         subtitle="Bid on available loads, manage assignments, and monitor active shipments"
       />
 
-      <Tabs
-        value={activeTab}
-        onChange={(event, value) => setActiveTab(value)}
-        sx={{ mb: 3 }}
-      >
+      <Tabs value={activeTab} onChange={(event, value) => setActiveTab(value)} sx={{ mb: 3 }}>
         <Tab label="Available Loads" value={tabConfig.available} />
         <Tab label="My Applications" value={tabConfig.applications} />
         <Tab label="Active Loads" value={tabConfig.active} />
@@ -566,7 +563,9 @@ const TruckOwnerPortal = () => {
               Shipment: {selectedShipment?._id?.slice(-8).toUpperCase()}
             </Typography>
 
-            {resourcesLoading && <Alert severity="info">Loading available drivers and trucks...</Alert>}
+            {resourcesLoading && (
+              <Alert severity="info">Loading available drivers and trucks...</Alert>
+            )}
 
             <TextField
               select
@@ -588,7 +587,9 @@ const TruckOwnerPortal = () => {
               select
               label="Driver"
               value={bidForm.driverId}
-              onChange={(event) => setBidForm((prev) => ({ ...prev, driverId: event.target.value }))}
+              onChange={(event) =>
+                setBidForm((prev) => ({ ...prev, driverId: event.target.value }))
+              }
               fullWidth
             >
               {availableDrivers.map((driver) => (
@@ -664,7 +665,9 @@ const TruckOwnerPortal = () => {
             <Typography variant="body2" color="text.secondary">
               Shipment: {selectedShipment?._id?.slice(-8).toUpperCase()}
             </Typography>
-            {resourcesLoading && <Alert severity="info">Loading available drivers and trucks...</Alert>}
+            {resourcesLoading && (
+              <Alert severity="info">Loading available drivers and trucks...</Alert>
+            )}
             <TextField
               select
               label="Driver"

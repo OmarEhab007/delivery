@@ -165,7 +165,12 @@ const getShipmentHistory = asyncHandler(async (req, res, next) => {
 const updateLocation = asyncHandler(async (req, res, next) => {
   const { latitude, longitude, shipmentId, address } = req.body;
 
-  if (latitude === undefined || latitude === null || longitude === undefined || longitude === null) {
+  if (
+    latitude === undefined ||
+    latitude === null ||
+    longitude === undefined ||
+    longitude === null
+  ) {
     return next(new ApiError('Both latitude and longitude are required', 400));
   }
 

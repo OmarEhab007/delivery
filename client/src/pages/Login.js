@@ -45,11 +45,7 @@ const Login = () => {
         if (result.success) {
           const role = result.user?.role;
           const redirectPath =
-            role === 'TruckOwner'
-              ? '/truck-owner'
-              : role === 'Driver'
-                ? '/driver'
-                : '/dashboard';
+            role === 'TruckOwner' ? '/truck-owner' : role === 'Driver' ? '/driver' : '/dashboard';
           navigate(redirectPath);
         } else {
           setError(result.message);

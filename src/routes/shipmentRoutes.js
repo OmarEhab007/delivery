@@ -193,7 +193,15 @@ router.get('/available', restrictTo('TruckOwner'), truckOwnerController.getAvail
 router.post(
   '/:shipmentId/assign-driver',
   restrictTo('TruckOwner'),
-  [body('driverId').notEmpty().withMessage('Driver ID is required')],
+  isValidObjectId('shipmentId'),
+  [
+    body('driverId')
+      .notEmpty()
+      .withMessage('Driver ID is required')
+      .isMongoId()
+      .withMessage('Driver ID must be a valid ID'),
+  ],
+  handleValidationErrors,
   truckOwnerController.assignShipmentToDriver
 );
 

@@ -47,7 +47,10 @@ const App = () => {
     <React.Suspense fallback={<LoadingFallback />}>
       <Routes>
         {/* Public routes */}
-        <Route path="/login" element={isAuthenticated ? <Navigate to={defaultPath} /> : <Login />} />
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to={defaultPath} /> : <Login />}
+        />
 
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>

@@ -29,13 +29,7 @@ const shipmentStatusMap = {
   DELAYED: { label: 'Delayed', color: 'error' },
 };
 
-const statusOptions = [
-  'LOADING',
-  'IN_TRANSIT',
-  'AT_BORDER',
-  'UNLOADING',
-  'DELIVERED',
-];
+const statusOptions = ['LOADING', 'IN_TRANSIT', 'AT_BORDER', 'UNLOADING', 'DELIVERED'];
 
 const issueTypes = [
   'DELAY',
@@ -218,6 +212,18 @@ const DriverPortal = () => {
       return;
     }
 
+    // Validate file type and size
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (!allowedTypes.includes(podForm.file.type)) {
+      enqueueSnackbar('Invalid file type. Please upload an image or PDF.', { variant: 'warning' });
+      return;
+    }
+    if (podForm.file.size > maxSize) {
+      enqueueSnackbar('File size exceeds 10MB limit', { variant: 'warning' });
+      return;
+    }
+
     setActionLoading(true);
     try {
       await driver.uploadProofOfDelivery(selectedShipment._id, podForm);
@@ -305,11 +311,7 @@ const DriverPortal = () => {
             <Button size="small" variant="outlined" onClick={() => openStatusDialog(params.row)}>
               Update Status
             </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => openLocationDialog(params.row)}
-            >
+            <Button size="small" variant="outlined" onClick={() => openLocationDialog(params.row)}>
               Update Location
             </Button>
             <Button size="small" variant="contained" onClick={() => openPodDialog(params.row)}>
@@ -345,7 +347,12 @@ const DriverPortal = () => {
         noDataMessage="No assigned shipments yet."
       />
 
-      <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={statusDialogOpen}
+        onClose={() => setStatusDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>Update Shipment Status</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -416,7 +423,12 @@ const DriverPortal = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={locationDialogOpen} onClose={() => setLocationDialogOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={locationDialogOpen}
+        onClose={() => setLocationDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>Update Location</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -507,7 +519,12 @@ const DriverPortal = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={issueDialogOpen} onClose={() => setIssueDialogOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={issueDialogOpen}
+        onClose={() => setIssueDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>Report Issue</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
