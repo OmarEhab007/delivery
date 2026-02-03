@@ -93,6 +93,11 @@ const shipmentSchema = new mongoose.Schema(
       default: 'BIDDING',
       required: true,
     },
+    incoterm: {
+      type: String,
+      trim: true,
+      uppercase: true,
+    },
     fixedPriceDetails: {
       amount: {
         type: Number,
@@ -196,6 +201,65 @@ const shipmentSchema = new mongoose.Schema(
       reviewedAt: Date,
       rejectionReason: String,
     },
+    compliance: {
+      status: {
+        type: String,
+        enum: ['PENDING', 'READY'],
+        default: 'PENDING',
+      },
+      acidNumber: {
+        type: String,
+        trim: true,
+      },
+      aciProofDocumentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Document',
+      },
+      brokerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Broker',
+      },
+      documents: {
+        commercialInvoiceDocumentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Document',
+        },
+        packingListDocumentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Document',
+        },
+        billOfLadingDocumentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Document',
+        },
+        waybillDocumentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Document',
+        },
+        certificateOfOriginDocumentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Document',
+        },
+        insuranceDocumentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Document',
+        },
+      },
+      gaftaRequested: {
+        type: Boolean,
+        default: false,
+      },
+      insuranceRequired: {
+        type: Boolean,
+        default: false,
+      },
+      saberStatus: {
+        type: String,
+        enum: ['NOT_APPLICABLE', 'PENDING', 'SUBMITTED', 'APPROVED', 'REJECTED'],
+        default: 'NOT_APPLICABLE',
+      },
+      completedAt: Date,
+    },
     selectedApplicationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Application',
@@ -222,6 +286,31 @@ const shipmentSchema = new mongoose.Schema(
       timestamp: Date,
       address: String,
     },
+    trackingHistory: [
+      {
+        location: {
+          type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point',
+          },
+          coordinates: {
+            type: [Number],
+            default: [0, 0],
+          },
+          address: String,
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+        source: {
+          type: String,
+          enum: ['DRIVER', 'SYSTEM', 'IMPORT'],
+          default: 'DRIVER',
+        },
+      },
+    ],
     paymentDetails: {
       amount: Number,
       currency: {
@@ -463,6 +552,79 @@ shipmentSchema.methods.addTimelineEntry = function (entry) {
       timestamp: new Date(),
     };
   }
+
+  return this.save();
+};
+
+shipmentSchema.methods.isComplianceReady = function () {
+  const compliance = this.compliance || {};
+  const documents = compliance.documents || {};
+
+  const hasAcid = Boolean(compliance.acidNumber && compliance.aciProofDocumentId);
+  const hasBroker = Boolean(compliance.brokerId);
+  const hasInvoice = Boolean(documents.commercialInvoiceDocumentId);
+  const hasPackingList = Boolean(documents.packingListDocumentId);
+  const hasBillOrWaybill = Boolean(documents.billOfLadingDocumentId || documents.waybillDocumentId);
+  const requiresCoo = Boolean(compliance.gaftaRequested);
+  const hasCoo = Boolean(documents.certificateOfOriginDocumentId);
+  const requiresInsurance = Boolean(compliance.insuranceRequired);
+  const hasInsurance = Boolean(documents.insuranceDocumentId);
+
+  if (!hasAcid || !hasBroker || !hasInvoice || !hasPackingList || !hasBillOrWaybill) {
+    return false;
+  }
+
+  if (requiresCoo && !hasCoo) {
+    return false;
+  }
+
+  if (requiresInsurance && !hasInsurance) {
+    return false;
+  }
+
+  return true;
+};
+
+shipmentSchema.methods.refreshComplianceStatus = function () {
+  this.compliance = this.compliance || {};
+  const ready = this.isComplianceReady();
+  this.compliance.status = ready ? 'READY' : 'PENDING';
+  if (ready && !this.compliance.completedAt) {
+    this.compliance.completedAt = new Date();
+  }
+  if (!ready) {
+    this.compliance.completedAt = null;
+  }
+  return ready;
+};
+
+shipmentSchema.methods.addTrackingPoint = function (location, source = 'DRIVER') {
+  // Validate location exists and has valid coordinates
+  if (!location || typeof location.lng !== 'number' || typeof location.lat !== 'number') {
+    return Promise.resolve(this);
+  }
+
+  // Validate coordinate ranges
+  if (location.lng < -180 || location.lng > 180 || location.lat < -90 || location.lat > 90) {
+    return Promise.resolve(this);
+  }
+
+  this.trackingHistory.push({
+    location: {
+      type: 'Point',
+      coordinates: [location.lng, location.lat],
+      address: location.address,
+    },
+    timestamp: new Date(),
+    source,
+  });
+
+  this.currentLocation = {
+    type: 'Point',
+    coordinates: [location.lng, location.lat],
+    timestamp: new Date(),
+    address: location.address,
+  };
 
   return this.save();
 };

@@ -474,10 +474,13 @@ const approveUserRegistrationRequest = asyncHandler(async (req, res, next) => {
       logger.info(`Registration approval email sent to: ${maskEmail(result.user.email)}`);
     } catch (emailError) {
       // Log email error but don't fail the request
-      logger.error(`Failed to send registration approval email to: ${maskEmail(result.user.email)}`, {
-        error: emailError.message,
-        userId: result.user._id,
-      });
+      logger.error(
+        `Failed to send registration approval email to: ${maskEmail(result.user.email)}`,
+        {
+          error: emailError.message,
+          userId: result.user._id,
+        }
+      );
     }
 
     return ApiSuccess(res, {
@@ -587,10 +590,13 @@ const rejectUserRegistrationRequest = asyncHandler(async (req, res, next) => {
     logger.info(`Registration rejection email sent to: ${maskEmail(request.payload.email)}`);
   } catch (emailError) {
     // Log email error but don't fail the request
-    logger.error(`Failed to send registration rejection email to: ${maskEmail(request.payload.email)}`, {
-      error: emailError.message,
-      requestId: request._id,
-    });
+    logger.error(
+      `Failed to send registration rejection email to: ${maskEmail(request.payload.email)}`,
+      {
+        error: emailError.message,
+        requestId: request._id,
+      }
+    );
   }
 
   return ApiSuccess(res, {

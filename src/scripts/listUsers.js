@@ -11,9 +11,7 @@ const listUsers = async () => {
     await mongoose.connect(process.env.MONGODB_URI);
     logger.info('Connected to MongoDB for listUsers');
 
-    const users = await User.find()
-      .select('name email role adminPermissions active')
-      .sort('name');
+    const users = await User.find().select('name email role adminPermissions active').sort('name');
 
     if (users.length === 0) {
       logger.info('No users found in the system.');

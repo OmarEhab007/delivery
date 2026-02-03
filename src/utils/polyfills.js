@@ -1,3 +1,10 @@
+/**
+ * SlowBuffer Polyfill
+ *
+ * SlowBuffer was deprecated in Node.js 6+ but some older dependencies
+ * (particularly crypto-related packages like jsonwebtoken) may still
+ * reference it. This polyfill ensures backward compatibility.
+ */
 const buffer = require('buffer');
 
 if (!buffer.SlowBuffer) {

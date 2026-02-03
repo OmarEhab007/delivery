@@ -18,6 +18,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 const initializeAdminUser = require('./utils/initAdmin');
 const documentService = require('./services/documentService');
+const { initializeTracking } = require('./services/tracking/trackingService');
 const ensureLogDirectory = require('./utils/ensureLogDir');
 const { requestLogger } = require('./middleware/loggingMiddleware');
 const { apiLimiter, authLimiter, sensitiveOpLimiter } = require('./middleware/rateLimiters');
@@ -319,15 +320,7 @@ app.get('/debug-models', (req, res) => {
 });
 
 // Socket.io setup for real-time tracking
-io.on('connection', (socket) => {
-  logger.info(`User connected: ${socket.id}`);
-
-  // Add socket event handlers here as they are developed
-
-  socket.on('disconnect', () => {
-    logger.info(`User disconnected: ${socket.id}`);
-  });
-});
+initializeTracking(io);
 
 // Use the enhanced error tracking middleware
 app.use(errorHandlerMiddleware());

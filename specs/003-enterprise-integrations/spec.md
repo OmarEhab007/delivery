@@ -5,7 +5,7 @@
 **Status**: Draft  
 **Input**: User description: "Phase 3 enterprise integrations, APIs/webhooks, analytics, automation."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - ERP Integration via Webhooks/API (Priority: P1)
 
@@ -65,7 +65,7 @@ late beyond a defined threshold.
 - How does the system handle webhook delivery failures?
 - What happens when analytics queries span very large date ranges?
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -75,7 +75,7 @@ late beyond a defined threshold.
   and carrier performance.
 - **FR-004**: System MUST allow users to configure automation rules for delays and exceptions.
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **WebhookSubscription**: Target URL, event types, auth token.
 - **IntegrationCredential**: API keys and scopes.
@@ -88,7 +88,7 @@ late beyond a defined threshold.
 - Shipment status changes are emitted as events.
 - Metrics pipeline can aggregate historical data.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

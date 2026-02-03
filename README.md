@@ -34,6 +34,7 @@ The Delivery App is a comprehensive logistics platform that orchestrates interna
 ## Features
 
 ### Authentication & Authorization
+
 - **JWT Access Token System**: Short-lived access tokens (24h default) for API authentication
 - **Refresh Token Rotation**: Secure refresh token system with 7-day expiry and revocation support
 - **Role-based Access Control (RBAC)**: Four user roles with hierarchical permissions
@@ -45,6 +46,7 @@ The Delivery App is a comprehensive logistics platform that orchestrates interna
 - **Password Reset Flow**: Secure token-based password reset via email
 
 ### Email Service
+
 - **Transactional Emails**: Nodemailer-based email service with template support
 - **Email Types**:
   - Password reset emails
@@ -55,6 +57,7 @@ The Delivery App is a comprehensive logistics platform that orchestrates interna
 - **Privacy-compliant Logging**: GDPR/CCPA compliant email address masking in logs
 
 ### Real-time Tracking
+
 - **Socket.IO Integration**: WebSocket-based real-time communication
 - **Live Location Updates**: Drivers can update shipment location in real-time
 - **Room-based Channels**: Join/leave shipment tracking rooms
@@ -64,6 +67,7 @@ The Delivery App is a comprehensive logistics platform that orchestrates interna
 - **Geofencing Support**: Check if locations are within defined boundaries
 
 ### Shipment Management
+
 - **Fixed Price Shipments**: Admin-defined fixed price shipments
 - **Bidding System**: Truck owners can bid on available shipments
 - **Shipment Status Workflow**: Track status through shipment lifecycle
@@ -71,18 +75,21 @@ The Delivery App is a comprehensive logistics platform that orchestrates interna
 - **Document Association**: Link documents to shipments and applications
 
 ### Document Management
+
 - **Secure File Storage**: On-premises document storage with validation
 - **Upload Middleware**: Multi-part form data handling with file validation
 - **Entity Relationships**: Documents linked to shipments, applications, trucks
 - **Audit Trail**: Track document uploads and modifications
 
 ### Input Validation & Security
+
 - **NoSQL Injection Prevention**: MongoDB operator sanitization
 - **Input Validation**: Express-validator middleware for all endpoints
 - **XSS Protection**: Sanitization of user input throughout the application
 - **SQL Injection Prevention**: Parameterized queries via Mongoose ODM
 
 ### Testing Infrastructure
+
 - **Jest Test Framework**: Comprehensive unit and integration tests
 - **MongoDB Memory Server**: Isolated test database
 - **Test Utilities**: Helper functions and data factories
@@ -92,6 +99,7 @@ The Delivery App is a comprehensive logistics platform that orchestrates interna
 ## Technology Stack
 
 ### Backend
+
 - **Runtime**: Node.js 18+
 - **Framework**: Express.js 4.18+
 - **Database**: MongoDB with Mongoose ODM
@@ -101,6 +109,7 @@ The Delivery App is a comprehensive logistics platform that orchestrates interna
 - **Validation**: express-validator 6.15+
 
 ### Security
+
 - **Helmet**: HTTP security headers
 - **CSRF Protection**: csurf for cross-site request forgery prevention
 - **Rate Limiting**: express-rate-limit for API protection
@@ -108,17 +117,20 @@ The Delivery App is a comprehensive logistics platform that orchestrates interna
 - **CORS**: Cross-origin resource sharing configuration
 
 ### Monitoring & Logging
+
 - **Logging**: Winston 3.8+ with daily rotation
 - **Metrics**: Prometheus (prom-client)
 - **Health Checks**: Custom health monitoring endpoints
 
 ### Development
+
 - **Testing**: Jest 29.7+ with Supertest
 - **Linting**: ESLint with Airbnb style guide
 - **Formatting**: Prettier 3.5+
 - **Git Hooks**: Husky + lint-staged for pre-commit checks
 
 ### DevOps
+
 - **Containerization**: Docker with multi-stage builds
 - **Orchestration**: Docker Compose for local development
 - **Process Management**: Nodemon for development
@@ -134,6 +146,7 @@ Before you begin, ensure you have the following installed:
 - **Git**: For version control
 
 ### Optional Dependencies
+
 - **Twilio Account**: For WhatsApp notifications
 - **SMTP Server**: For email services (e.g., Mailtrap, SendGrid)
 - **AWS S3**: For cloud document storage (optional)
@@ -164,6 +177,7 @@ Edit the `.env` file with your configuration (see [Environment Variables](#envir
 ### 4. Initialize the Database
 
 The application will automatically:
+
 - Connect to MongoDB on startup
 - Create necessary indexes
 - Initialize the admin user if none exists
@@ -344,6 +358,7 @@ Interactive API documentation is available via Swagger UI:
 ### Key API Endpoints
 
 #### Authentication
+
 - `POST /api/auth/register` - User registration (requires admin approval)
 - `POST /api/auth/login` - User login (returns access + refresh tokens)
 - `POST /api/auth/refresh-token` - Refresh access token
@@ -352,12 +367,14 @@ Interactive API documentation is available via Swagger UI:
 - `POST /api/auth/reset-password/:token` - Reset password with token
 
 #### Users
+
 - `GET /api/users/me` - Get current user profile
 - `PATCH /api/users/me` - Update current user profile
 - `GET /api/users` - List all users (admin only)
 - `GET /api/users/:id` - Get user by ID (admin only)
 
 #### Shipments
+
 - `GET /api/shipments` - List all shipments
 - `POST /api/shipments` - Create new shipment (merchant)
 - `GET /api/shipments/:id` - Get shipment details
@@ -365,18 +382,21 @@ Interactive API documentation is available via Swagger UI:
 - `DELETE /api/shipments/:id` - Delete shipment
 
 #### Fixed Price Shipments
+
 - `GET /api/fixed-price-shipments` - List fixed price shipments
 - `POST /api/fixed-price-shipments` - Create fixed price shipment (admin)
 - `GET /api/fixed-price-shipments/:id` - Get details
 - `PATCH /api/fixed-price-shipments/:id` - Update shipment (admin)
 
 #### Applications (Bids)
+
 - `GET /api/applications` - List all applications
 - `POST /api/applications` - Submit bid on shipment (truck owner)
 - `GET /api/applications/:id` - Get application details
 - `PATCH /api/applications/:id/status` - Update application status
 
 #### Trucks
+
 - `GET /api/trucks` - List all trucks
 - `POST /api/trucks` - Register new truck (truck owner)
 - `GET /api/trucks/:id` - Get truck details
@@ -384,18 +404,21 @@ Interactive API documentation is available via Swagger UI:
 - `DELETE /api/trucks/:id` - Delete truck
 
 #### Documents
+
 - `GET /api/documents` - List documents
 - `POST /api/documents` - Upload document
 - `GET /api/documents/:id` - Get document
 - `DELETE /api/documents/:id` - Delete document
 
 #### Admin
+
 - `GET /api/admin/users/pending` - List pending registrations
 - `PATCH /api/admin/users/:id/approve` - Approve registration
 - `PATCH /api/admin/users/:id/reject` - Reject registration
 - `GET /api/admin/reports` - Generate reports
 
 #### Health & Metrics
+
 - `GET /health` - Basic health check
 - `GET /health/db` - Database health check
 - `GET /health/storage` - Storage health check
@@ -438,6 +461,7 @@ tests/
 ### Test Coverage
 
 The test suite covers:
+
 - Authentication flows (login, registration, token refresh)
 - Authorization and role-based access control
 - Input validation and sanitization
@@ -599,6 +623,7 @@ delivery-app/
 This application implements multiple layers of security to protect against common vulnerabilities:
 
 ### Authentication & Authorization
+
 - **JWT-based Authentication**: Stateless token-based authentication
 - **Refresh Token Rotation**: Secure token refresh with revocation support
 - **Role-based Access Control**: Four-tier role hierarchy (Admin, Merchant, Truck Owner, Driver)
@@ -606,12 +631,14 @@ This application implements multiple layers of security to protect against commo
 - **Password Hashing**: bcrypt with salt for secure password storage
 
 ### Input Validation & Sanitization
+
 - **NoSQL Injection Prevention**: MongoDB operator sanitization (`express-mongo-sanitize`)
 - **Input Validation**: Request validation using `express-validator`
 - **XSS Protection**: Input sanitization throughout the application
 - **Parameterized Queries**: Mongoose ODM prevents SQL injection
 
 ### HTTP Security
+
 - **Security Headers**: Helmet for secure HTTP headers
   - Content Security Policy (CSP)
   - X-Frame-Options (clickjacking protection)
@@ -622,17 +649,20 @@ This application implements multiple layers of security to protect against commo
 - **CORS Configuration**: Controlled cross-origin resource sharing
 
 ### Rate Limiting
+
 - **General API Limiter**: 100 requests per 15 minutes
 - **Auth Limiter**: 5 requests per 15 minutes for sensitive endpoints
 - **Sensitive Operations**: Stricter limits for password reset, registration
 
 ### Data Protection
+
 - **Environment Variable Validation**: Mandatory variables checked on startup
 - **Secure Password Reset**: Time-limited, single-use reset tokens
 - **Email Masking**: GDPR/CCPA compliant logging
 - **Document Storage**: Secure file upload with validation
 
 ### Security Best Practices
+
 - **No Secrets in Code**: All secrets via environment variables
 - **Error Handling**: Generic error messages to prevent information leakage
 - **Logging**: Structured logging with sensitive data redaction
@@ -727,17 +757,20 @@ We welcome contributions to the Delivery App! Please follow these guidelines:
 ### Development Workflow
 
 1. **Fork the repository** and create a feature branch
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
 
 2. **Write code** following existing patterns and conventions
+
    - Use async/await for asynchronous operations
    - Implement proper error handling
    - Add input validation for new endpoints
    - Write tests for new functionality
 
 3. **Run tests** and ensure they pass
+
    ```bash
    npm test
    npm run lint
@@ -745,6 +778,7 @@ We welcome contributions to the Delivery App! Please follow these guidelines:
    ```
 
 4. **Commit changes** with clear messages
+
    ```bash
    git add .
    git commit -m "Add: Feature description"

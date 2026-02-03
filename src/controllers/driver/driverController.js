@@ -209,6 +209,13 @@ const updateShipmentStatus = asyncHandler(async (req, res, next) => {
     return next(new ApiError('Shipment not found or not assigned to you', 404));
   }
 
+  if (
+    [ShipmentStatus.LOADING, ShipmentStatus.IN_TRANSIT].includes(status) &&
+    !shipment.isComplianceReady()
+  ) {
+    return next(new ApiError('Shipment compliance is incomplete. Cannot dispatch.', 400));
+  }
+
   // Add timeline entry with the new status
   const timelineEntry = {
     status,
@@ -263,6 +270,10 @@ const startDelivery = asyncHandler(async (req, res, next) => {
     return next(
       new ApiError(`Cannot start delivery for shipment with status: ${shipment.status}`, 400)
     );
+  }
+
+  if (!shipment.isComplianceReady()) {
+    return next(new ApiError('Shipment compliance is incomplete. Cannot dispatch.', 400));
   }
 
   // Update shipment

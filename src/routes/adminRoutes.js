@@ -10,6 +10,7 @@ const adminController = require('../controllers/admin/adminController');
 const adminShipmentController = require('../controllers/admin/adminShipmentController');
 const adminApplicationController = require('../controllers/admin/adminApplicationController');
 const adminTruckController = require('../controllers/admin/adminTruckController');
+const adminBrokerController = require('../controllers/admin/adminBrokerController');
 const {
   getUserRegistrationRequests,
   approveUserRegistrationRequest,
@@ -500,6 +501,43 @@ router.patch(
   [body('reason').optional().isString().withMessage('Reason must be a string')],
   adminShipmentController.rejectShipment
 );
+
+router.patch(
+  '/shipments/:id/broker',
+  [body('brokerId').notEmpty().withMessage('Broker ID is required')],
+  adminShipmentController.assignBroker
+);
+
+router
+  .route('/brokers')
+  .get(adminBrokerController.listBrokers)
+  .post(
+    [
+      body('name').notEmpty().withMessage('Broker name is required'),
+      body('licenseNumber').notEmpty().withMessage('License number is required'),
+      body('countriesServed').optional().isArray().withMessage('Countries served must be an array'),
+      body('contacts').optional().isArray().withMessage('Contacts must be an array'),
+      body('contacts.*.email').optional().isEmail().withMessage('Contact email must be valid'),
+    ],
+    adminBrokerController.createBroker
+  );
+
+router
+  .route('/brokers/:id')
+  .get(adminBrokerController.getBrokerById)
+  .patch(
+    [
+      body('name').optional().notEmpty().withMessage('Broker name cannot be empty'),
+      body('licenseNumber').optional().notEmpty().withMessage('License number cannot be empty'),
+      body('status')
+        .optional()
+        .isIn(['ACTIVE', 'INACTIVE'])
+        .withMessage('Status must be ACTIVE or INACTIVE'),
+      body('contacts.*.email').optional().isEmail().withMessage('Contact email must be valid'),
+    ],
+    adminBrokerController.updateBroker
+  )
+  .delete(adminBrokerController.deactivateBroker);
 
 router.route('/registration-requests').get(getUserRegistrationRequests);
 

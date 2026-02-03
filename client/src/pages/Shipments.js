@@ -495,11 +495,7 @@ const Shipments = () => {
                     disabled={isLoading}
                     onClick={() => handleRejectShipment(shipment)}
                   >
-                    {isLoading ? (
-                      <PendingIcon fontSize="small" />
-                    ) : (
-                      <RejectIcon fontSize="small" />
-                    )}
+                    {isLoading ? <PendingIcon fontSize="small" /> : <RejectIcon fontSize="small" />}
                   </IconButton>
                 </span>
               </Tooltip>

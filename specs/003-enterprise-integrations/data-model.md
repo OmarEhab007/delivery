@@ -3,6 +3,7 @@
 ## Entities
 
 ### IntegrationCredential
+
 - `name`
 - `apiKeyHash`
 - `scopes`
@@ -10,6 +11,7 @@
 - `active`
 
 ### WebhookSubscription
+
 - `endpointUrl`
 - `eventTypes`
 - `secret`
@@ -17,6 +19,7 @@
 - `lastDeliveredAt`
 
 ### WebhookDelivery
+
 - `subscriptionId`
 - `eventType`
 - `payload`
@@ -24,12 +27,14 @@
 - `attemptCount`
 
 ### AnalyticsReport
+
 - `tenantId`
 - `periodStart`
 - `periodEnd`
 - `kpis` (on-time %, avg transit time, delay rate)
 
 ### AutomationRule
+
 - `tenantId`
 - `triggerType` (delay, missing-update)
 - `threshold`
