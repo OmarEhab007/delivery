@@ -6,6 +6,7 @@ const { body } = require('express-validator');
 const shipmentController = require('../controllers/shipment/shipmentController');
 const applicationController = require('../controllers/application/applicationController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
+const { singleUpload } = require('../middleware/uploadMiddleware');
 
 // Import validators
 const {
@@ -21,6 +22,11 @@ const {
 // Apply protection middleware to all routes
 router.use(protect);
 
+const setShipmentUploadContext = (req, res, next) => {
+  req.body.entityType = 'Shipment';
+  req.body.entityId = req.params.id;
+  next();
+};
 /**
  * @swagger
  * /api/shipments:
@@ -564,6 +570,52 @@ router.post(
     body('note').optional().notEmpty().withMessage('Note cannot be empty'),
   ],
   shipmentController.addTimelineEntry
+);
+
+router.patch(
+  '/:id/compliance',
+  restrictTo('Merchant'),
+  isValidObjectId('id'),
+  shipmentController.updateComplianceDetails
+);
+
+router.get(
+  '/:id/compliance',
+  restrictTo('Merchant'),
+  isValidObjectId('id'),
+  shipmentController.getComplianceStatus
+);
+
+router.post(
+  '/:id/compliance/documents',
+  restrictTo('Merchant'),
+  isValidObjectId('id'),
+  setShipmentUploadContext,
+  singleUpload('document'),
+  shipmentController.uploadComplianceDocument
+);
+
+router.post(
+  '/:id/payment-proof',
+  restrictTo('Merchant'),
+  isValidObjectId('id'),
+  setShipmentUploadContext,
+  singleUpload('document'),
+  shipmentController.uploadPaymentProof
+);
+
+router.get(
+  '/:id/tracking',
+  restrictTo('Merchant'),
+  isValidObjectId('id'),
+  shipmentController.getTracking
+);
+
+router.get(
+  '/:id/tracking/history',
+  restrictTo('Merchant'),
+  isValidObjectId('id'),
+  shipmentController.getTrackingHistory
 );
 
 module.exports = router;

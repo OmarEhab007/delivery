@@ -10,6 +10,7 @@ const adminController = require('../controllers/admin/adminController');
 const adminShipmentController = require('../controllers/admin/adminShipmentController');
 const adminApplicationController = require('../controllers/admin/adminApplicationController');
 const adminTruckController = require('../controllers/admin/adminTruckController');
+const adminBrokerController = require('../controllers/admin/adminBrokerController');
 const {
   getUserRegistrationRequests,
   approveUserRegistrationRequest,
@@ -500,6 +501,23 @@ router.patch(
   [body('reason').optional().isString().withMessage('Reason must be a string')],
   adminShipmentController.rejectShipment
 );
+
+router.patch(
+  '/shipments/:id/broker',
+  [body('brokerId').notEmpty().withMessage('Broker ID is required')],
+  adminShipmentController.assignBroker
+);
+
+router
+  .route('/brokers')
+  .get(adminBrokerController.listBrokers)
+  .post(adminBrokerController.createBroker);
+
+router
+  .route('/brokers/:id')
+  .get(adminBrokerController.getBrokerById)
+  .patch(adminBrokerController.updateBroker)
+  .delete(adminBrokerController.deactivateBroker);
 
 router.route('/registration-requests').get(getUserRegistrationRequests);
 

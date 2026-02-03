@@ -1,10 +1,41 @@
+const path = require('path');
 const { validationResult } = require('express-validator');
 
 const { Shipment, ShipmentStatus, ShipmentApprovalState } = require('../../models/Shipment');
 const Truck = require('../../models/Truck');
+const { Document, DocumentType } = require('../../models/Document');
 const { ApiError } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
 const metricScheduler = require('../../utils/metricScheduler');
+const trackingService = require('../../services/tracking/trackingService');
+
+const INSURANCE_REQUIRED_INCOTERMS = new Set(['CIF', 'CIP']);
+
+const buildComplianceSummary = (shipment) => {
+  const compliance = shipment.compliance || {};
+  const documents = compliance.documents || {};
+  const missing = [];
+
+  if (!compliance.acidNumber) missing.push('ACID_NUMBER');
+  if (!compliance.aciProofDocumentId) missing.push('ACI_PROOF');
+  if (!compliance.brokerId) missing.push('BROKER');
+  if (!documents.commercialInvoiceDocumentId) missing.push('COMMERCIAL_INVOICE');
+  if (!documents.packingListDocumentId) missing.push('PACKING_LIST');
+  if (!documents.billOfLadingDocumentId && !documents.waybillDocumentId) {
+    missing.push('BILL_OF_LADING_OR_WAYBILL');
+  }
+  if (compliance.gaftaRequested && !documents.certificateOfOriginDocumentId) {
+    missing.push('CERTIFICATE_OF_ORIGIN');
+  }
+  if (compliance.insuranceRequired && !documents.insuranceDocumentId) {
+    missing.push('INSURANCE_CERTIFICATE');
+  }
+
+  return {
+    ready: shipment.isComplianceReady(),
+    missing,
+  };
+};
 
 /**
  * Allowed fields for shipment creation
@@ -122,17 +153,31 @@ exports.createShipment = async (req, res, next) => {
  */
 exports.getMyShipments = async (req, res, next) => {
   try {
-    // Find all shipments belonging to the current merchant
-    const shipments = await Shipment.find({
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const skip = (page - 1) * limit;
+
+    const query = {
       merchantId: req.user.id,
       active: true,
-    });
+    };
+
+    const [shipments, total] = await Promise.all([
+      Shipment.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }),
+      Shipment.countDocuments(query),
+    ]);
 
     res.status(200).json({
       status: 'success',
       results: shipments.length,
       data: {
         shipments,
+        pagination: {
+          total,
+          page,
+          pages: Math.ceil(total / limit),
+          limit,
+        },
       },
     });
   } catch (error) {
@@ -428,6 +473,329 @@ exports.addTimelineEntry = async (req, res, next) => {
       status: 'success',
       data: {
         shipment,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update shipment compliance details
+ * @route PATCH /api/shipments/:id/compliance
+ * @access Private/Merchant
+ */
+exports.updateComplianceDetails = async (req, res, next) => {
+  try {
+    const shipment = await Shipment.findById(req.params.id);
+
+    if (!shipment) {
+      return next(new ApiError('No shipment found with that ID', 404));
+    }
+
+    if (req.user.role === 'Merchant' && shipment.merchantId.toString() !== req.user.id) {
+      return next(new ApiError('You do not have permission to update this shipment', 403));
+    }
+
+    const { acidNumber, gaftaRequested, incoterm, saberStatus } = req.body;
+
+    shipment.compliance = shipment.compliance || {};
+
+    if (acidNumber !== undefined) {
+      shipment.compliance.acidNumber = String(acidNumber).trim();
+    }
+
+    if (gaftaRequested !== undefined) {
+      shipment.compliance.gaftaRequested = Boolean(gaftaRequested);
+    }
+
+    if (incoterm !== undefined) {
+      const normalizedIncoterm = String(incoterm).trim().toUpperCase();
+      shipment.incoterm = normalizedIncoterm;
+      shipment.compliance.insuranceRequired = INSURANCE_REQUIRED_INCOTERMS.has(
+        normalizedIncoterm
+      );
+    }
+
+    if (saberStatus !== undefined) {
+      shipment.compliance.saberStatus = saberStatus;
+    }
+
+    shipment.refreshComplianceStatus();
+    await shipment.save();
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        compliance: shipment.compliance,
+        summary: buildComplianceSummary(shipment),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get shipment compliance status
+ * @route GET /api/shipments/:id/compliance
+ * @access Private/Merchant
+ */
+exports.getComplianceStatus = async (req, res, next) => {
+  try {
+    const shipment = await Shipment.findById(req.params.id);
+
+    if (!shipment) {
+      return next(new ApiError('No shipment found with that ID', 404));
+    }
+
+    if (req.user.role === 'Merchant' && shipment.merchantId.toString() !== req.user.id) {
+      return next(new ApiError('You do not have permission to view this shipment', 403));
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        compliance: shipment.compliance,
+        summary: buildComplianceSummary(shipment),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Upload shipment compliance document
+ * @route POST /api/shipments/:id/compliance/documents
+ * @access Private/Merchant
+ */
+exports.uploadComplianceDocument = async (req, res, next) => {
+  try {
+    const shipment = await Shipment.findById(req.params.id);
+
+    if (!shipment) {
+      return next(new ApiError('No shipment found with that ID', 404));
+    }
+
+    if (req.user.role === 'Merchant' && shipment.merchantId.toString() !== req.user.id) {
+      return next(new ApiError('You do not have permission to update this shipment', 403));
+    }
+
+    const { documentType, name, description } = req.body;
+
+    if (!req.file) {
+      return next(new ApiError('No file was uploaded', 400));
+    }
+
+    const allowedComplianceTypes = new Set([
+      DocumentType.COMMERCIAL_INVOICE,
+      DocumentType.SHIPPING_INVOICE,
+      DocumentType.PACKING_LIST,
+      DocumentType.BILL_OF_LADING,
+      DocumentType.WAYBILL,
+      DocumentType.CERTIFICATE_OF_ORIGIN,
+      DocumentType.ACID_PROOF,
+      DocumentType.INSURANCE_CERTIFICATE,
+    ]);
+
+    if (!documentType || !allowedComplianceTypes.has(documentType)) {
+      return next(new ApiError('Invalid document type for compliance upload', 400));
+    }
+
+    const filePath = req.file.relativePath
+      ? req.file.relativePath
+      : req.file.path.replace(`${process.cwd()}/uploads/`, '');
+
+    const document = new Document({
+      name: name || req.file.originalname,
+      description,
+      filePath,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+      fileExtension: path.extname(req.file.originalname),
+      originalName: req.file.originalname,
+      documentType,
+      uploadedBy: req.user.id,
+      entityType: 'Shipment',
+      entityId: shipment._id,
+    });
+
+    await document.save();
+
+    await shipment.addDocument(document);
+
+    shipment.compliance = shipment.compliance || {};
+    shipment.compliance.documents = shipment.compliance.documents || {};
+
+    const complianceDocMap = {
+      [DocumentType.COMMERCIAL_INVOICE]: 'commercialInvoiceDocumentId',
+      [DocumentType.SHIPPING_INVOICE]: 'commercialInvoiceDocumentId',
+      [DocumentType.PACKING_LIST]: 'packingListDocumentId',
+      [DocumentType.BILL_OF_LADING]: 'billOfLadingDocumentId',
+      [DocumentType.WAYBILL]: 'waybillDocumentId',
+      [DocumentType.CERTIFICATE_OF_ORIGIN]: 'certificateOfOriginDocumentId',
+      [DocumentType.INSURANCE_CERTIFICATE]: 'insuranceDocumentId',
+    };
+
+    if (documentType === DocumentType.ACID_PROOF) {
+      shipment.compliance.aciProofDocumentId = document._id;
+    } else if (complianceDocMap[documentType]) {
+      shipment.compliance.documents[complianceDocMap[documentType]] = document._id;
+    }
+
+    shipment.refreshComplianceStatus();
+    await shipment.save();
+
+    return res.status(201).json({
+      status: 'success',
+      data: {
+        document,
+        compliance: shipment.compliance,
+        summary: buildComplianceSummary(shipment),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Upload payment proof
+ * @route POST /api/shipments/:id/payment-proof
+ * @access Private/Merchant
+ */
+exports.uploadPaymentProof = async (req, res, next) => {
+  try {
+    const shipment = await Shipment.findById(req.params.id);
+
+    if (!shipment) {
+      return next(new ApiError('No shipment found with that ID', 404));
+    }
+
+    if (req.user.role === 'Merchant' && shipment.merchantId.toString() !== req.user.id) {
+      return next(new ApiError('You do not have permission to update this shipment', 403));
+    }
+
+    if (!req.file) {
+      return next(new ApiError('No file was uploaded', 400));
+    }
+
+    const { amount, currency } = req.body;
+    const filePath = req.file.relativePath
+      ? req.file.relativePath
+      : req.file.path.replace(`${process.cwd()}/uploads/`, '');
+
+    const document = new Document({
+      name: req.body.name || req.file.originalname,
+      description: req.body.description,
+      filePath,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+      fileExtension: path.extname(req.file.originalname),
+      originalName: req.file.originalname,
+      documentType: DocumentType.PAYMENT_RECEIPT,
+      uploadedBy: req.user.id,
+      entityType: 'Shipment',
+      entityId: shipment._id,
+    });
+
+    await document.save();
+    await shipment.addDocument(document);
+
+    shipment.paymentDetails = shipment.paymentDetails || {};
+    shipment.paymentDetails.paymentReceiptDocumentId = document._id;
+    shipment.paymentDetails.paymentDate = new Date();
+    shipment.paymentDetails.paymentVerified = false;
+    shipment.paymentDetails.paymentReceiptUrl = `/uploads/${document.filePath}`;
+    if (amount !== undefined && amount !== '') {
+      const parsedAmount = Number(amount);
+      if (!Number.isNaN(parsedAmount)) {
+        shipment.paymentDetails.amount = parsedAmount;
+      }
+    }
+    if (currency) {
+      shipment.paymentDetails.currency = currency;
+    }
+
+    await shipment.save();
+
+    await shipment.addTimelineEntry({
+      status: shipment.status,
+      note: 'Payment proof uploaded by merchant',
+    });
+
+    return res.status(201).json({
+      status: 'success',
+      data: {
+        document,
+        paymentDetails: shipment.paymentDetails,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get shipment tracking info
+ * @route GET /api/shipments/:id/tracking
+ * @access Private/Merchant
+ */
+exports.getTracking = async (req, res, next) => {
+  try {
+    const shipment = await Shipment.findById(req.params.id);
+
+    if (!shipment) {
+      return next(new ApiError('No shipment found with that ID', 404));
+    }
+
+    if (req.user.role === 'Merchant' && shipment.merchantId.toString() !== req.user.id) {
+      return next(new ApiError('You do not have permission to view this shipment', 403));
+    }
+
+    let eta = null;
+    try {
+      eta = await trackingService.calculateETA(shipment._id);
+    } catch (etaError) {
+      logger.warn(`Failed to calculate ETA: ${etaError.message}`);
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        currentLocation: shipment.currentLocation,
+        lastUpdate: shipment.currentLocation?.timestamp || null,
+        eta,
+        status: shipment.status,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get shipment tracking history
+ * @route GET /api/shipments/:id/tracking/history
+ * @access Private/Merchant
+ */
+exports.getTrackingHistory = async (req, res, next) => {
+  try {
+    const shipment = await Shipment.findById(req.params.id, 'trackingHistory merchantId');
+
+    if (!shipment) {
+      return next(new ApiError('No shipment found with that ID', 404));
+    }
+
+    if (req.user.role === 'Merchant' && shipment.merchantId.toString() !== req.user.id) {
+      return next(new ApiError('You do not have permission to view this shipment', 403));
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        trackingHistory: shipment.trackingHistory || [],
       },
     });
   } catch (error) {

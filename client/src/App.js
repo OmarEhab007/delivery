@@ -9,6 +9,7 @@ import { useAuth } from './context/AuthContext';
 
 // Lazy load other pages to improve initial load time
 const Shipments = React.lazy(() => import('./pages/Shipments'));
+const MerchantShipments = React.lazy(() => import('./pages/MerchantShipments'));
 const Applications = React.lazy(() => import('./pages/Applications'));
 const Trucks = React.lazy(() => import('./pages/Trucks'));
 const Settings = React.lazy(() => import('./pages/Settings'));
@@ -43,6 +44,14 @@ const App = () => {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/users" element={<Users />} />
             <Route path="/shipments" element={<Shipments />} />
+            <Route
+              path="/merchant/shipments"
+              element={
+                <ProtectedRoute requiredRole="Merchant">
+                  <MerchantShipments />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/applications" element={<Applications />} />
             <Route path="/trucks" element={<Trucks />} />
             <Route

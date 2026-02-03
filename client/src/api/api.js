@@ -148,6 +148,31 @@ export const shipments = {
   getMerchantShipmentById: (id) => api.get(`/api/shipments/${id}`),
   updateMerchantShipment: (id, shipmentData) => api.patch(`/api/shipments/${id}`, shipmentData),
   cancelShipment: (id, reason) => api.patch(`/api/shipments/${id}/cancel`, { reason }),
+  updateComplianceDetails: (id, payload) => api.patch(`/api/shipments/${id}/compliance`, payload),
+  getComplianceStatus: (id) => api.get(`/api/shipments/${id}/compliance`),
+  uploadComplianceDocument: (id, payload) => {
+    const formData = new FormData();
+    formData.append('document', payload.file);
+    formData.append('documentType', payload.documentType);
+    formData.append('name', payload.name || payload.file?.name || 'Compliance document');
+    if (payload.description) formData.append('description', payload.description);
+    return api.post(`/api/shipments/${id}/compliance/documents`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  uploadPaymentProof: (id, payload) => {
+    const formData = new FormData();
+    formData.append('document', payload.file);
+    if (payload.name) formData.append('name', payload.name);
+    if (payload.description) formData.append('description', payload.description);
+    if (payload.amount !== undefined) formData.append('amount', payload.amount);
+    if (payload.currency) formData.append('currency', payload.currency);
+    return api.post(`/api/shipments/${id}/payment-proof`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  getTracking: (id) => api.get(`/api/shipments/${id}/tracking`),
+  getTrackingHistory: (id) => api.get(`/api/shipments/${id}/tracking/history`),
 
   // Safe create shipment with CSRF token
   safeCreateShipment: async (shipmentData) => {

@@ -1,4 +1,5 @@
 const { Shipment, ShipmentStatus, ShipmentApprovalState } = require('../../models/Shipment');
+const Broker = require('../../models/Broker');
 const { ApiError } = require('../../middleware/errorHandler');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
 const { asyncHandler } = require('../../middleware/asyncHandler');
@@ -150,6 +151,13 @@ const changeShipmentStatus = asyncHandler(async (req, res, next) => {
     return next(new ApiError('Shipment not found', 404));
   }
 
+  if (
+    [ShipmentStatus.LOADING, ShipmentStatus.IN_TRANSIT].includes(status) &&
+    !shipment.isComplianceReady()
+  ) {
+    return next(new ApiError('Shipment compliance is incomplete. Cannot dispatch.', 400));
+  }
+
   shipment.status = status;
 
   // Add timeline entry
@@ -225,6 +233,38 @@ const rejectShipment = asyncHandler(async (req, res, next) => {
 
   return ApiSuccess(res, {
     message: 'Shipment rejected successfully',
+    shipment,
+  });
+});
+
+const assignBroker = asyncHandler(async (req, res, next) => {
+  const { brokerId } = req.body;
+
+  if (!brokerId) {
+    return next(new ApiError('Broker ID is required', 400));
+  }
+
+  const shipment = await Shipment.findById(req.params.id);
+  if (!shipment) {
+    return next(new ApiError('Shipment not found', 404));
+  }
+
+  const broker = await Broker.findById(brokerId);
+  if (!broker) {
+    return next(new ApiError('Broker not found', 404));
+  }
+  if (broker.status !== 'ACTIVE') {
+    return next(new ApiError('Broker is not active', 400));
+  }
+
+  shipment.compliance = shipment.compliance || {};
+  shipment.compliance.brokerId = broker._id;
+  shipment.refreshComplianceStatus();
+
+  await shipment.save();
+
+  return ApiSuccess(res, {
+    message: 'Broker assigned successfully',
     shipment,
   });
 });
@@ -322,4 +362,5 @@ module.exports = {
   assignShipmentToDriver,
   approveShipment,
   rejectShipment,
+  assignBroker,
 };

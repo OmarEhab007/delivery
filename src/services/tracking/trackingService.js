@@ -102,15 +102,7 @@ const updateShipmentLocation = async (shipmentId, location) => {
       throw new Error(`Shipment not found: ${shipmentId}`);
     }
 
-    // Update the current location using GeoJSON format
-    shipment.currentLocation = {
-      type: 'Point',
-      coordinates: [location.lng, location.lat],
-      timestamp: new Date(),
-      address: location.address, // Optional
-    };
-
-    await shipment.save();
+    await shipment.addTrackingPoint(location, 'DRIVER');
 
     return shipment;
   } catch (error) {
