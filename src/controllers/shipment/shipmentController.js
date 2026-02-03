@@ -7,6 +7,51 @@ const logger = require('../../utils/logger');
 const metricScheduler = require('../../utils/metricScheduler');
 
 /**
+ * Allowed fields for shipment creation
+ * SEC-002: Whitelist approach prevents mass assignment attacks
+ * Fields like status, assignedTruckId, merchantId, isApproved are NOT allowed
+ */
+const ALLOWED_CREATE_FIELDS = [
+  'origin',
+  'destination',
+  'cargoDetails',
+  'pricing',
+  'notes',
+  'scheduledDate',
+  'pricingType',
+  'specialRequirements',
+];
+
+/**
+ * Allowed fields for shipment updates
+ */
+const ALLOWED_UPDATE_FIELDS = [
+  'origin',
+  'destination',
+  'cargoDetails',
+  'pricing',
+  'notes',
+  'scheduledDate',
+  'specialRequirements',
+];
+
+/**
+ * Helper function to pick only allowed fields from an object
+ * @param {Object} source - Source object to pick from
+ * @param {Array} allowedFields - Array of allowed field names
+ * @returns {Object} Object containing only allowed fields
+ */
+const pickAllowedFields = (source, allowedFields) => {
+  const result = {};
+  allowedFields.forEach((field) => {
+    if (source[field] !== undefined) {
+      result[field] = source[field];
+    }
+  });
+  return result;
+};
+
+/**
  * Create a new shipment
  * @route POST /api/v1/shipments
  * @access Private/Merchant
@@ -19,36 +64,37 @@ exports.createShipment = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Set merchantId to current user id
-    req.body.merchantId = req.user.id;
+    // SEC-002: Pick only allowed fields from request body
+    // This prevents mass assignment attacks where users try to set
+    // fields like status, assignedTruckId, merchantId, isApproved
+    const shipmentData = pickAllowedFields(req.body, ALLOWED_CREATE_FIELDS);
 
-    // Set initial status and approval metadata
-    req.body.status = ShipmentStatus.PENDING_APPROVAL;
-    req.body.approval = {
+    // Set merchantId to current user id (server-controlled, not from request)
+    shipmentData.merchantId = req.user.id;
+
+    // Set initial status and approval metadata (server-controlled)
+    shipmentData.status = ShipmentStatus.PENDING_APPROVAL;
+    shipmentData.approval = {
       state: ShipmentApprovalState.PENDING,
       submittedBy: req.user.id,
       submittedAt: new Date(),
     };
 
     // Default to BIDDING if pricingType not specified
-    if (!req.body.pricingType) {
-      req.body.pricingType = 'BIDDING';
+    if (!shipmentData.pricingType) {
+      shipmentData.pricingType = 'BIDDING';
     }
 
-    // Add initial timeline entry
-    const initialTimeline = {
-      status: ShipmentStatus.PENDING_APPROVAL,
-      note: 'Shipment submitted for admin approval',
-    };
+    // Add initial timeline entry (server-controlled)
+    shipmentData.timeline = [
+      {
+        status: ShipmentStatus.PENDING_APPROVAL,
+        note: 'Shipment submitted for admin approval',
+      },
+    ];
 
-    if (!req.body.timeline) {
-      req.body.timeline = [initialTimeline];
-    } else {
-      req.body.timeline.unshift(initialTimeline);
-    }
-
-    // Create new shipment
-    const shipment = await Shipment.create(req.body);
+    // Create new shipment with sanitized data
+    const shipment = await Shipment.create(shipmentData);
 
     try {
       await metricScheduler.updateShipmentStatusMetrics();
@@ -165,15 +211,16 @@ exports.updateShipment = async (req, res, next) => {
       return next(new ApiError('You do not have permission to update this shipment', 403));
     }
 
-    // Check if shipment status allows updates (CANCELLED removed - cannot update cancelled shipments)
-    if (
-      ![ShipmentStatus.PENDING_APPROVAL, ShipmentStatus.REQUESTED].includes(shipment.status)
-    ) {
+    // Check if shipment status allows updates (CANCELLED shipments cannot be updated)
+    if (![ShipmentStatus.PENDING_APPROVAL, ShipmentStatus.REQUESTED].includes(shipment.status)) {
       return next(new ApiError(`Cannot update shipment with status: ${shipment.status}`, 400));
     }
 
-    // Update shipment
-    const updatedShipment = await Shipment.findByIdAndUpdate(req.params.id, req.body, {
+    // SEC-002: Pick only allowed fields from request body for update
+    const updateData = pickAllowedFields(req.body, ALLOWED_UPDATE_FIELDS);
+
+    // Update shipment with sanitized data
+    const updatedShipment = await Shipment.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     });

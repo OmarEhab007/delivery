@@ -25,8 +25,11 @@ const { csrfProtection, handleCSRFError, addCSRFHeaders } = require('./middlewar
 const { configureSecurityHeaders, handleCSPReports } = require('./middleware/securityHeaders');
 // Import Swagger configuration
 const { swaggerServe, swaggerSetup } = require('./config/swagger');
-// Import auth middleware for swagger guards
+// Import auth middleware for Swagger guard and protected routes
 const { authenticateToken, restrictTo } = require('./middleware/authMiddleware');
+
+// Import sanitization middleware for NoSQL injection prevention
+const mongoSanitize = require('./middleware/sanitization');
 
 // Import monitoring utilities
 const metrics = require('./utils/metrics');
@@ -137,13 +140,13 @@ app.use(
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// SEC-013: Cookie secret must be set in production (no fallback)
-// OWASP A02:2021 - Cryptographic Failures
-const cookieSecret = process.env.COOKIE_SECRET || (process.env.NODE_ENV !== 'production' ? 'delivery-app-secret-dev' : null);
-if (!cookieSecret) {
-  throw new Error('COOKIE_SECRET environment variable must be set in production');
-}
-app.use(cookieParser(cookieSecret));
+
+// NoSQL Injection Sanitization - SEC-001: Prevent MongoDB operator injection
+// OWASP A03:2021 - Injection
+// Must be applied after body parsing and before any route handlers
+app.use(mongoSanitize);
+
+app.use(cookieParser(process.env.COOKIE_SECRET || 'delivery-app-secret'));
 
 // Add CSRF-related security headers to all responses
 app.use(addCSRFHeaders);
@@ -169,13 +172,13 @@ app.use(requestLogger);
 app.use(handleCSRFError);
 
 // CSP violation reporting endpoint
-// app.post(
-//   '/api/csp-report',
-//   express.json({
-//     type: 'application/csp-report',
-//   }),
-//   handleCSPReports()
-// );
+app.post(
+  '/api/csp-report',
+  express.json({
+    type: 'application/csp-report',
+  }),
+  handleCSPReports()
+);
 
 // Apply auth rate limiting
 app.use('/api/auth/login', authLimiter);
@@ -249,8 +252,8 @@ const csrfProtectedPaths = [
 ];
 
 // Apply CSRF protection to routes that modify data
-csrfProtectedPaths.forEach((path) => {
-  app.all(path, csrfProtection);
+csrfProtectedPaths.forEach((routePath) => {
+  app.all(routePath, csrfProtection);
 });
 
 // Add Swagger documentation routes (restricted by default)
@@ -272,12 +275,7 @@ app.use('/api/driver', driverRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/truck-owner', truckOwnerRoutes);
 // Add metrics routes
-app.use(
-  '/api/metrics',
-  authenticateToken,
-  restrictTo('Admin'),
-  metricsRoutes
-);
+app.use('/api/metrics', authenticateToken, restrictTo('Admin'), metricsRoutes);
 // Add reporting routes
 app.use('/api/reports', reportingRoutes);
 // Add other routes as they are developed
@@ -316,7 +314,8 @@ if (process.env.NODE_ENV !== 'production') {
 // SEC-007: Socket.io authentication middleware
 // OWASP A07:2021 - Identification and Authentication Failures
 io.use((socket, next) => {
-  const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace('Bearer ', '');
+  const token =
+    socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace('Bearer ', '');
 
   if (!token) {
     logger.warn(`Socket connection rejected: No token provided (${socket.id})`);
@@ -326,8 +325,7 @@ io.use((socket, next) => {
   try {
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // Use socket.data.user per Socket.IO 4.x convention
-    socket.data.user = decoded;
+    socket.user = decoded;
     next();
   } catch (error) {
     logger.warn(`Socket connection rejected: Invalid token (${socket.id}) - ${error.message}`);
@@ -337,7 +335,7 @@ io.use((socket, next) => {
 
 // Socket.io setup for real-time tracking
 io.on('connection', (socket) => {
-  logger.info(`User connected: ${socket.id} (User: ${socket.data.user?.id || 'unknown'})`);
+  logger.info(`User connected: ${socket.id} (User: ${socket.user?.id || 'unknown'})`);
 
   // Add socket event handlers here as they are developed
 
@@ -368,12 +366,12 @@ if (process.env.NODE_ENV !== 'test') {
     if (err.code === 'EADDRINUSE') {
       logger.error(`Port ${PORT} is already in use. Please use a different port.`);
       console.error(
-        `❌ Error: Port ${PORT} is already in use. Please use a different port or stop the process using it.`
+        `Error: Port ${PORT} is already in use. Please use a different port or stop the process using it.`
       );
       process.exit(1);
     } else {
       logger.error(`Error checking port availability: ${err.message}`, { error: err });
-      console.error(`❌ Error checking port availability: ${err.message}`);
+      console.error(`Error checking port availability: ${err.message}`);
     }
   });
 
@@ -387,7 +385,7 @@ if (process.env.NODE_ENV !== 'test') {
         })
         .on('error', (err) => {
           logger.error(`Error starting server: ${err.message}`, { error: err });
-          console.error(`❌ Error starting server: ${err.message}`);
+          console.error(`Error starting server: ${err.message}`);
         });
     });
   });
@@ -398,14 +396,14 @@ if (process.env.NODE_ENV !== 'test') {
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (err) => {
     logger.error(`Unhandled Rejection: ${err.message}`, { error: err });
-    console.error(`❌ Unhandled Promise Rejection: ${err.message}`);
+    console.error(`Unhandled Promise Rejection: ${err.message}`);
     // Don't exit the process automatically, just log the error
   });
 
   // Handle uncaught exceptions
   process.on('uncaughtException', (err) => {
     logger.error(`Uncaught Exception: ${err.message}`, { error: err });
-    console.error(`❌ Uncaught Exception: ${err.message}`);
+    console.error(`Uncaught Exception: ${err.message}`);
     console.error(err.stack);
     // Give the process time to log the error before exiting
     setTimeout(() => {

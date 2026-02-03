@@ -71,10 +71,10 @@ refreshTokenSchema.statics.createToken = async function (userId, options = {}) {
   const token = this.generateToken();
   const tokenHash = this.hashToken(token);
 
-  // Default expiry: 7 days
-  const expiresInMs =
-    parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN_DAYS, 10) * 24 * 60 * 60 * 1000 ||
-    7 * 24 * 60 * 60 * 1000;
+  // Default expiry: 7 days (use nullish coalescing to handle 0 correctly)
+  const configuredDays = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN_DAYS, 10);
+  const expiryDays = Number.isNaN(configuredDays) ? 7 : configuredDays;
+  const expiresInMs = expiryDays * 24 * 60 * 60 * 1000;
 
   const expiresAt = new Date(Date.now() + expiresInMs);
 
