@@ -34,6 +34,19 @@ const emailFrom = process.env.EMAIL_FROM || 'noreply@deliveryapp.com';
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
 const supportEmail = process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM;
 
+/**
+ * Mask email address for privacy-safe logging (GDPR/CCPA compliant)
+ * @param {string} email - Email address to mask
+ * @returns {string} Masked email (e.g., "u***@example.com")
+ */
+const maskEmail = (email) => {
+  if (!email || typeof email !== 'string') return '[no-email]';
+  const [localPart, domain] = email.split('@');
+  if (!domain) return '[invalid-email]';
+  const maskedLocal = localPart.charAt(0) + '***';
+  return `${maskedLocal}@${domain}`;
+};
+
 // Create transporter (lazy initialization)
 let transporter = null;
 
@@ -90,7 +103,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
   if (isDevelopment || !emailEnabled) {
     logger.info('Email would be sent (development mode)', {
       type: 'EMAIL_DEBUG',
-      to,
+      to: maskEmail(to),
       subject,
       preview: html.substring(0, 200) + '...',
     });
@@ -108,7 +121,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
 
     logger.info('Email sent successfully', {
       type: 'EMAIL_SENT',
-      to,
+      to: maskEmail(to),
       subject,
       messageId: info.messageId,
     });
@@ -120,7 +133,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
   } catch (error) {
     logger.error('Failed to send email', {
       type: 'EMAIL_ERROR',
-      to,
+      to: maskEmail(to),
       subject,
       error: error.message,
     });
@@ -197,4 +210,5 @@ module.exports = {
   sendRejectionEmail,
   sendNotificationEmail,
   verifyConnection,
+  maskEmail,
 };

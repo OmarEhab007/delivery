@@ -280,12 +280,21 @@ exports.refreshAccessToken = async (req, res, next) => {
     // Generate new access token
     const accessToken = generateAccessToken(user._id);
 
-    logger.info(`Access token refreshed for user: ${user.email}`);
+    // Rotate refresh token - revoke old one and issue new one (security best practice)
+    await RefreshToken.revokeToken(refreshToken);
+    const { token: newRefreshToken } = await RefreshToken.createToken(user._id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
+    });
+
+    logger.info(`Access token refreshed for user: ${user._id}`);
 
     res.status(200).json({
       status: 'success',
       accessToken,
+      refreshToken: newRefreshToken,
       expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+      refreshExpiresIn: `${REFRESH_TOKEN_EXPIRES_IN_DAYS}d`,
     });
   } catch (error) {
     next(error);
