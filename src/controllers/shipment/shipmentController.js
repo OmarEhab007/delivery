@@ -512,9 +512,7 @@ exports.updateComplianceDetails = async (req, res, next) => {
     if (incoterm !== undefined) {
       const normalizedIncoterm = String(incoterm).trim().toUpperCase();
       shipment.incoterm = normalizedIncoterm;
-      shipment.compliance.insuranceRequired = INSURANCE_REQUIRED_INCOTERMS.has(
-        normalizedIncoterm
-      );
+      shipment.compliance.insuranceRequired = INSURANCE_REQUIRED_INCOTERMS.has(normalizedIncoterm);
     }
 
     if (saberStatus !== undefined) {
@@ -586,6 +584,22 @@ exports.uploadComplianceDocument = async (req, res, next) => {
 
     if (!req.file) {
       return next(new ApiError('No file was uploaded', 400));
+    }
+
+    // Validate file MIME type for security
+    const ALLOWED_COMPLIANCE_MIME_TYPES = new Set([
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ]);
+
+    if (!ALLOWED_COMPLIANCE_MIME_TYPES.has(req.file.mimetype)) {
+      return next(
+        new ApiError('Invalid file type. Only PDF, images, and documents are allowed', 400)
+      );
     }
 
     const allowedComplianceTypes = new Set([
@@ -679,6 +693,15 @@ exports.uploadPaymentProof = async (req, res, next) => {
 
     if (!req.file) {
       return next(new ApiError('No file was uploaded', 400));
+    }
+
+    // Validate file MIME type for payment proofs
+    const ALLOWED_PAYMENT_PROOF_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+
+    if (!ALLOWED_PAYMENT_PROOF_TYPES.has(req.file.mimetype)) {
+      return next(
+        new ApiError('Invalid file type. Only PDF and images are allowed for payment proofs', 400)
+      );
     }
 
     const { amount, currency } = req.body;

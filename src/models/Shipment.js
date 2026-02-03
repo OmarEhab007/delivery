@@ -564,9 +564,7 @@ shipmentSchema.methods.isComplianceReady = function () {
   const hasBroker = Boolean(compliance.brokerId);
   const hasInvoice = Boolean(documents.commercialInvoiceDocumentId);
   const hasPackingList = Boolean(documents.packingListDocumentId);
-  const hasBillOrWaybill = Boolean(
-    documents.billOfLadingDocumentId || documents.waybillDocumentId
-  );
+  const hasBillOrWaybill = Boolean(documents.billOfLadingDocumentId || documents.waybillDocumentId);
   const requiresCoo = Boolean(compliance.gaftaRequested);
   const hasCoo = Boolean(documents.certificateOfOriginDocumentId);
   const requiresInsurance = Boolean(compliance.insuranceRequired);
@@ -601,8 +599,14 @@ shipmentSchema.methods.refreshComplianceStatus = function () {
 };
 
 shipmentSchema.methods.addTrackingPoint = function (location, source = 'DRIVER') {
-  if (!location) {
-    return this;
+  // Validate location exists and has valid coordinates
+  if (!location || typeof location.lng !== 'number' || typeof location.lat !== 'number') {
+    return Promise.resolve(this);
+  }
+
+  // Validate coordinate ranges
+  if (location.lng < -180 || location.lng > 180 || location.lat < -90 || location.lat > 90) {
+    return Promise.resolve(this);
   }
 
   this.trackingHistory.push({

@@ -14,7 +14,9 @@ const initializeTracking = (io) => {
   // SEC-006: Implement actual JWT verification for Socket.io authentication
   // OWASP A07:2021 - Identification and Authentication Failures
   io.use((socket, next) => {
-    const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace('Bearer ', '');
+    const token =
+      socket.handshake.auth?.token ||
+      socket.handshake.headers?.authorization?.replace('Bearer ', '');
 
     if (!token) {
       logger.warn(`Socket connection rejected: No token provided (${socket.id})`);

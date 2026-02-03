@@ -19,6 +19,7 @@ Most API endpoints require authentication using JSON Web Tokens (JWT). The appli
 The application uses two types of tokens:
 
 1. **Access Token** (Short-lived: 15 minutes)
+
    - Used for API authentication
    - Included in the `Authorization` header: `Authorization: Bearer <access_token>`
 
@@ -47,7 +48,9 @@ To obtain authentication tokens, use the login endpoint as described in the Auth
   "expiresIn": "15m",
   "refreshExpiresIn": "7d",
   "data": {
-    "user": { /* user object */ }
+    "user": {
+      /* user object */
+    }
   }
 }
 ```

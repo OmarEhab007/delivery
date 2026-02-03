@@ -31,9 +31,7 @@ const logger = require('../../utils/logger');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
 const otpService = require('../../services/auth/otpService');
 const { sendPasswordResetEmail } = require('../../services/email/emailService');
-const {
-  UserRegistrationRequest,
-} = require('../../models/UserRegistrationRequest');
+const { UserRegistrationRequest } = require('../../models/UserRegistrationRequest');
 
 /** @type {string} Access token expiry time */
 const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';

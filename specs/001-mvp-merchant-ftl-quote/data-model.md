@@ -3,6 +3,7 @@
 ## Entities
 
 ### Shipment (existing)
+
 Add compliance and payment-related fields to the existing shipment model.
 
 - `pricingType`: fixed to request-quote for MVP
@@ -11,6 +12,7 @@ Add compliance and payment-related fields to the existing shipment model.
 - `compliance`: embedded checklist object
 
 ### ComplianceChecklist (embedded)
+
 - `acidNumber`
 - `aciProofDocumentId`
 - `brokerId`
@@ -22,6 +24,7 @@ Add compliance and payment-related fields to the existing shipment model.
 - `completedAt`
 
 ### Broker
+
 - `name`
 - `licenseNumber`
 - `countriesServed`
@@ -29,6 +32,7 @@ Add compliance and payment-related fields to the existing shipment model.
 - `status` (active/inactive)
 
 ### Quote
+
 - `shipmentId`
 - `carrierId`
 - `amount`
@@ -37,12 +41,14 @@ Add compliance and payment-related fields to the existing shipment model.
 - `status` (submitted/accepted/rejected/expired)
 
 ### TrackingUpdate
+
 - `shipmentId`
 - `lat`, `lng`
 - `timestamp`
 - `source` (driver/system)
 
 ### PaymentProof
+
 - `shipmentId`
 - `documentId`
 - `submittedBy`

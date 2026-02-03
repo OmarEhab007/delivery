@@ -131,7 +131,7 @@ const userRegistrationRequestSchema = new mongoose.Schema(
 
 The User model represents different types of users in the system with role-based fields.
 
-```javascript
+````javascript
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -297,7 +297,7 @@ const truckSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
-```
+````
 
 #### Indexes
 

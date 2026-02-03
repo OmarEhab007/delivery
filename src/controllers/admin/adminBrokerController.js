@@ -47,11 +47,11 @@ const updateBroker = asyncHandler(async (req, res, next) => {
 
   const { name, licenseNumber, countriesServed, contacts, status, notes } = req.body;
 
-  if (name) broker.name = name;
-  if (licenseNumber) broker.licenseNumber = licenseNumber;
-  if (countriesServed) broker.countriesServed = countriesServed;
-  if (contacts) broker.contacts = contacts;
-  if (status) broker.status = status;
+  if (name !== undefined) broker.name = name;
+  if (licenseNumber !== undefined) broker.licenseNumber = licenseNumber;
+  if (countriesServed !== undefined) broker.countriesServed = countriesServed;
+  if (contacts !== undefined) broker.contacts = contacts;
+  if (status !== undefined) broker.status = status;
   if (notes !== undefined) broker.notes = notes;
 
   await broker.save();

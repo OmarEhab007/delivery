@@ -5,7 +5,7 @@
 **Status**: Draft  
 **Input**: User description: "Merchant-first MVP for Egypt -> GCC, FTL only, request-quote only, admin assigns broker, Google Maps tracking/ETA, payment proof upload."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Request and Approve Quote (Priority: P1)
 
@@ -75,7 +75,7 @@ update time without needing full analytics or ERP integration.
 - What happens when tracking updates stop for more than the allowed interval?
 - How does the system handle a quote that expires before acceptance?
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -96,7 +96,7 @@ update time without needing full analytics or ERP integration.
   and estimated arrival time.
 - **FR-009**: System MUST allow POD upload and mark shipments delivered.
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **ShipmentRequest**: Merchant shipment request with route, cargo, and status.
 - **Quote**: Carrier pricing proposal tied to a shipment request.
@@ -112,7 +112,7 @@ update time without needing full analytics or ERP integration.
 - Tracking updates are provided by driver or carrier systems.
 - Documents are stored and retrievable for compliance review.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

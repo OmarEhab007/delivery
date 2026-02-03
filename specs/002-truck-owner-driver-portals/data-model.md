@@ -3,19 +3,23 @@
 ## Entities
 
 ### Application/Bid (existing)
+
 - Use existing Application model for bidding status and history.
 
 ### Driver Assignment (existing fields on Shipment)
+
 - `assignedDriverId`
 - `assignedTruckId`
 - `assignedAt`
 
 ### Driver Status (existing User fields)
+
 - `availabilityStatus`
 - `currentLocation`
 - `lastCheckIn`
 
 ### Milestone (Shipment timeline)
+
 - Status updates with optional location and notes.
 
 ## Relationships

@@ -5,7 +5,7 @@
 **Status**: Draft  
 **Input**: User description: "Phase 2 portals for truck owners and drivers: bidding, assignment, tracking updates, POD uploads."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Truck Owner Bidding and Load Management (Priority: P1)
 
@@ -64,7 +64,7 @@ Drivers update location and milestone status, and upload proof of delivery.
 - How does the system handle driver reassignment mid-route?
 - What happens when a driver is offline and uploads location data later?
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -75,7 +75,7 @@ Drivers update location and milestone status, and upload proof of delivery.
 - **FR-005**: System MUST allow drivers to send location updates and status milestones.
 - **FR-006**: System MUST allow drivers to upload POD and issue reports.
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **Bid/Application**: Carrier bid for a shipment.
 - **DriverAssignment**: Link between shipment, truck, and driver.
@@ -88,7 +88,7 @@ Drivers update location and milestone status, and upload proof of delivery.
 - Drivers are already registered under truck owner accounts.
 - Tracking and document storage services are available.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

@@ -48,7 +48,10 @@ afterEach(async () => {
 
 // Disconnect and close the db connection after all tests are done
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
+  // Only drop database for in-memory server to prevent accidental data loss
+  if (mongoServer) {
+    await mongoose.connection.dropDatabase();
+  }
   await mongoose.connection.close();
   if (mongoServer) {
     await mongoServer.stop();

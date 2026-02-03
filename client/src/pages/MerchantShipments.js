@@ -125,13 +125,32 @@ const MerchantShipments = () => {
   }, [rows, searchTerm]);
 
   const handleCreateShipment = async () => {
+    // Client-side validation
+    if (!createForm.originAddress.trim()) {
+      enqueueSnackbar('Origin address is required', { variant: 'warning' });
+      return;
+    }
+    if (!createForm.destinationAddress.trim()) {
+      enqueueSnackbar('Destination address is required', { variant: 'warning' });
+      return;
+    }
+    if (!createForm.cargoDescription.trim()) {
+      enqueueSnackbar('Cargo description is required', { variant: 'warning' });
+      return;
+    }
+    const weight = Number(createForm.cargoWeight);
+    if (!createForm.cargoWeight || Number.isNaN(weight) || weight <= 0) {
+      enqueueSnackbar('Cargo weight must be a positive number', { variant: 'warning' });
+      return;
+    }
+
     try {
       const payload = {
-        origin: { address: createForm.originAddress },
-        destination: { address: createForm.destinationAddress },
+        origin: { address: createForm.originAddress.trim() },
+        destination: { address: createForm.destinationAddress.trim() },
         cargoDetails: {
-          description: createForm.cargoDescription,
-          weight: Number(createForm.cargoWeight),
+          description: createForm.cargoDescription.trim(),
+          weight,
         },
         pricingType: 'BIDDING',
       };
@@ -229,9 +248,7 @@ const MerchantShipments = () => {
       headerName: 'Compliance',
       width: 160,
       valueGetter: (params) => params.row.compliance?.status || 'PENDING',
-      renderCell: (params) => (
-        <StatusChip status={params.value} statusMap={complianceStatusMap} />
-      ),
+      renderCell: (params) => <StatusChip status={params.value} statusMap={complianceStatusMap} />,
     },
     {
       field: 'actions',
@@ -331,9 +348,7 @@ const MerchantShipments = () => {
               label="Cargo Weight (tons)"
               type="number"
               value={createForm.cargoWeight}
-              onChange={(e) =>
-                setCreateForm((prev) => ({ ...prev, cargoWeight: e.target.value }))
-              }
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, cargoWeight: e.target.value }))}
             />
           </Stack>
         </DialogContent>
@@ -345,7 +360,12 @@ const MerchantShipments = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={complianceOpen} onClose={() => setComplianceOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={complianceOpen}
+        onClose={() => setComplianceOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Compliance Details</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -359,9 +379,7 @@ const MerchantShipments = () => {
             <TextField
               label="Incoterm"
               value={complianceForm.incoterm}
-              onChange={(e) =>
-                setComplianceForm((prev) => ({ ...prev, incoterm: e.target.value }))
-              }
+              onChange={(e) => setComplianceForm((prev) => ({ ...prev, incoterm: e.target.value }))}
             />
             <FormControl fullWidth>
               <InputLabel id="gafta-label">GAFTA Requested</InputLabel>

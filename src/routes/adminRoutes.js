@@ -511,12 +511,32 @@ router.patch(
 router
   .route('/brokers')
   .get(adminBrokerController.listBrokers)
-  .post(adminBrokerController.createBroker);
+  .post(
+    [
+      body('name').notEmpty().withMessage('Broker name is required'),
+      body('licenseNumber').notEmpty().withMessage('License number is required'),
+      body('countriesServed').optional().isArray().withMessage('Countries served must be an array'),
+      body('contacts').optional().isArray().withMessage('Contacts must be an array'),
+      body('contacts.*.email').optional().isEmail().withMessage('Contact email must be valid'),
+    ],
+    adminBrokerController.createBroker
+  );
 
 router
   .route('/brokers/:id')
   .get(adminBrokerController.getBrokerById)
-  .patch(adminBrokerController.updateBroker)
+  .patch(
+    [
+      body('name').optional().notEmpty().withMessage('Broker name cannot be empty'),
+      body('licenseNumber').optional().notEmpty().withMessage('License number cannot be empty'),
+      body('status')
+        .optional()
+        .isIn(['ACTIVE', 'INACTIVE'])
+        .withMessage('Status must be ACTIVE or INACTIVE'),
+      body('contacts.*.email').optional().isEmail().withMessage('Contact email must be valid'),
+    ],
+    adminBrokerController.updateBroker
+  )
   .delete(adminBrokerController.deactivateBroker);
 
 router.route('/registration-requests').get(getUserRegistrationRequests);
