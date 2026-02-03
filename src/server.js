@@ -12,6 +12,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const { Server } = require('socket.io');
 
 require('dotenv').config();
+require('./utils/polyfills');
 
 const connectDB = require('./config/database');
 const { errorHandler } = require('./middleware/errorHandler');

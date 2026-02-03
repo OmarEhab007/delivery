@@ -294,6 +294,7 @@ router.post(
  *         $ref: '#/components/responses/Error'
  */
 router.post('/shipments/:shipmentId/proof', driverController.uploadProofOfDelivery);
+router.post('/shipments/:shipmentId/pod', driverController.uploadProofOfDelivery);
 
 // Get delivery route
 router.get('/route/:shipmentId', driverController.getDeliveryRoute);

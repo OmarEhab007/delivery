@@ -5,6 +5,7 @@ const { body } = require('express-validator');
 
 const shipmentController = require('../controllers/shipment/shipmentController');
 const applicationController = require('../controllers/application/applicationController');
+const truckOwnerController = require('../controllers/truck/truckOwnerController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { singleUpload } = require('../middleware/uploadMiddleware');
 
@@ -161,6 +162,40 @@ router.post(
  *         $ref: '#/components/responses/Error'
  */
 router.get('/', restrictTo('Merchant'), shipmentController.getMyShipments);
+
+/**
+ * @swagger
+ * /api/shipments/available:
+ *   get:
+ *     summary: Get available shipments for truck owners
+ *     tags: [Shipments]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Available shipments retrieved successfully
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Forbidden - user is not a truck owner
+ */
+router.get('/available', restrictTo('TruckOwner'), truckOwnerController.getAvailableShipments);
+
+/**
+ * @swagger
+ * /api/shipments/{shipmentId}/assign-driver:
+ *   post:
+ *     summary: Assign a driver to a shipment (truck owner)
+ *     tags: [Shipments]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post(
+  '/:shipmentId/assign-driver',
+  restrictTo('TruckOwner'),
+  [body('driverId').notEmpty().withMessage('Driver ID is required')],
+  truckOwnerController.assignShipmentToDriver
+);
 
 /**
  * @swagger

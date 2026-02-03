@@ -7,6 +7,7 @@ This directory houses the full set of operational, architectural, and runbook do
 - [System Architecture](SYSTEM_ARCHITECTURE.md) – system context, component diagrams, request flows
 - [Database Schema](DATABASE_SCHEMA.md) – entities, relationships, indexes, transaction notes
 - [API Documentation](API_DOCUMENTATION.md) – endpoint contracts, examples, auth requirements
+- [Carrier & Driver Portals](PORTALS.md) – portal flows and role-specific endpoints
 - [Swagger Guide](SWAGGER_GUIDE.md) – extending OpenAPI definitions and UI usage
 - [Monitoring](monitoring.md) & [HEALTH_MONITORING](HEALTH_MONITORING.md) – probes, external checks, alerting strategy
 - [LOGGING](LOGGING.md) – Winston configuration, log rotation, log levels

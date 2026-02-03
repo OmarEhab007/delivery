@@ -15,6 +15,8 @@ const Trucks = React.lazy(() => import('./pages/Trucks'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Profile = React.lazy(() => import('./pages/Profile'));
 const Reports = React.lazy(() => import('./pages/Reports'));
+const TruckOwnerPortal = React.lazy(() => import('./pages/TruckOwnerPortal'));
+const DriverPortal = React.lazy(() => import('./pages/DriverPortal'));
 
 const LoadingFallback = () => (
   <div
@@ -30,20 +32,50 @@ const LoadingFallback = () => (
 );
 
 const App = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, currentUser } = useAuth();
+  const defaultPath = !isAuthenticated
+    ? '/login'
+    : currentUser?.role === 'TruckOwner'
+      ? '/truck-owner'
+      : currentUser?.role === 'Driver'
+        ? '/driver'
+        : currentUser?.role === 'Merchant'
+          ? '/merchant/shipments'
+          : '/dashboard';
 
   return (
     <React.Suspense fallback={<LoadingFallback />}>
       <Routes>
         {/* Public routes */}
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
+        <Route path="/login" element={isAuthenticated ? <Navigate to={defaultPath} /> : <Login />} />
 
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/shipments" element={<Shipments />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute requiredRole="Admin">
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute requiredRole="Admin">
+                  <Users />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shipments"
+              element={
+                <ProtectedRoute requiredRole="Admin">
+                  <Shipments />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/merchant/shipments"
               element={
@@ -52,8 +84,38 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
-            <Route path="/applications" element={<Applications />} />
-            <Route path="/trucks" element={<Trucks />} />
+            <Route
+              path="/applications"
+              element={
+                <ProtectedRoute requiredRole="Admin">
+                  <Applications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trucks"
+              element={
+                <ProtectedRoute requiredRole="Admin">
+                  <Trucks />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/truck-owner"
+              element={
+                <ProtectedRoute requiredRole="TruckOwner">
+                  <TruckOwnerPortal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/driver"
+              element={
+                <ProtectedRoute requiredRole="Driver">
+                  <DriverPortal />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/reports"
               element={
@@ -68,16 +130,10 @@ const App = () => {
         </Route>
 
         {/* Redirect to dashboard if authenticated, otherwise to login */}
-        <Route
-          path="/"
-          element={isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
-        />
+        <Route path="/" element={<Navigate to={defaultPath} />} />
 
         {/* Catch all - redirect to dashboard or login */}
-        <Route
-          path="*"
-          element={isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
-        />
+        <Route path="*" element={<Navigate to={defaultPath} />} />
       </Routes>
     </React.Suspense>
   );
