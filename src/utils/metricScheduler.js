@@ -1,5 +1,7 @@
 const { Shipment } = require('../models/Shipment');
 const Truck = require('../models/Truck');
+const { Application } = require('../models/Application');
+const User = require('../models/User');
 
 const logger = require('./logger');
 const metrics = require('./metrics');
@@ -84,12 +86,78 @@ const updateDbMetrics = async () => {
 };
 
 /**
+ * Update application/bid status metrics
+ */
+const updateApplicationStatusMetrics = async () => {
+  try {
+    const pipeline = [
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ];
+
+    const statusCounts = await Application.aggregate(pipeline);
+    const formattedCounts = {};
+
+    statusCounts.forEach((item) => {
+      formattedCounts[item._id] = item.count;
+    });
+
+    metrics.updateApplicationStatusMetrics(formattedCounts);
+
+    logger.debug('Updated application status metrics', {
+      counts: formattedCounts,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error(`Error updating application status metrics: ${error.message}`, { error });
+  }
+};
+
+/**
+ * Update user count metrics by role
+ */
+const updateUserMetrics = async () => {
+  try {
+    const pipeline = [
+      {
+        $group: {
+          _id: '$role',
+          count: { $sum: 1 },
+        },
+      },
+    ];
+
+    const roleCounts = await User.aggregate(pipeline);
+    const formattedCounts = {};
+
+    roleCounts.forEach((item) => {
+      formattedCounts[item._id] = item.count;
+    });
+
+    metrics.updateUserMetrics(formattedCounts);
+
+    logger.debug('Updated user metrics', {
+      counts: formattedCounts,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error(`Error updating user metrics: ${error.message}`, { error });
+  }
+};
+
+/**
  * Initialize metric collection schedules
  */
 const initMetricSchedulers = () => {
   // Update status counts every 5 minutes
   setInterval(updateShipmentStatusMetrics, 5 * 60 * 1000);
   setInterval(updateTruckStatusMetrics, 5 * 60 * 1000);
+  setInterval(updateApplicationStatusMetrics, 5 * 60 * 1000);
+  setInterval(updateUserMetrics, 5 * 60 * 1000);
 
   // Update DB metrics every 15 minutes
   setInterval(updateDbMetrics, 15 * 60 * 1000);
@@ -100,6 +168,8 @@ const initMetricSchedulers = () => {
 
     updateShipmentStatusMetrics()
       .then(() => updateTruckStatusMetrics())
+      .then(() => updateApplicationStatusMetrics())
+      .then(() => updateUserMetrics())
       .then(() => updateDbMetrics())
       .then(() => {
         logger.info('Initial metrics collection complete');
@@ -116,5 +186,7 @@ module.exports = {
   initMetricSchedulers,
   updateShipmentStatusMetrics,
   updateTruckStatusMetrics,
+  updateApplicationStatusMetrics,
+  updateUserMetrics,
   updateDbMetrics,
 };

@@ -126,9 +126,35 @@ const connectDB = async (retryCount = 0) => {
       logger.info('MongoDB reconnected');
     });
 
+    // Set up periodic connection pool metrics collection (every 30 seconds)
+    let poolMetricsInterval = null;
+    if (process.env.NODE_ENV !== 'test') {
+      // Lazy load metrics to avoid circular dependency
+      const { updateMongoConnectionMetrics } = require('../utils/metrics');
+      poolMetricsInterval = setInterval(() => {
+        try {
+          const pool = mongoose.connection.client?.topology?.s?.pool;
+          if (pool) {
+            const poolStats = {
+              total: pool.totalConnectionCount || 0,
+              available: pool.availableConnectionCount || 0,
+              inUse: (pool.totalConnectionCount || 0) - (pool.availableConnectionCount || 0),
+            };
+            updateMongoConnectionMetrics(poolStats);
+          }
+        } catch (err) {
+          // Silently ignore pool metrics errors to avoid log noise
+        }
+      }, 30000);
+    }
+
     // Handle process termination
     process.on('SIGINT', async () => {
       try {
+        // Clear the pool metrics interval to prevent callbacks after connection close
+        if (poolMetricsInterval) {
+          clearInterval(poolMetricsInterval);
+        }
         await mongoose.connection.close();
         logger.info('MongoDB connection closed due to app termination');
         process.exit(0);
