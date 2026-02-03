@@ -1,0 +1,107 @@
+groups:
+  - name: delivery_app_critical
+    interval: 30s
+    rules:
+      # High Error Rate Alert (FR-015)
+      # Triggers when 5xx error rate exceeds 5% for 5 minutes
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://wiki.example.com/runbooks/high-error-rate"
+          dashboard_url: "http://localhost:3002/d/delivery-overview"
+
+      # Scrape Failure Alert (FR-019)
+      # Triggers when metrics scraping fails for 2 consecutive attempts
+      - alert: ScrapeFailure
+        expr: up{job="delivery-app"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Metrics scraping failed"
+          description: "Cannot scrape metrics from delivery-app for 2+ minutes"
+          runbook_url: "https://wiki.example.com/runbooks/scrape-failure"
+
+  - name: delivery_app_warning
+    interval: 30s
+    rules:
+      # High Latency Alert (FR-016)
+      # Triggers when p95 latency exceeds 2 seconds for 5 minutes
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High API latency detected"
+          description: "P95 latency is {{ $value | humanizeDuration }} (threshold: 2s)"
+          runbook_url: "https://wiki.example.com/runbooks/high-latency"
+          dashboard_url: "http://localhost:3002/d/http-api-performance"
+
+      # MongoDB Pool Exhaustion Alert (FR-017)
+      # Triggers when connection pool utilization exceeds 80%
+      - alert: MongoPoolExhausted
+        expr: |
+          (
+            mongodb_connections_current{state="in_use"}
+            /
+            mongodb_connections_current{state="total"}
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "MongoDB connection pool near exhaustion"
+          description: "Pool utilization is {{ $value | humanizePercentage }} (threshold: 80%)"
+          runbook_url: "https://wiki.example.com/runbooks/mongo-pool-exhaustion"
+          dashboard_url: "http://localhost:3002/d/database-performance"
+
+      # High Memory Usage Alert (FR-018)
+      # Triggers when heap memory exceeds 80% of total
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            nodejs_heap_size_used_bytes
+            /
+            nodejs_heap_size_total_bytes
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High Node.js memory usage"
+          description: "Heap usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+          runbook_url: "https://wiki.example.com/runbooks/high-memory"
+          dashboard_url: "http://localhost:3002/d/infrastructure"
+
+      # High Event Loop Lag Alert
+      # Triggers when p99 event loop lag exceeds 100ms for 5 minutes
+      - alert: HighEventLoopLag
+        expr: nodejs_eventloop_lag_p99_seconds > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High event loop lag detected"
+          description: "P99 event loop lag is {{ $value | humanizeDuration }} (threshold: 100ms)"
+          runbook_url: "https://wiki.example.com/runbooks/event-loop-lag"
+          dashboard_url: "http://localhost:3002/d/infrastructure"

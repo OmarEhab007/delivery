@@ -1,0 +1,296 @@
+# Alert Rules Contract: Grafana Observability Stack
+#
+# Feature: 004-grafana-observability
+# Date: 2026-02-03
+#
+# This file defines the alerting rules for both Prometheus and Grafana.
+# Rules are organized by severity and category.
+
+---
+
+# =============================================================================
+# PROMETHEUS ALERT RULES
+# Location: docker/prometheus/alerts/rules.yml
+# =============================================================================
+
+groups:
+  - name: delivery_app_critical
+    interval: 30s
+    rules:
+      # ---------------------------------------------------------------------
+      # ALERT: High Error Rate (FR-015)
+      # Triggers when 5xx error rate exceeds 5% for 5 minutes
+      # ---------------------------------------------------------------------
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook_url: "https://wiki.example.com/runbooks/high-error-rate"
+          dashboard_url: "http://localhost:3002/d/delivery-overview"
+
+      # ---------------------------------------------------------------------
+      # ALERT: Scrape Failure (FR-019)
+      # Triggers when metrics scraping fails for 2 consecutive attempts
+      # ---------------------------------------------------------------------
+      - alert: ScrapeFailure
+        expr: up{job="delivery-app"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Metrics scraping failed"
+          description: "Cannot scrape metrics from delivery-app for 2+ minutes"
+          runbook_url: "https://wiki.example.com/runbooks/scrape-failure"
+
+  - name: delivery_app_warning
+    interval: 30s
+    rules:
+      # ---------------------------------------------------------------------
+      # ALERT: High Latency (FR-016)
+      # Triggers when p95 latency exceeds 2 seconds for 5 minutes
+      # ---------------------------------------------------------------------
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High API latency detected"
+          description: "P95 latency is {{ $value | humanizeDuration }} (threshold: 2s)"
+          runbook_url: "https://wiki.example.com/runbooks/high-latency"
+          dashboard_url: "http://localhost:3002/d/http-api-performance"
+
+      # ---------------------------------------------------------------------
+      # ALERT: MongoDB Pool Exhaustion (FR-017)
+      # Triggers when connection pool utilization exceeds 80%
+      # ---------------------------------------------------------------------
+      - alert: MongoPoolExhausted
+        expr: |
+          (
+            mongodb_connections_current{state="in_use"}
+            /
+            mongodb_connections_current{state="total"}
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "MongoDB connection pool near exhaustion"
+          description: "Pool utilization is {{ $value | humanizePercentage }} (threshold: 80%)"
+          runbook_url: "https://wiki.example.com/runbooks/mongo-pool-exhaustion"
+          dashboard_url: "http://localhost:3002/d/database-performance"
+
+      # ---------------------------------------------------------------------
+      # ALERT: High Memory Usage (FR-018)
+      # Triggers when heap memory exceeds 80% of total
+      # ---------------------------------------------------------------------
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            nodejs_heap_size_used_bytes
+            /
+            nodejs_heap_size_total_bytes
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High Node.js memory usage"
+          description: "Heap usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+          runbook_url: "https://wiki.example.com/runbooks/high-memory"
+          dashboard_url: "http://localhost:3002/d/infrastructure"
+
+      # ---------------------------------------------------------------------
+      # ALERT: High Event Loop Lag
+      # Triggers when p99 event loop lag exceeds 100ms for 5 minutes
+      # ---------------------------------------------------------------------
+      - alert: HighEventLoopLag
+        expr: nodejs_eventloop_lag_seconds{percentile="p99"} > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High event loop lag detected"
+          description: "P99 event loop lag is {{ $value | humanizeDuration }} (threshold: 100ms)"
+          runbook_url: "https://wiki.example.com/runbooks/event-loop-lag"
+          dashboard_url: "http://localhost:3002/d/infrastructure"
+
+---
+
+# =============================================================================
+# GRAFANA UNIFIED ALERTING
+# Location: docker/grafana/provisioning/alerting/alerts.yml
+# =============================================================================
+
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: Application Alerts
+    folder: Delivery App
+    interval: 1m
+    rules:
+      # ---------------------------------------------------------------------
+      # High Error Rate Alert (Grafana Unified Alerting format)
+      # ---------------------------------------------------------------------
+      - uid: error-rate-high
+        title: High Error Rate
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: sum(rate(http_requests_total{status_code=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0.05]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: "Error rate exceeds 5%"
+          description: "Application error rate is above threshold. Check /d/delivery-overview for details."
+        labels:
+          severity: critical
+
+      # ---------------------------------------------------------------------
+      # High Latency Alert
+      # ---------------------------------------------------------------------
+      - uid: latency-high
+        title: High API Latency
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [2]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: "P95 latency exceeds 2 seconds"
+          description: "API response times are elevated. Check /d/http-api-performance for details."
+        labels:
+          severity: warning
+
+      # ---------------------------------------------------------------------
+      # Scrape Failure Alert
+      # ---------------------------------------------------------------------
+      - uid: scrape-failure
+        title: Metrics Scrape Failure
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: up{job="delivery-app"}
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [1]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+              type: threshold
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          summary: "Cannot scrape metrics from application"
+          description: "Prometheus is unable to collect metrics. Check application health."
+        labels:
+          severity: critical
+
+---
+
+# =============================================================================
+# ALERT SEVERITY MATRIX
+# =============================================================================
+#
+# | Severity | Response Time | Examples |
+# |----------|---------------|----------|
+# | critical | Immediate | Error rate >5%, scrape failure |
+# | warning | Within 1 hour | High latency, memory pressure |
+# | info | Next business day | Trend anomalies |
+#
+# =============================================================================
+# ESCALATION POLICY (Future Enhancement)
+# =============================================================================
+#
+# When external notification channels are configured:
+# - critical: Slack #incidents + PagerDuty
+# - warning: Slack #alerts
+# - info: Grafana UI only
