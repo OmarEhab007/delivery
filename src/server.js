@@ -137,7 +137,13 @@ app.use(
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser(process.env.COOKIE_SECRET || 'delivery-app-secret'));
+// SEC-013: Cookie secret must be set in production (no fallback)
+// OWASP A02:2021 - Cryptographic Failures
+const cookieSecret = process.env.COOKIE_SECRET || (process.env.NODE_ENV !== 'production' ? 'delivery-app-secret-dev' : null);
+if (!cookieSecret) {
+  throw new Error('COOKIE_SECRET environment variable must be set in production');
+}
+app.use(cookieParser(cookieSecret));
 
 // Add CSRF-related security headers to all responses
 app.use(addCSRFHeaders);
@@ -279,34 +285,59 @@ app.use('/api/reports', reportingRoutes);
 // Health check routes
 app.use('/health', healthRoutes);
 
-// Debug route - no auth required
-app.get('/debug-models', (req, res) => {
-  const models = {
-    Document: typeof Document !== 'undefined',
-    Shipment: typeof Shipment !== 'undefined',
-    Application: typeof Application !== 'undefined',
-    Truck: typeof Truck !== 'undefined',
-    User: typeof User !== 'undefined',
-  };
+// Debug route - SEC-004: Disabled in production
+// OWASP A01:2021 - Broken Access Control
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/debug-models', (req, res) => {
+    const models = {
+      Document: typeof Document !== 'undefined',
+      Shipment: typeof Shipment !== 'undefined',
+      Application: typeof Application !== 'undefined',
+      Truck: typeof Truck !== 'undefined',
+      User: typeof User !== 'undefined',
+    };
 
-  const methods = {
-    Document: typeof Document?.findById === 'function',
-    Shipment: typeof Shipment?.findById === 'function',
-    Application: typeof Application?.findById === 'function',
-    Truck: typeof Truck?.findById === 'function',
-    User: typeof User?.findById === 'function',
-  };
+    const methods = {
+      Document: typeof Document?.findById === 'function',
+      Shipment: typeof Shipment?.findById === 'function',
+      Application: typeof Application?.findById === 'function',
+      Truck: typeof Truck?.findById === 'function',
+      User: typeof User?.findById === 'function',
+    };
 
-  res.status(200).json({
-    success: true,
-    models,
-    methods,
+    res.status(200).json({
+      success: true,
+      models,
+      methods,
+    });
   });
+}
+
+// SEC-007: Socket.io authentication middleware
+// OWASP A07:2021 - Identification and Authentication Failures
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace('Bearer ', '');
+
+  if (!token) {
+    logger.warn(`Socket connection rejected: No token provided (${socket.id})`);
+    return next(new Error('Authentication error: Token required'));
+  }
+
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Use socket.data.user per Socket.IO 4.x convention
+    socket.data.user = decoded;
+    next();
+  } catch (error) {
+    logger.warn(`Socket connection rejected: Invalid token (${socket.id}) - ${error.message}`);
+    return next(new Error('Authentication error: Invalid token'));
+  }
 });
 
 // Socket.io setup for real-time tracking
 io.on('connection', (socket) => {
-  logger.info(`User connected: ${socket.id}`);
+  logger.info(`User connected: ${socket.id} (User: ${socket.data.user?.id || 'unknown'})`);
 
   // Add socket event handlers here as they are developed
 

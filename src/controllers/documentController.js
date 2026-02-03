@@ -229,11 +229,38 @@ const uploadMultipleDocuments = catchAsync(async (req, res) => {
 });
 
 // Get document by ID
-const getDocument = catchAsync(async (req, res) => {
+const getDocument = catchAsync(async (req, res, next) => {
   const document = await documentService.getDocumentById(req.params.id);
 
-  // Implement proper access control here
-  // For example, check if user has permission to access this document
+  // SEC-010: Implement document access control
+  // OWASP A01:2021 - Broken Access Control
+  // Users can only access documents they uploaded or documents related to their entities
+  const isAdmin = req.user.role === 'Admin';
+  const isUploader = document.uploadedBy.toString() === req.user.id;
+
+  // Check if user has access to the entity this document belongs to
+  let hasEntityAccess = false;
+  if (document.entityType === 'User' && document.entityId.toString() === req.user.id) {
+    hasEntityAccess = true;
+  } else if (document.entityType === 'Shipment' || document.entityType === 'Application') {
+    // Merchants can access their shipments/applications, truck owners can access applications they bid on
+    const entity = await validateEntity(document.entityType, document.entityId);
+    if (entity.merchant && entity.merchant.toString() === req.user.id) {
+      hasEntityAccess = true;
+    } else if (entity.truckOwner && entity.truckOwner.toString() === req.user.id) {
+      hasEntityAccess = true;
+    }
+  } else if (document.entityType === 'Truck') {
+    // Truck owners can access their own trucks
+    const truck = await Truck.findById(document.entityId);
+    if (truck && truck.ownerId && truck.ownerId.toString() === req.user.id) {
+      hasEntityAccess = true;
+    }
+  }
+
+  if (!isAdmin && !isUploader && !hasEntityAccess) {
+    return next(new ApiError('You do not have permission to access this document', 403));
+  }
 
   res.status(200).json({
     success: true,

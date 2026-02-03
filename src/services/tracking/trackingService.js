@@ -2,6 +2,7 @@
  * Tracking Service
  * Handles real-time location tracking for shipments
  */
+const jwt = require('jsonwebtoken');
 const { Shipment } = require('../../models/Shipment');
 const logger = require('../../utils/logger');
 
@@ -10,17 +11,26 @@ const logger = require('../../utils/logger');
  * @param {Object} io - Socket.io server instance
  */
 const initializeTracking = (io) => {
-  // Authentication middleware for socket connections
+  // SEC-006: Implement actual JWT verification for Socket.io authentication
+  // OWASP A07:2021 - Identification and Authentication Failures
   io.use((socket, next) => {
-    const { token } = socket.handshake.auth;
-    // JWT verification logic would go here
-    // For now, we're just ensuring a token exists
+    const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace('Bearer ', '');
+
     if (!token) {
-      return next(new Error('Authentication error'));
+      logger.warn(`Socket connection rejected: No token provided (${socket.id})`);
+      return next(new Error('Authentication error: Token required'));
     }
-    // Could decode token and attach user data to socket
-    // socket.user = decodedUser;
-    next();
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // Use socket.data.user per Socket.IO 4.x convention
+      socket.data.user = decoded;
+      logger.debug(`Socket authenticated for user ${decoded.id}`);
+      next();
+    } catch (error) {
+      logger.warn(`Socket connection rejected: Invalid token (${socket.id}) - ${error.message}`);
+      return next(new Error('Authentication error: Invalid token'));
+    }
   });
 
   // Connection handling

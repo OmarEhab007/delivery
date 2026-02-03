@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const UserRegistrationState = {
   PENDING: 'PENDING',
@@ -62,6 +63,23 @@ const userRegistrationRequestSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// SEC-002: Hash passwords before storage to prevent plain-text exposure
+// OWASP A02:2021 - Cryptographic Failures
+userRegistrationRequestSchema.pre('save', async function (next) {
+  // Only hash the password if it has been modified (or is new)
+  if (!this.isModified('payload.password')) {
+    return next();
+  }
+
+  // Check if password exists and is not already hashed (bcrypt hashes start with $2)
+  if (this.payload && this.payload.password && !this.payload.password.startsWith('$2')) {
+    const salt = await bcrypt.genSalt(12);
+    this.payload.password = await bcrypt.hash(this.payload.password, salt);
+  }
+
+  next();
+});
 
 const UserRegistrationRequest = mongoose.model(
   'UserRegistrationRequest',

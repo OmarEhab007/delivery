@@ -151,7 +151,10 @@ router.post(
 );
 
 // Test admin registration (for testing purposes only)
-router.post('/register/testadmin', registerValidation, authController.registerTestAdmin);
+// SEC-001: Disable in production to prevent unauthenticated admin creation
+if (process.env.NODE_ENV !== 'production') {
+  router.post('/register/testadmin', registerValidation, authController.registerTestAdmin);
+}
 
 /**
  * @swagger
