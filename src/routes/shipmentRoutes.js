@@ -7,6 +7,17 @@ const shipmentController = require('../controllers/shipment/shipmentController')
 const applicationController = require('../controllers/application/applicationController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
+// Import validators
+const {
+  isValidObjectId,
+  paginationValidation,
+} = require('../middleware/validators/commonValidators');
+const {
+  createShipmentValidation,
+  updateShipmentValidation,
+  handleValidationErrors,
+} = require('../middleware/validators/shipmentValidators');
+
 // Apply protection middleware to all routes
 router.use(protect);
 
@@ -107,12 +118,8 @@ router.use(protect);
 router.post(
   '/',
   restrictTo('Merchant'),
-  [
-    body('origin.address').notEmpty().withMessage('Origin address is required'),
-    body('destination.address').notEmpty().withMessage('Destination address is required'),
-    body('cargoDetails.description').notEmpty().withMessage('Cargo description is required'),
-    body('cargoDetails.weight').isNumeric().withMessage('Cargo weight must be a number'),
-  ],
+  createShipmentValidation,
+  handleValidationErrors,
   shipmentController.createShipment
 );
 
@@ -176,6 +183,19 @@ router.get('/', restrictTo('Merchant'), shipmentController.getMyShipments);
  *           type: string
  *           format: date
  *         description: Filter by maximum scheduled date
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Number of results per page
  *     responses:
  *       200:
  *         description: List of matching shipments
@@ -199,7 +219,12 @@ router.get('/', restrictTo('Merchant'), shipmentController.getMyShipments);
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.get('/search', restrictTo('Merchant'), shipmentController.searchShipments);
+router.get(
+  '/search',
+  restrictTo('Merchant'),
+  paginationValidation,
+  shipmentController.searchShipments
+);
 
 /**
  * @swagger
@@ -258,6 +283,7 @@ router.get('/search', restrictTo('Merchant'), shipmentController.searchShipments
 router.get(
   '/:shipmentId/applications',
   restrictTo('Merchant'),
+  isValidObjectId('shipmentId'),
   applicationController.getShipmentApplications
 );
 
@@ -297,7 +323,7 @@ router.get(
  *       500:
  *         $ref: '#/components/responses/Error'
  */
-router.get('/:id', shipmentController.getShipment);
+router.get('/:id', isValidObjectId('id'), shipmentController.getShipment);
 
 /**
  * @swagger
@@ -384,18 +410,9 @@ router.get('/:id', shipmentController.getShipment);
 router.patch(
   '/:id',
   restrictTo('Merchant'),
-  [
-    body('origin.address').optional().notEmpty().withMessage('Origin address cannot be empty'),
-    body('destination.address')
-      .optional()
-      .notEmpty()
-      .withMessage('Destination address cannot be empty'),
-    body('cargoDetails.description')
-      .optional()
-      .notEmpty()
-      .withMessage('Cargo description cannot be empty'),
-    body('cargoDetails.weight').optional().isNumeric().withMessage('Cargo weight must be a number'),
-  ],
+  isValidObjectId('id'),
+  updateShipmentValidation,
+  handleValidationErrors,
   shipmentController.updateShipment
 );
 
@@ -455,6 +472,7 @@ router.patch(
 router.patch(
   '/:id/cancel',
   restrictTo('Merchant'),
+  isValidObjectId('id'),
   [body('reason').optional().notEmpty().withMessage('Reason cannot be empty')],
   shipmentController.cancelShipment
 );
@@ -540,6 +558,7 @@ router.patch(
  */
 router.post(
   '/:id/timeline',
+  isValidObjectId('id'),
   [
     body('status').notEmpty().withMessage('Status is required'),
     body('note').optional().notEmpty().withMessage('Note cannot be empty'),
