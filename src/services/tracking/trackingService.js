@@ -23,7 +23,8 @@ const initializeTracking = (io) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.user = decoded;
+      // Use socket.data.user per Socket.IO 4.x convention
+      socket.data.user = decoded;
       logger.debug(`Socket authenticated for user ${decoded.id}`);
       next();
     } catch (error) {

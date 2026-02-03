@@ -379,21 +379,24 @@ exports.forgotPassword = async (req, res, next) => {
     user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
     await user.save({ validateBeforeSave: false });
 
-    // TODO: Send email with reset token (implement email service)
-    // For now, returning token in response (only for development)
-
     logger.info(`Password reset token generated for user: ${user.email}`);
 
     // SEC-008: Only return reset token in development environment
     // OWASP A01:2021 - Broken Access Control
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
     const response = {
       status: 'success',
-      message: 'Token sent to email',
+      // Be accurate about what's happening - email service integration pending
+      message: isDevelopment
+        ? 'Password reset token generated (development mode - token included in response)'
+        : 'If an account exists with this email, a password reset link will be sent',
     };
 
     // Only include token in development for testing purposes
-    if (process.env.NODE_ENV === 'development') {
+    if (isDevelopment) {
       response.resetToken = resetToken;
+      response.note = 'Email delivery not implemented yet - use this token directly';
     }
 
     res.status(200).json(response);

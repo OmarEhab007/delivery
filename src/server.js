@@ -325,7 +325,8 @@ io.use((socket, next) => {
   try {
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = decoded;
+    // Use socket.data.user per Socket.IO 4.x convention
+    socket.data.user = decoded;
     next();
   } catch (error) {
     logger.warn(`Socket connection rejected: Invalid token (${socket.id}) - ${error.message}`);
@@ -335,7 +336,7 @@ io.use((socket, next) => {
 
 // Socket.io setup for real-time tracking
 io.on('connection', (socket) => {
-  logger.info(`User connected: ${socket.id} (User: ${socket.user?.id || 'unknown'})`);
+  logger.info(`User connected: ${socket.id} (User: ${socket.data.user?.id || 'unknown'})`);
 
   // Add socket event handlers here as they are developed
 

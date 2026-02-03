@@ -253,7 +253,7 @@ const getDocument = catchAsync(async (req, res, next) => {
   } else if (document.entityType === 'Truck') {
     // Truck owners can access their own trucks
     const truck = await Truck.findById(document.entityId);
-    if (truck && truck.owner && truck.owner.toString() === req.user.id) {
+    if (truck && truck.ownerId && truck.ownerId.toString() === req.user.id) {
       hasEntityAccess = true;
     }
   }
