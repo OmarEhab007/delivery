@@ -414,15 +414,22 @@ shipmentSchema.post('save', function (doc) {
 
   const { emitShipmentStatusEvent } = require('../services/integration/webhookService');
   const { evaluateAutomationRules } = require('../services/automation/automationService');
+  const logger = require('../utils/logger');
 
   emitShipmentStatusEvent({ shipment: doc, previousStatus }).catch((error) => {
-    // eslint-disable-next-line no-console
-    console.error('Failed to emit webhook event for shipment status change', error);
+    logger.error('Failed to emit webhook event for shipment status change', {
+      shipmentId: doc._id,
+      error: error.message,
+      stack: error.stack,
+    });
   });
 
   evaluateAutomationRules(doc, { previousStatus }).catch((error) => {
-    // eslint-disable-next-line no-console
-    console.error('Failed to evaluate automation rules for shipment', error);
+    logger.error('Failed to evaluate automation rules for shipment', {
+      shipmentId: doc._id,
+      error: error.message,
+      stack: error.stack,
+    });
   });
 });
 

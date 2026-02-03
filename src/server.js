@@ -238,6 +238,9 @@ app.get('/api/test-csrf', csrfProtection, (req, res) => {
 
 // Routes that require CSRF protection
 // Note: GET requests are safe and don't need CSRF protection
+// Note: Only cookie-authenticated endpoints need CSRF protection.
+//       Bearer token endpoints (like /api/integrations/*) don't need CSRF
+//       because browsers don't automatically include Authorization headers.
 const csrfProtectedPaths = [
   '/api/users/profile',
   '/api/users/:id',
@@ -249,6 +252,9 @@ const csrfProtectedPaths = [
   '/api/trucks/:id',
   '/api/auth/change-password',
   '/api/documents',
+  // Automation routes (if accessed via browser dashboard with cookies)
+  '/api/automation/rules',
+  '/api/automation/rules/:id',
 ];
 
 // Apply CSRF protection to routes that modify data
@@ -277,12 +283,7 @@ app.use('/api/truck-owner', truckOwnerRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/automation', automationRoutes);
 // Add metrics routes
-app.use(
-  '/api/metrics',
-  authenticateToken,
-  restrictTo('Admin'),
-  metricsRoutes
-);
+app.use('/api/metrics', authenticateToken, restrictTo('Admin'), metricsRoutes);
 // Add analytics routes (merchant + admin)
 app.use('/api/reports', analyticsRoutes);
 // Add reporting routes (admin-only)

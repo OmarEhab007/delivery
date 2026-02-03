@@ -15,10 +15,17 @@ const signPayload = (secret, payload, timestamp) => {
   return hmac.digest('hex');
 };
 
+/**
+ * Posts JSON data to an endpoint.
+ * @param {string} endpointUrl - The URL to post to
+ * @param {string|object} payload - Pre-serialized JSON string or object to serialize
+ * @param {object} headers - Additional headers
+ */
 const postJson = (endpointUrl, payload, headers = {}) => {
   return new Promise((resolve, reject) => {
     const url = new URL(endpointUrl);
-    const data = JSON.stringify(payload);
+    // Accept either pre-serialized string or object
+    const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
     const client = url.protocol === 'https:' ? https : http;
 
     const options = {
@@ -71,13 +78,15 @@ const deliverWebhook = async (subscription, eventType, payload) => {
   const startTime = Date.now();
 
   try {
-    const response = await postJson(subscription.endpointUrl, payload, {
+    // Use the same serialized payload for both signing and sending to ensure signature consistency
+    const response = await postJson(subscription.endpointUrl, payloadBody, {
       'X-Delivery-Event': eventType,
       'X-Delivery-Timestamp': timestamp,
       'X-Delivery-Signature': signature,
     });
 
-    delivery.status = response.statusCode >= 200 && response.statusCode < 300 ? 'SUCCESS' : 'FAILED';
+    delivery.status =
+      response.statusCode >= 200 && response.statusCode < 300 ? 'SUCCESS' : 'FAILED';
     delivery.responseCode = response.statusCode;
     delivery.durationMs = Date.now() - startTime;
     delivery.deliveredAt = new Date();

@@ -98,9 +98,9 @@ const getKpiSummary = async ({ merchantId, startDate, endDate }) => {
   return {
     totalShipments,
     deliveredCount,
-    onTimeRate: deliveredCount ? summary.onTimeCount / deliveredCount : 0,
-    averageTransitHours: summary?.avgTransitHours || 0,
-    averageDelayHours: summary?.avgDelayHours || 0,
+    onTimeRate: deliveredCount > 0 && summary ? (summary.onTimeCount || 0) / deliveredCount : 0,
+    averageTransitHours: summary?.avgTransitHours ?? 0,
+    averageDelayHours: summary?.avgDelayHours ?? 0,
   };
 };
 
