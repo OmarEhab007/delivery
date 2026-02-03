@@ -5,24 +5,38 @@ const { validationResult } = require('express-validator');
 const asyncHandler = require('express-async-handler');
 
 const User = require('../../models/User');
+const RefreshToken = require('../../models/RefreshToken');
 const { ApiError } = require('../../middleware/errorHandler');
 const logger = require('../../utils/logger');
 const { ApiSuccess } = require('../../middleware/apiSuccess');
 const otpService = require('../../services/auth/otpService');
+const { sendPasswordResetEmail } = require('../../services/email/emailService');
 const {
   UserRegistrationRequest,
-  UserRegistrationState,
 } = require('../../models/UserRegistrationRequest');
 
+// Token expiry configuration
+const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
+const REFRESH_TOKEN_EXPIRES_IN_DAYS = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN_DAYS, 10) || 7;
+
 /**
- * Generate JWT token
+ * Generate JWT access token
+ * @param {string} id User ID
+ * @returns {string} JWT token
+ */
+const generateAccessToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+  });
+};
+
+/**
+ * Generate JWT token (legacy - for backward compatibility)
  * @param {string} id User ID
  * @returns {string} JWT token
  */
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d', // Use a valid expiration time (30 days)
-  });
+  return generateAccessToken(id);
 };
 
 /**
@@ -195,18 +209,106 @@ exports.login = async (req, res, next) => {
       return next(new ApiError('Invalid credentials', 401));
     }
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Generate access token (short-lived: 15 minutes)
+    const accessToken = generateAccessToken(user._id);
+
+    // Generate refresh token (long-lived: 7 days)
+    const { token: refreshToken } = await RefreshToken.createToken(user._id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
+    });
 
     // Remove password from output
     user.password = undefined;
 
+    logger.info(`User logged in: ${user.email}`);
+
     res.status(200).json({
       status: 'success',
-      token,
+      accessToken,
+      refreshToken,
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+      refreshExpiresIn: `${REFRESH_TOKEN_EXPIRES_IN_DAYS}d`,
       data: {
         user,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Refresh access token using refresh token
+ * @route POST /api/auth/refresh
+ * @access Public
+ */
+exports.refreshAccessToken = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return next(new ApiError('Refresh token is required', 400));
+    }
+
+    // Find and validate the refresh token
+    const storedToken = await RefreshToken.findByToken(refreshToken);
+
+    if (!storedToken) {
+      return next(new ApiError('Invalid or expired refresh token', 401));
+    }
+
+    // Check if user still exists
+    const user = await User.findById(storedToken.userId);
+    if (!user) {
+      // Revoke the token if user no longer exists
+      await RefreshToken.revokeToken(refreshToken);
+      return next(new ApiError('User no longer exists', 401));
+    }
+
+    // Check if user is still active
+    if (user.active === false) {
+      await RefreshToken.revokeToken(refreshToken);
+      return next(new ApiError('User account is inactive', 403));
+    }
+
+    // Generate new access token
+    const accessToken = generateAccessToken(user._id);
+
+    logger.info(`Access token refreshed for user: ${user.email}`);
+
+    res.status(200).json({
+      status: 'success',
+      accessToken,
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Logout user - revoke refresh token
+ * @route POST /api/auth/logout
+ * @access Public
+ */
+exports.logout = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (refreshToken) {
+      await RefreshToken.revokeToken(refreshToken);
+      logger.info('Refresh token revoked on logout');
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Logged out successfully',
     });
   } catch (error) {
     next(error);
@@ -312,11 +414,19 @@ exports.verifyOtp = async (req, res, next) => {
     user.otp = undefined;
     await user.save({ validateBeforeSave: false });
 
-    const token = generateToken(user._id);
+    // Generate both access and refresh tokens
+    const accessToken = generateAccessToken(user._id);
+    const { token: refreshToken } = await RefreshToken.createToken(user._id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
+    });
 
     res.status(200).json({
       status: 'success',
-      token,
+      accessToken,
+      refreshToken,
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+      refreshExpiresIn: `${REFRESH_TOKEN_EXPIRES_IN_DAYS}d`,
       data: {
         user,
       },
@@ -348,7 +458,7 @@ exports.getCurrentUser = async (req, res, next) => {
 };
 
 /**
- * Forgot password - Send password reset token
+ * Forgot password - Send password reset token via email
  * @route POST /api/v1/auth/forgotPassword
  * @access Public
  */
@@ -379,7 +489,22 @@ exports.forgotPassword = async (req, res, next) => {
     user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
     await user.save({ validateBeforeSave: false });
 
-    logger.info(`Password reset token generated for user: ${user.email}`);
+    // Send password reset email
+    try {
+      await sendPasswordResetEmail(user, resetToken);
+      logger.info(`Password reset email sent to: ${user.email}`);
+    } catch (emailError) {
+      // Clear the reset token if email fails
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      logger.error(`Failed to send password reset email to: ${user.email}`, {
+        error: emailError.message,
+      });
+
+      return next(new ApiError('Error sending password reset email. Please try again later.', 500));
+    }
 
     // SEC-008: Only return reset token in development environment
     // OWASP A01:2021 - Broken Access Control
@@ -387,16 +512,13 @@ exports.forgotPassword = async (req, res, next) => {
 
     const response = {
       status: 'success',
-      // Be accurate about what's happening - email service integration pending
-      message: isDevelopment
-        ? 'Password reset token generated (development mode - token included in response)'
-        : 'If an account exists with this email, a password reset link will be sent',
+      message: 'Password reset link sent to email',
     };
 
-    // Only include token in development for testing purposes
+    // SEC-008: Only include token in development for testing purposes
+    // OWASP A01:2021 - Broken Access Control
     if (isDevelopment) {
       response.resetToken = resetToken;
-      response.note = 'Email delivery not implemented yet - use this token directly';
     }
 
     res.status(200).json(response);
@@ -440,12 +562,24 @@ exports.resetPassword = async (req, res, next) => {
     user.passwordResetExpires = undefined;
     await user.save();
 
-    // Generate new JWT token
-    const newToken = generateToken(user._id);
+    // Revoke all existing refresh tokens for security
+    await RefreshToken.revokeAllUserTokens(user._id);
+
+    // Generate new tokens
+    const accessToken = generateAccessToken(user._id);
+    const { token: refreshToken } = await RefreshToken.createToken(user._id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
+    });
+
+    logger.info(`Password reset successful for user: ${user.email}`);
 
     res.status(200).json({
       status: 'success',
-      token: newToken,
+      accessToken,
+      refreshToken,
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+      refreshExpiresIn: `${REFRESH_TOKEN_EXPIRES_IN_DAYS}d`,
       message: 'Password has been reset successfully',
     });
   } catch (error) {
@@ -481,12 +615,24 @@ exports.updatePassword = async (req, res, next) => {
     user.password = newPassword;
     await user.save();
 
-    // Generate new token
-    const token = generateToken(user._id);
+    // Revoke all existing refresh tokens for security
+    await RefreshToken.revokeAllUserTokens(user._id);
+
+    // Generate new tokens
+    const accessToken = generateAccessToken(user._id);
+    const { token: refreshToken } = await RefreshToken.createToken(user._id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
+    });
+
+    logger.info(`Password updated for user: ${user.email}`);
 
     res.status(200).json({
       status: 'success',
-      token,
+      accessToken,
+      refreshToken,
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+      refreshExpiresIn: `${REFRESH_TOKEN_EXPIRES_IN_DAYS}d`,
       message: 'Password updated successfully',
     });
   } catch (error) {
@@ -518,10 +664,14 @@ const registerAdmin = asyncHandler(async (req, res, next) => {
     adminPermissions: adminPermissions || ['FULL_ACCESS'],
   });
 
-  // Generate JWT token
-  const token = generateToken(admin._id);
+  // Generate tokens
+  const accessToken = generateAccessToken(admin._id);
+  const { token: refreshToken } = await RefreshToken.createToken(admin._id, {
+    userAgent: req.headers['user-agent'],
+    ipAddress: req.ip,
+  });
 
-  // Return success response with token
+  // Return success response with tokens
   return ApiSuccess(
     res,
     {
@@ -533,7 +683,10 @@ const registerAdmin = asyncHandler(async (req, res, next) => {
         role: admin.role,
         adminPermissions: admin.adminPermissions,
       },
-      token,
+      accessToken,
+      refreshToken,
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+      refreshExpiresIn: `${REFRESH_TOKEN_EXPIRES_IN_DAYS}d`,
     },
     201
   );
@@ -569,12 +722,19 @@ exports.registerTestAdmin = async (req, res, next) => {
       role: 'Admin',
     });
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Generate tokens
+    const accessToken = generateAccessToken(user._id);
+    const { token: refreshToken } = await RefreshToken.createToken(user._id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
+    });
 
     res.status(201).json({
       status: 'success',
-      token,
+      accessToken,
+      refreshToken,
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+      refreshExpiresIn: `${REFRESH_TOKEN_EXPIRES_IN_DAYS}d`,
       data: {
         user: {
           id: user._id,

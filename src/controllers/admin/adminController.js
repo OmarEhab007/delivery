@@ -11,6 +11,10 @@ const {
 } = require('../../models/UserRegistrationRequest');
 const db = require('../../utils/db');
 const logger = require('../../utils/logger');
+const {
+  sendRegistrationApprovedEmail,
+  sendRejectionEmail,
+} = require('../../services/email/emailService');
 
 /**
  * Get all users in the system
@@ -463,6 +467,17 @@ const approveUserRegistrationRequest = asyncHandler(async (req, res, next) => {
       ? await approveRegistrationWithTransaction({ request, userData, adminId })
       : await approveRegistrationWithoutTransaction({ request, userData, adminId });
 
+    // Send registration approved email
+    try {
+      await sendRegistrationApprovedEmail(result.user);
+      logger.info(`Registration approval email sent to: ${result.user.email}`);
+    } catch (emailError) {
+      // Log email error but don't fail the request
+      logger.error(`Failed to send registration approval email to: ${result.user.email}`, {
+        error: emailError.message,
+      });
+    }
+
     return ApiSuccess(res, {
       message: 'Registration request approved successfully',
       user: result.user.toObject({ getters: true, virtuals: true, versionKey: false }),
@@ -563,6 +578,17 @@ const rejectUserRegistrationRequest = asyncHandler(async (req, res, next) => {
   request.rejectionReason = reason;
 
   await request.save();
+
+  // Send registration rejection email
+  try {
+    await sendRejectionEmail(request.payload.email, request.payload.name, reason);
+    logger.info(`Registration rejection email sent to: ${request.payload.email}`);
+  } catch (emailError) {
+    // Log email error but don't fail the request
+    logger.error(`Failed to send registration rejection email to: ${request.payload.email}`, {
+      error: emailError.message,
+    });
+  }
 
   return ApiSuccess(res, {
     message: 'Registration request rejected successfully',

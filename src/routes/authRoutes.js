@@ -186,9 +186,15 @@ if (process.env.NODE_ENV !== 'production') {
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                 token:
+ *                 status:
+ *                   type: string
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *                 expiresIn:
+ *                   type: string
+ *                 refreshExpiresIn:
  *                   type: string
  *                 data:
  *                   $ref: '#/components/schemas/User'
@@ -218,6 +224,85 @@ router.post(
   ],
   authController.login
 );
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh access token using refresh token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: The refresh token received during login
+ *     responses:
+ *       200:
+ *         description: New access token issued
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 accessToken:
+ *                   type: string
+ *                 expiresIn:
+ *                   type: string
+ *       400:
+ *         description: Refresh token is required
+ *       401:
+ *         description: Invalid or expired refresh token
+ *       403:
+ *         description: User account is inactive
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
+router.post(
+  '/refresh',
+  [body('refreshToken').notEmpty().withMessage('Refresh token is required')],
+  authController.refreshAccessToken
+);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user and revoke refresh token
+ *     tags: [Auth]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: The refresh token to revoke
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *       500:
+ *         $ref: '#/components/responses/Error'
+ */
+router.post('/logout', authController.logout);
 
 router.post(
   '/otp/request',
