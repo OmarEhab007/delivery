@@ -92,10 +92,10 @@ const updateShipmentLocation = async (shipmentId, location) => {
       throw new Error(`Shipment not found: ${shipmentId}`);
     }
 
-    // Update the current location
+    // Update the current location using GeoJSON format
     shipment.currentLocation = {
-      lat: location.lat,
-      lng: location.lng,
+      type: 'Point',
+      coordinates: [location.lng, location.lat],
       timestamp: new Date(),
       address: location.address, // Optional
     };

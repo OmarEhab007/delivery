@@ -4,6 +4,7 @@ const { promisify } = require('util');
 const crypto = require('crypto');
 
 const { Document, DocumentType } = require('../models/Document');
+const User = require('../models/User');
 const logger = require('../utils/logger');
 const { createCustomError } = require('../utils/errorResponse');
 
@@ -209,7 +210,7 @@ const deleteDocument = async (documentId, userId) => {
     // Only the uploader or admin can delete documents
     if (document.uploadedBy.toString() !== userId.toString()) {
       const user = await User.findById(userId);
-      if (!user || user.role !== 'admin') {
+      if (!user || user.role !== 'Admin') {
         throw createCustomError('Not authorized to delete this document', 403);
       }
     }
@@ -341,7 +342,7 @@ const updateDocumentMetadata = async (documentId, userId, updateData) => {
     // Authorization check
     if (document.uploadedBy.toString() !== userId.toString()) {
       const user = await User.findById(userId);
-      if (!user || user.role !== 'admin') {
+      if (!user || user.role !== 'Admin') {
         throw createCustomError('Not authorized to update this document', 403);
       }
     }

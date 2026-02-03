@@ -165,13 +165,9 @@ exports.updateShipment = async (req, res, next) => {
       return next(new ApiError('You do not have permission to update this shipment', 403));
     }
 
-    // Check if shipment status allows updates
+    // Check if shipment status allows updates (CANCELLED removed - cannot update cancelled shipments)
     if (
-      ![
-        ShipmentStatus.PENDING_APPROVAL,
-        ShipmentStatus.REQUESTED,
-        ShipmentStatus.CANCELLED,
-      ].includes(shipment.status)
+      ![ShipmentStatus.PENDING_APPROVAL, ShipmentStatus.REQUESTED].includes(shipment.status)
     ) {
       return next(new ApiError(`Cannot update shipment with status: ${shipment.status}`, 400));
     }
