@@ -1,3 +1,5 @@
+require('./utils/polyfills');
+
 const { createServer } = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -50,6 +52,9 @@ const truckOwnerRoutes = require('./routes/truckOwnerRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const metricsRoutes = require('./routes/metricsRoutes');
 const reportingRoutes = require('./routes/reportingRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const integrationRoutes = require('./routes/integrationRoutes');
+const automationRoutes = require('./routes/automationRoutes');
 const swaggerRoutes = require('./routes/swaggerRoutes');
 // Add other route imports as they are developed
 
@@ -233,6 +238,9 @@ app.get('/api/test-csrf', csrfProtection, (req, res) => {
 
 // Routes that require CSRF protection
 // Note: GET requests are safe and don't need CSRF protection
+// Note: Only cookie-authenticated endpoints need CSRF protection.
+//       Bearer token endpoints (like /api/integrations/*) don't need CSRF
+//       because browsers don't automatically include Authorization headers.
 const csrfProtectedPaths = [
   '/api/users/profile',
   '/api/users/:id',
@@ -244,6 +252,9 @@ const csrfProtectedPaths = [
   '/api/trucks/:id',
   '/api/auth/change-password',
   '/api/documents',
+  // Automation routes (if accessed via browser dashboard with cookies)
+  '/api/automation/rules',
+  '/api/automation/rules/:id',
 ];
 
 // Apply CSRF protection to routes that modify data
@@ -269,14 +280,13 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/truck-owner', truckOwnerRoutes);
+app.use('/api/integrations', integrationRoutes);
+app.use('/api/automation', automationRoutes);
 // Add metrics routes
-app.use(
-  '/api/metrics',
-  authenticateToken,
-  restrictTo('Admin'),
-  metricsRoutes
-);
-// Add reporting routes
+app.use('/api/metrics', authenticateToken, restrictTo('Admin'), metricsRoutes);
+// Add analytics routes (merchant + admin)
+app.use('/api/reports', analyticsRoutes);
+// Add reporting routes (admin-only)
 app.use('/api/reports', reportingRoutes);
 // Add other routes as they are developed
 

@@ -46,7 +46,7 @@ describe('OTP Authentication', () => {
       .send({ phone, otp: otpCode })
       .expect(200);
 
-    expect(response.body).toHaveProperty('token');
+    expect(response.body).toHaveProperty('accessToken');
     expect(response.body.data.user.phone).toBe(phone);
   });
 

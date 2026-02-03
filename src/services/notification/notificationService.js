@@ -17,6 +17,8 @@ const EventTypes = {
   FIXED_PRICE_SHIPMENT_AVAILABLE: 'FIXED_PRICE_SHIPMENT_AVAILABLE',
   FIXED_PRICE_SHIPMENT_ACCEPTED: 'FIXED_PRICE_SHIPMENT_ACCEPTED',
   ASSIGNED_TO_SHIPMENT: 'ASSIGNED_TO_SHIPMENT',
+  SHIPMENT_DELAY_ALERT: 'SHIPMENT_DELAY_ALERT',
+  SHIPMENT_MISSING_UPDATE: 'SHIPMENT_MISSING_UPDATE',
 };
 
 /**
@@ -122,6 +124,16 @@ const createNotificationContent = (eventType, data, recipient) => {
     case EventTypes.ASSIGNED_TO_SHIPMENT:
       return {
         message: `You have been assigned to shipment #${data.shipmentId}. Route: ${data.origin} to ${data.destination}. Cargo: ${data.cargo}. Please prepare for pickup.`,
+        mediaUrls: [],
+      };
+    case EventTypes.SHIPMENT_DELAY_ALERT:
+      return {
+        message: `Shipment #${data.shipmentId} is delayed beyond the expected delivery date. Current status: ${data.status}. Please review and take action.`,
+        mediaUrls: [],
+      };
+    case EventTypes.SHIPMENT_MISSING_UPDATE:
+      return {
+        message: `Shipment #${data.shipmentId} has not received an update within the expected window. Current status: ${data.status}. Please check the latest tracking information.`,
         mediaUrls: [],
       };
 
