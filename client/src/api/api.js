@@ -190,6 +190,8 @@ export const applications = {
   delete: (id) => api.delete(`/api/admin/applications/${id}`),
   updateStatus: (id, status) => api.patch(`/api/admin/applications/${id}/status`, { status }),
   getStats: () => api.get('/api/admin/applications/stats'),
+  create: (payload) => api.post('/api/applications', payload),
+  getMy: (params) => api.get('/api/applications', { params }),
 };
 
 // Trucks API calls
@@ -214,6 +216,37 @@ export const reports = {
   getPerformance: (params) => api.get('/api/reports/performance', { params }),
   getCustomers: (params) => api.get('/api/reports/customers', { params }),
   getEfficiency: (params) => api.get('/api/reports/efficiency', { params }),
+};
+
+// Truck owner portal API calls
+export const truckOwner = {
+  getAvailableShipments: (params) => api.get('/api/truck-owner/shipments/available', { params }),
+  getMyShipments: (params) => api.get('/api/truck-owner/shipments', { params }),
+  assignShipment: (shipmentId, payload) =>
+    api.patch(`/api/truck-owner/shipments/${shipmentId}/assign`, payload),
+  getDrivers: (params) => api.get('/api/truck-owner/drivers', { params }),
+  getAvailableDrivers: (params) => api.get('/api/truck-owner/drivers/available', { params }),
+  getAvailableTrucks: (params) => api.get('/api/truck-owner/trucks/available', { params }),
+};
+
+// Driver portal API calls
+export const driver = {
+  getAssignedShipments: (params) => api.get('/api/driver/shipments/assigned', { params }),
+  getActiveShipments: (params) => api.get('/api/driver/shipments/active', { params }),
+  updateLocation: (payload) => api.patch('/api/driver/location', payload),
+  updateShipmentStatus: (shipmentId, payload) =>
+    api.patch(`/api/driver/shipments/${shipmentId}/status`, payload),
+  uploadProofOfDelivery: (shipmentId, payload) => {
+    const formData = new FormData();
+    formData.append('proof', payload.file);
+    if (payload.type) formData.append('type', payload.type);
+    if (payload.notes) formData.append('notes', payload.notes);
+    return api.post(`/api/driver/shipments/${shipmentId}/proof`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  reportIssue: (shipmentId, payload) =>
+    api.post(`/api/driver/shipments/${shipmentId}/issues`, payload),
 };
 
 export default api;

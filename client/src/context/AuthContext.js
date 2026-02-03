@@ -45,14 +45,7 @@ export const AuthProvider = ({ children }) => {
 
           // Get current user info
           const response = await axios.get('/api/auth/me');
-
-          // Only set admin users
-          if (response.data.data.user.role === 'Admin') {
-            setCurrentUser(response.data.data.user);
-          } else {
-            logout();
-            return;
-          }
+          setCurrentUser(response.data.data.user);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -71,21 +64,17 @@ export const AuthProvider = ({ children }) => {
       await initCsrfToken();
 
       const response = await axios.post('/api/auth/login', { email, password });
-      const { token, data } = response.data;
+      const { accessToken, token, data } = response.data;
       const user = data.user;
-
-      // Check if user is admin
-      if (user.role !== 'Admin') {
-        throw new Error('Unauthorized: Admin access only');
-      }
+      const resolvedToken = accessToken || token;
 
       // Save token and set current user
-      localStorage.setItem('auth_token', token);
-      setToken(token);
+      localStorage.setItem('auth_token', resolvedToken);
+      setToken(resolvedToken);
       setCurrentUser(user);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${resolvedToken}`;
 
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
       console.error('Login error:', error);
       return {

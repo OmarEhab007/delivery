@@ -12,6 +12,7 @@ const { ApiSuccess } = require('../../middleware/apiSuccess');
 const { asyncHandler } = require('../../middleware/asyncHandler');
 const metricScheduler = require('../../utils/metricScheduler');
 const logger = require('../../utils/logger');
+const trackingService = require('../../services/tracking/trackingService');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -158,26 +159,57 @@ const getShipmentHistory = asyncHandler(async (req, res, next) => {
 
 /**
  * Update driver's location
- * @route PATCH /api/v1/driver/location
+ * @route PATCH /api/driver/location
  * @access Private (Driver only)
  */
 const updateLocation = asyncHandler(async (req, res, next) => {
-  const { latitude, longitude } = req.body;
+  const { latitude, longitude, shipmentId, address } = req.body;
 
-  if (!latitude || !longitude) {
+  if (
+    latitude === undefined ||
+    latitude === null ||
+    longitude === undefined ||
+    longitude === null
+  ) {
     return next(new ApiError('Both latitude and longitude are required', 400));
+  }
+
+  const parsedLatitude = Number(latitude);
+  const parsedLongitude = Number(longitude);
+
+  if (!Number.isFinite(parsedLatitude) || !Number.isFinite(parsedLongitude)) {
+    return next(new ApiError('Latitude and longitude must be valid numbers', 400));
   }
 
   const driver = await User.findById(req.user.id);
   driver.currentLocation = {
     type: 'Point',
-    coordinates: [longitude, latitude],
+    coordinates: [parsedLongitude, parsedLatitude],
   };
   await driver.save();
+
+  let shipment = null;
+  if (shipmentId) {
+    shipment = await Shipment.findOne({
+      _id: shipmentId,
+      assignedDriverId: req.user.id,
+    });
+
+    if (!shipment) {
+      return next(new ApiError('Shipment not found or not assigned to you', 404));
+    }
+
+    await trackingService.updateShipmentLocation(shipmentId, {
+      lat: parsedLatitude,
+      lng: parsedLongitude,
+      address,
+    });
+  }
 
   return ApiSuccess(res, {
     message: 'Location updated successfully',
     location: driver.currentLocation,
+    shipment,
   });
 });
 

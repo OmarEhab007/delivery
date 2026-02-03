@@ -38,12 +38,24 @@ import { useAuth } from '../../context/AuthContext';
 const drawerWidth = 240;
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-  { text: 'Users', icon: <UsersIcon />, path: '/users' },
-  { text: 'Shipments', icon: <ShipmentsIcon />, path: '/shipments' },
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', role: 'Admin' },
+  { text: 'Users', icon: <UsersIcon />, path: '/users', role: 'Admin' },
+  { text: 'Shipments', icon: <ShipmentsIcon />, path: '/shipments', role: 'Admin' },
   { text: 'My Shipments', icon: <ShipmentsIcon />, path: '/merchant/shipments', role: 'Merchant' },
-  { text: 'Trucks', icon: <TrucksIcon />, path: '/trucks' },
-  { text: 'Applications', icon: <ApplicationsIcon />, path: '/applications' },
+  { text: 'Trucks', icon: <TrucksIcon />, path: '/trucks', role: 'Admin' },
+  { text: 'Applications', icon: <ApplicationsIcon />, path: '/applications', role: 'Admin' },
+  {
+    text: 'Carrier Portal',
+    icon: <ShipmentsIcon />,
+    path: '/truck-owner',
+    role: 'TruckOwner',
+  },
+  {
+    text: 'Driver Portal',
+    icon: <TrucksIcon />,
+    path: '/driver',
+    role: 'Driver',
+  },
   { text: 'Reports', icon: <ReportsIcon />, path: '/reports', role: 'Admin' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];

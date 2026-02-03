@@ -6,8 +6,10 @@
  * reference it. This polyfill ensures backward compatibility.
  */
 const buffer = require('buffer');
+const logger = require('./logger');
 
 if (!buffer.SlowBuffer) {
+  logger.debug('Applying SlowBuffer polyfill for backward compatibility');
   buffer.SlowBuffer = buffer.Buffer;
 }
 

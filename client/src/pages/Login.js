@@ -43,7 +43,10 @@ const Login = () => {
         const result = await login(values.email, values.password);
 
         if (result.success) {
-          navigate('/dashboard');
+          const role = result.user?.role;
+          const redirectPath =
+            role === 'TruckOwner' ? '/truck-owner' : role === 'Driver' ? '/driver' : '/dashboard';
+          navigate(redirectPath);
         } else {
           setError(result.message);
         }
@@ -88,10 +91,10 @@ const Login = () => {
           >
             <AdminIcon color="primary" sx={{ fontSize: 64, mb: 2 }} />
             <Typography variant="h4" component="h1" gutterBottom fontWeight="500">
-              Admin Login
+              Sign In
             </Typography>
             <Typography variant="body2" color="text.secondary" align="center">
-              Enter your credentials to access the admin dashboard
+              Enter your credentials to access your portal
             </Typography>
           </Box>
 

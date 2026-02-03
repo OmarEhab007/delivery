@@ -28,8 +28,10 @@ const cleanupErrorCache = () => {
   }
 };
 
-// Set up periodic cleanup
-setInterval(cleanupErrorCache, 15 * 60 * 1000); // Clean every 15 minutes
+// Set up periodic cleanup (skip during tests to avoid open handles)
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(cleanupErrorCache, 15 * 60 * 1000); // Clean every 15 minutes
+}
 
 /**
  * Generate a fingerprint for an error to identify similar errors
