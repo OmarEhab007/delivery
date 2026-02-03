@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const mongoSanitize = require('express-mongo-sanitize');
 const { Server } = require('socket.io');
 
 require('dotenv').config();
@@ -25,11 +26,8 @@ const { csrfProtection, handleCSRFError, addCSRFHeaders } = require('./middlewar
 const { configureSecurityHeaders, handleCSPReports } = require('./middleware/securityHeaders');
 // Import Swagger configuration
 const { swaggerServe, swaggerSetup } = require('./config/swagger');
-// Import auth middleware for Swagger guard and protected routes
+// Import auth middleware for Swagger guard
 const { authenticateToken, restrictTo } = require('./middleware/authMiddleware');
-
-// Import sanitization middleware for NoSQL injection prevention
-const mongoSanitize = require('./middleware/sanitization');
 
 // Import monitoring utilities
 const metrics = require('./utils/metrics');
@@ -140,13 +138,10 @@ app.use(
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// NoSQL Injection Sanitization - SEC-001: Prevent MongoDB operator injection
-// OWASP A03:2021 - Injection
-// Must be applied after body parsing and before any route handlers
-app.use(mongoSanitize);
-
 app.use(cookieParser(process.env.COOKIE_SECRET || 'delivery-app-secret'));
+
+// NoSQL injection protection - sanitize user-supplied data
+app.use(mongoSanitize());
 
 // Add CSRF-related security headers to all responses
 app.use(addCSRFHeaders);
@@ -172,13 +167,13 @@ app.use(requestLogger);
 app.use(handleCSRFError);
 
 // CSP violation reporting endpoint
-app.post(
-  '/api/csp-report',
-  express.json({
-    type: 'application/csp-report',
-  }),
-  handleCSPReports()
-);
+// app.post(
+//   '/api/csp-report',
+//   express.json({
+//     type: 'application/csp-report',
+//   }),
+//   handleCSPReports()
+// );
 
 // Apply auth rate limiting
 app.use('/api/auth/login', authLimiter);
@@ -252,8 +247,8 @@ const csrfProtectedPaths = [
 ];
 
 // Apply CSRF protection to routes that modify data
-csrfProtectedPaths.forEach((routePath) => {
-  app.all(routePath, csrfProtection);
+csrfProtectedPaths.forEach((path) => {
+  app.all(path, csrfProtection);
 });
 
 // Add Swagger documentation routes (restricted by default)
@@ -275,7 +270,12 @@ app.use('/api/driver', driverRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/truck-owner', truckOwnerRoutes);
 // Add metrics routes
-app.use('/api/metrics', authenticateToken, restrictTo('Admin'), metricsRoutes);
+app.use(
+  '/api/metrics',
+  authenticateToken,
+  restrictTo('Admin'),
+  metricsRoutes
+);
 // Add reporting routes
 app.use('/api/reports', reportingRoutes);
 // Add other routes as they are developed
@@ -283,59 +283,34 @@ app.use('/api/reports', reportingRoutes);
 // Health check routes
 app.use('/health', healthRoutes);
 
-// Debug route - SEC-004: Disabled in production
-// OWASP A01:2021 - Broken Access Control
-if (process.env.NODE_ENV !== 'production') {
-  app.get('/debug-models', (req, res) => {
-    const models = {
-      Document: typeof Document !== 'undefined',
-      Shipment: typeof Shipment !== 'undefined',
-      Application: typeof Application !== 'undefined',
-      Truck: typeof Truck !== 'undefined',
-      User: typeof User !== 'undefined',
-    };
+// Debug route - no auth required
+app.get('/debug-models', (req, res) => {
+  const models = {
+    Document: typeof Document !== 'undefined',
+    Shipment: typeof Shipment !== 'undefined',
+    Application: typeof Application !== 'undefined',
+    Truck: typeof Truck !== 'undefined',
+    User: typeof User !== 'undefined',
+  };
 
-    const methods = {
-      Document: typeof Document?.findById === 'function',
-      Shipment: typeof Shipment?.findById === 'function',
-      Application: typeof Application?.findById === 'function',
-      Truck: typeof Truck?.findById === 'function',
-      User: typeof User?.findById === 'function',
-    };
+  const methods = {
+    Document: typeof Document?.findById === 'function',
+    Shipment: typeof Shipment?.findById === 'function',
+    Application: typeof Application?.findById === 'function',
+    Truck: typeof Truck?.findById === 'function',
+    User: typeof User?.findById === 'function',
+  };
 
-    res.status(200).json({
-      success: true,
-      models,
-      methods,
-    });
+  res.status(200).json({
+    success: true,
+    models,
+    methods,
   });
-}
-
-// SEC-007: Socket.io authentication middleware
-// OWASP A07:2021 - Identification and Authentication Failures
-io.use((socket, next) => {
-  const token =
-    socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace('Bearer ', '');
-
-  if (!token) {
-    logger.warn(`Socket connection rejected: No token provided (${socket.id})`);
-    return next(new Error('Authentication error: Token required'));
-  }
-
-  try {
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = decoded;
-    next();
-  } catch (error) {
-    logger.warn(`Socket connection rejected: Invalid token (${socket.id}) - ${error.message}`);
-    return next(new Error('Authentication error: Invalid token'));
-  }
 });
 
 // Socket.io setup for real-time tracking
 io.on('connection', (socket) => {
-  logger.info(`User connected: ${socket.id} (User: ${socket.user?.id || 'unknown'})`);
+  logger.info(`User connected: ${socket.id}`);
 
   // Add socket event handlers here as they are developed
 
@@ -366,12 +341,12 @@ if (process.env.NODE_ENV !== 'test') {
     if (err.code === 'EADDRINUSE') {
       logger.error(`Port ${PORT} is already in use. Please use a different port.`);
       console.error(
-        `Error: Port ${PORT} is already in use. Please use a different port or stop the process using it.`
+        `❌ Error: Port ${PORT} is already in use. Please use a different port or stop the process using it.`
       );
       process.exit(1);
     } else {
       logger.error(`Error checking port availability: ${err.message}`, { error: err });
-      console.error(`Error checking port availability: ${err.message}`);
+      console.error(`❌ Error checking port availability: ${err.message}`);
     }
   });
 
@@ -385,7 +360,7 @@ if (process.env.NODE_ENV !== 'test') {
         })
         .on('error', (err) => {
           logger.error(`Error starting server: ${err.message}`, { error: err });
-          console.error(`Error starting server: ${err.message}`);
+          console.error(`❌ Error starting server: ${err.message}`);
         });
     });
   });
@@ -396,14 +371,14 @@ if (process.env.NODE_ENV !== 'test') {
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (err) => {
     logger.error(`Unhandled Rejection: ${err.message}`, { error: err });
-    console.error(`Unhandled Promise Rejection: ${err.message}`);
+    console.error(`❌ Unhandled Promise Rejection: ${err.message}`);
     // Don't exit the process automatically, just log the error
   });
 
   // Handle uncaught exceptions
   process.on('uncaughtException', (err) => {
     logger.error(`Uncaught Exception: ${err.message}`, { error: err });
-    console.error(`Uncaught Exception: ${err.message}`);
+    console.error(`❌ Uncaught Exception: ${err.message}`);
     console.error(err.stack);
     // Give the process time to log the error before exiting
     setTimeout(() => {
