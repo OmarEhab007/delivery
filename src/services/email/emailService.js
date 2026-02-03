@@ -105,7 +105,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
       type: 'EMAIL_DEBUG',
       to: maskEmail(to),
       subject,
-      preview: html.substring(0, 200) + '...',
+      preview: html ? html.substring(0, 200) + '...' : '[no content]',
     });
 
     return {

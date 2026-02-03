@@ -8,6 +8,21 @@ const appName = process.env.APP_NAME || 'Delivery App';
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
 
 /**
+ * HTML escape utility to prevent XSS/injection in email templates
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string safe for HTML
+ */
+const escapeHtml = (str) => {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+/**
  * Base email template wrapper
  * @param {string} content - The main content of the email
  * @returns {string} Complete HTML email
@@ -135,14 +150,16 @@ const baseTemplate = (content) => `
 const passwordResetTemplate = (resetUrl, userName) => {
   const subject = `Reset Your Password - ${appName}`;
   const expiryMinutes = 10;
+  const safeUserName = escapeHtml(userName) || 'User';
+  const safeResetUrl = escapeHtml(resetUrl);
 
   const content = `
     <h2>Password Reset Request</h2>
-    <p>Hello ${userName || 'User'},</p>
+    <p>Hello ${safeUserName},</p>
     <p>We received a request to reset your password. Click the button below to create a new password:</p>
 
     <p style="text-align: center;">
-      <a href="${resetUrl}" class="button">Reset Password</a>
+      <a href="${safeResetUrl}" class="button">Reset Password</a>
     </p>
 
     <div class="warning">
@@ -150,7 +167,7 @@ const passwordResetTemplate = (resetUrl, userName) => {
     </div>
 
     <p>If the button doesn't work, copy and paste this link into your browser:</p>
-    <p style="word-break: break-all;"><a href="${resetUrl}">${resetUrl}</a></p>
+    <p style="word-break: break-all;"><a href="${safeResetUrl}">${safeResetUrl}</a></p>
 
     <p>If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
 
@@ -171,10 +188,11 @@ const passwordResetTemplate = (resetUrl, userName) => {
 const registrationApprovedTemplate = (userName) => {
   const subject = `Welcome to ${appName} - Registration Approved`;
   const loginUrl = `${frontendUrl}/login`;
+  const safeUserName = escapeHtml(userName) || 'User';
 
   const content = `
     <h2>Welcome to ${appName}!</h2>
-    <p>Hello ${userName || 'User'},</p>
+    <p>Hello ${safeUserName},</p>
     <p>Great news! Your registration has been approved by our admin team.</p>
 
     <div class="info">
@@ -207,24 +225,27 @@ const registrationApprovedTemplate = (userName) => {
  */
 const registrationRejectionTemplate = ({ name, reason, supportEmail }) => {
   const subject = `Registration Update - ${appName}`;
+  const safeName = escapeHtml(name) || 'User';
+  const safeReason = escapeHtml(reason);
+  const safeSupportEmail = escapeHtml(supportEmail);
 
   const content = `
     <h2>Registration Status Update</h2>
-    <p>Hello ${name || 'User'},</p>
+    <p>Hello ${safeName},</p>
     <p>Thank you for your interest in ${appName}. After reviewing your registration request, we were unable to approve your account at this time.</p>
 
     ${
-      reason
+      safeReason
         ? `
     <div class="warning">
       <strong>Reason:</strong>
-      <p style="margin: 8px 0 0 0;">${reason}</p>
+      <p style="margin: 8px 0 0 0;">${safeReason}</p>
     </div>
     `
         : ''
     }
 
-    <p>If you believe this decision was made in error, or if you would like more information, please contact our support team${supportEmail ? ` at <a href="mailto:${supportEmail}">${supportEmail}</a>` : ''}.</p>
+    <p>If you believe this decision was made in error, or if you would like more information, please contact our support team${safeSupportEmail ? ` at <a href="mailto:${safeSupportEmail}">${safeSupportEmail}</a>` : ''}.</p>
 
     <p>You may also submit a new registration request with updated information if applicable.</p>
 
@@ -247,17 +268,21 @@ const registrationRejectionTemplate = ({ name, reason, supportEmail }) => {
  * @returns {Object} Subject and HTML content
  */
 const notificationTemplate = ({ title, message, actionUrl, actionText }) => {
-  const subject = `${title} - ${appName}`;
+  const safeTitle = escapeHtml(title);
+  const safeMessage = escapeHtml(message);
+  const safeActionUrl = escapeHtml(actionUrl);
+  const safeActionText = escapeHtml(actionText);
+  const subject = `${safeTitle} - ${appName}`;
 
   const content = `
-    <h2>${title}</h2>
-    <p>${message}</p>
+    <h2>${safeTitle}</h2>
+    <p>${safeMessage}</p>
 
     ${
-      actionUrl && actionText
+      safeActionUrl && safeActionText
         ? `
     <p style="text-align: center;">
-      <a href="${actionUrl}" class="button">${actionText}</a>
+      <a href="${safeActionUrl}" class="button">${safeActionText}</a>
     </p>
     `
         : ''

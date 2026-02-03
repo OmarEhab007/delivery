@@ -96,10 +96,14 @@ const createShipmentValidation = [
     .optional()
     .isArray({ min: 2, max: 2 })
     .withMessage('Coordinates must be an array of [longitude, latitude]'),
-  body('origin.coordinates.*')
+  body('origin.coordinates.0')
     .optional()
     .isFloat({ min: -180, max: 180 })
-    .withMessage('Coordinate values must be valid numbers'),
+    .withMessage('Longitude must be between -180 and 180'),
+  body('origin.coordinates.1')
+    .optional()
+    .isFloat({ min: -90, max: 90 })
+    .withMessage('Latitude must be between -90 and 90'),
 
   // Destination validation
   body('destination').notEmpty().withMessage('Destination is required'),
@@ -123,10 +127,14 @@ const createShipmentValidation = [
     .optional()
     .isArray({ min: 2, max: 2 })
     .withMessage('Coordinates must be an array of [longitude, latitude]'),
-  body('destination.coordinates.*')
+  body('destination.coordinates.0')
     .optional()
     .isFloat({ min: -180, max: 180 })
-    .withMessage('Coordinate values must be valid numbers'),
+    .withMessage('Longitude must be between -180 and 180'),
+  body('destination.coordinates.1')
+    .optional()
+    .isFloat({ min: -90, max: 90 })
+    .withMessage('Latitude must be between -90 and 90'),
 
   // Cargo details validation
   body('cargoDetails').notEmpty().withMessage('Cargo details are required'),
