@@ -1,6 +1,20 @@
+/**
+ * User Model
+ *
+ * Represents different types of users in the system with role-based fields.
+ * Supports four user roles: Admin, Merchant, TruckOwner, and Driver.
+ *
+ * @module models/User
+ * @requires mongoose
+ * @requires bcryptjs
+ */
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+/**
+ * User Schema Definition
+ * @type {mongoose.Schema}
+ */
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -260,7 +274,15 @@ userSchema.virtual('allDocuments', {
   match: { entityType: 'User', isActive: true },
 });
 
-// Helper method to add a document to user
+/**
+ * Add a document to the user's document list
+ * @method
+ * @param {Object} document - The document object to add
+ * @param {mongoose.Types.ObjectId} document._id - Document ID
+ * @param {string} document.name - Document name
+ * @param {string} document.documentType - Type of document
+ * @returns {Promise<User>} The saved user instance
+ */
 userSchema.methods.addDocument = function (document) {
   // Check if document already exists
   const exists = this.documents.some(
@@ -303,7 +325,11 @@ userSchema.methods.addDocument = function (document) {
   return this;
 };
 
-// Pre-save hook to hash password
+/**
+ * Pre-save hook to hash password before saving
+ * @hook
+ * @param {Function} next - Express next middleware function
+ */
 userSchema.pre('save', async function (next) {
   // Only hash the password if it's modified (or new)
   if (!this.isModified('password')) return next();
@@ -314,7 +340,12 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Method to compare password
+/**
+ * Compare a candidate password with the stored hashed password
+ * @method
+ * @param {string} candidatePassword - The password to compare
+ * @returns {Promise<boolean>} True if passwords match, false otherwise
+ */
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };

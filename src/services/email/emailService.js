@@ -2,7 +2,12 @@
  * Email Service
  *
  * Handles all email sending functionality using nodemailer.
- * In development mode, emails are logged instead of sent.
+ * Supports development mode logging and configurable email settings.
+ *
+ * @module services/email/emailService
+ * @requires nodemailer
+ * @requires ../../utils/logger
+ * @requires ./emailTemplates
  */
 
 const nodemailer = require('nodemailer');
@@ -14,12 +19,12 @@ const {
   notificationTemplate,
 } = require('./emailTemplates');
 
-// Environment configuration
+/** @type {boolean} Whether we're in development mode */
 const isDevelopment = process.env.NODE_ENV !== 'production';
+/** @type {boolean} Whether email sending is enabled */
 const emailEnabled = process.env.EMAIL_ENABLED !== 'false';
 
-// Email configuration from environment variables
-// Support both naming conventions: EMAIL_USER/EMAIL_PASS and EMAIL_USERNAME/EMAIL_PASSWORD
+/** @type {Object} Email configuration from environment variables */
 const emailConfig = {
   host: process.env.EMAIL_HOST || 'smtp.mailtrap.io',
   port: parseInt(process.env.EMAIL_PORT, 10) || 587,
@@ -30,12 +35,16 @@ const emailConfig = {
   },
 };
 
+/** @type {string} Default from email address */
 const emailFrom = process.env.EMAIL_FROM || 'noreply@deliveryapp.com';
+/** @type {string} Frontend URL for email links */
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+/** @type {string} Support email address */
 const supportEmail = process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM;
 
 /**
  * Mask email address for privacy-safe logging (GDPR/CCPA compliant)
+ * @function
  * @param {string} email - Email address to mask
  * @returns {string} Masked email (e.g., "u***@example.com")
  */

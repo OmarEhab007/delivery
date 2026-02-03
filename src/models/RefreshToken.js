@@ -1,6 +1,20 @@
+/**
+ * RefreshToken Model
+ *
+ * Implements secure refresh token rotation for JWT authentication.
+ * Stores hashed refresh tokens with expiration and revocation tracking.
+ *
+ * @module models/RefreshToken
+ * @requires mongoose
+ * @requires crypto
+ */
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
+/**
+ * RefreshToken Schema Definition
+ * @type {mongoose.Schema}
+ */
 const refreshTokenSchema = new mongoose.Schema(
   {
     userId: {

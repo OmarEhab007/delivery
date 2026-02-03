@@ -1,3 +1,14 @@
+/**
+ * Authentication Middleware
+ *
+ * Provides JWT-based authentication and role-based authorization.
+ * Verifies access tokens and checks user permissions.
+ *
+ * @module middleware/authMiddleware
+ * @requires jsonwebtoken
+ * @requires ../models/User
+ * @requires ./errorHandler
+ */
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/User');
@@ -6,6 +17,12 @@ const { ApiError } = require('./errorHandler');
 
 /**
  * Protect routes - Verify JWT token and attach user to request
+ * @function
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {void}
+ * @throws {ApiError} 401 - If token is missing, invalid, or expired
  */
 const protect = async (req, res, next) => {
   try {
@@ -47,7 +64,10 @@ const protect = async (req, res, next) => {
 
 /**
  * Restrict routes to specific roles
- * @param  {...string} roles Array of allowed roles
+ * @function
+ * @param {...string} roles - Array of allowed roles (Admin, Merchant, TruckOwner, Driver)
+ * @returns {Function} Express middleware function
+ * @throws {ApiError} 403 - If user's role is not in the allowed roles list
  */
 const restrictTo = (...roles) => {
   return (req, res, next) => {
@@ -58,13 +78,22 @@ const restrictTo = (...roles) => {
   };
 };
 
-// Add an alias for authorizeRoles for backward compatibility
+/**
+ * Alias for restrictTo with backward compatibility
+ * Accepts either array or rest parameters
+ * @function
+ * @param {string[]|string} roles - Array of roles or single role
+ * @returns {Function} Express middleware function
+ */
 const authorizeRoles = (roles) => {
   // Convert array to rest parameters if an array is passed
   return restrictTo(...(Array.isArray(roles) ? roles : [roles]));
 };
 
-// Alias for authenticateToken for backward compatibility
+/**
+ * Alias for protect for backward compatibility
+ * @function
+ */
 const authenticateToken = protect;
 
 module.exports = {

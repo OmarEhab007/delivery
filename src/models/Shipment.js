@@ -1,6 +1,18 @@
+/**
+ * Shipment Model
+ *
+ * Represents cargo transportation from origin to destination.
+ * Manages shipment status, timeline, assignments, and payment details.
+ *
+ * @module models/Shipment
+ * @requires mongoose
+ */
 const mongoose = require('mongoose');
 
-// Shipment status enum
+/**
+ * Shipment Status Enumeration
+ * @enum {string}
+ */
 const ShipmentStatus = {
   PENDING_APPROVAL: 'PENDING_APPROVAL',
   REQUESTED: 'REQUESTED',
@@ -17,13 +29,21 @@ const ShipmentStatus = {
   REJECTED: 'REJECTED',
 };
 
+/**
+ * Shipment Approval State Enumeration
+ * @enum {string}
+ */
 const ShipmentApprovalState = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
 };
 
-// Timeline entry schema
+/**
+ * Timeline Entry Schema
+ * Tracks the history of status changes and events for a shipment
+ * @type {mongoose.Schema}
+ */
 const timelineEntrySchema = new mongoose.Schema(
   {
     status: {

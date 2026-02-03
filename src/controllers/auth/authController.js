@@ -1,3 +1,23 @@
+/**
+ * Authentication Controller
+ *
+ * Handles user authentication, registration, token management,
+ * and password reset functionality.
+ *
+ * @module controllers/auth/authController
+ * @requires crypto
+ * @requires jsonwebtoken
+ * @requires express-validator
+ * @requires express-async-handler
+ * @requires ../../models/User
+ * @requires ../../models/RefreshToken
+ * @requires ../../models/UserRegistrationRequest
+ * @requires ../../middleware/errorHandler
+ * @requires ../../middleware/apiSuccess
+ * @requires ../../utils/logger
+ * @requires ../../services/auth/otpService
+ * @requires ../../services/email/emailService
+ */
 const crypto = require('crypto');
 
 const jwt = require('jsonwebtoken');
@@ -15,13 +35,15 @@ const {
   UserRegistrationRequest,
 } = require('../../models/UserRegistrationRequest');
 
-// Token expiry configuration
+/** @type {string} Access token expiry time */
 const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
+/** @type {number} Refresh token expiry time in days */
 const REFRESH_TOKEN_EXPIRES_IN_DAYS = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN_DAYS, 10) || 7;
 
 /**
  * Generate JWT access token
- * @param {string} id User ID
+ * @private
+ * @param {string} id - User ID
  * @returns {string} JWT token
  */
 const generateAccessToken = (id) => {
@@ -32,7 +54,9 @@ const generateAccessToken = (id) => {
 
 /**
  * Generate JWT token (legacy - for backward compatibility)
- * @param {string} id User ID
+ * @private
+ * @deprecated Use generateAccessToken instead
+ * @param {string} id - User ID
  * @returns {string} JWT token
  */
 const generateToken = (id) => {
@@ -41,8 +65,12 @@ const generateToken = (id) => {
 
 /**
  * Register a merchant
- * @route POST /api/v1/auth/register/merchant
+ * Creates a registration request that requires admin approval
+ * @route POST /api/auth/register/merchant
  * @access Public
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
  */
 exports.registerMerchant = async (req, res, next) => {
   try {
@@ -178,8 +206,13 @@ exports.registerDriver = async (req, res, next) => {
 
 /**
  * Login user
- * @route POST /api/v1/auth/login
+ * Authenticates user and returns access and refresh tokens
+ * Implements refresh token rotation for security
+ * @route POST /api/auth/login
  * @access Public
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
  */
 exports.login = async (req, res, next) => {
   try {
@@ -240,8 +273,12 @@ exports.login = async (req, res, next) => {
 
 /**
  * Refresh access token using refresh token
+ * Implements token rotation: old token is revoked, new token issued
  * @route POST /api/auth/refresh
  * @access Public
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
  */
 exports.refreshAccessToken = async (req, res, next) => {
   try {
@@ -305,6 +342,9 @@ exports.refreshAccessToken = async (req, res, next) => {
  * Logout user - revoke refresh token
  * @route POST /api/auth/logout
  * @access Public
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
  */
 exports.logout = async (req, res, next) => {
   try {
