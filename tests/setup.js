@@ -15,7 +15,11 @@ let mongoServer;
 
 // Connect to the in-memory database before running any tests
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryServer.create({
+    instance: {
+      ip: '127.0.0.1',
+    },
+  });
   const mongoUri = mongoServer.getUri();
 
   await mongoose.connect(mongoUri, {
