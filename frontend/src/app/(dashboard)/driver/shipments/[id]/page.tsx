@@ -53,19 +53,19 @@ import { toast } from 'sonner';
 import type { ShipmentStatus } from '@/types/api';
 
 const statusConfig: Record<ShipmentStatus, { label: string; color: string }> = {
-  PENDING_APPROVAL: { label: 'في انتظار الموافقة', color: 'bg-yellow-100 text-yellow-800' },
-  REQUESTED: { label: 'مطلوب', color: 'bg-blue-100 text-blue-800' },
-  CONFIRMED: { label: 'مؤكد', color: 'bg-indigo-100 text-indigo-800' },
-  ASSIGNED: { label: 'تم التخصيص', color: 'bg-purple-100 text-purple-800' },
-  LOADING: { label: 'جاري التحميل', color: 'bg-cyan-100 text-cyan-800' },
-  IN_TRANSIT: { label: 'في الطريق', color: 'bg-blue-100 text-blue-800' },
-  UNLOADING: { label: 'جاري التفريغ', color: 'bg-teal-100 text-teal-800' },
-  AT_BORDER: { label: 'عند الحدود', color: 'bg-orange-100 text-orange-800' },
-  DELIVERED: { label: 'تم التسليم', color: 'bg-green-100 text-green-800' },
-  COMPLETED: { label: 'مكتمل', color: 'bg-green-100 text-green-800' },
-  CANCELLED: { label: 'ملغي', color: 'bg-red-100 text-red-800' },
-  DELAYED: { label: 'متأخر', color: 'bg-amber-100 text-amber-800' },
-  REJECTED: { label: 'مرفوض', color: 'bg-red-100 text-red-800' },
+  PENDING_APPROVAL: { label: 'في انتظار الموافقة', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/35 dark:text-yellow-200' },
+  REQUESTED: { label: 'مطلوب', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/35 dark:text-blue-200' },
+  CONFIRMED: { label: 'مؤكد', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/35 dark:text-indigo-200' },
+  ASSIGNED: { label: 'تم التخصيص', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/35 dark:text-purple-200' },
+  LOADING: { label: 'جاري التحميل', color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/35 dark:text-cyan-200' },
+  IN_TRANSIT: { label: 'في الطريق', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/35 dark:text-blue-200' },
+  UNLOADING: { label: 'جاري التفريغ', color: 'bg-teal-100 text-teal-800 dark:bg-teal-900/35 dark:text-teal-200' },
+  AT_BORDER: { label: 'عند الحدود', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/35 dark:text-orange-200' },
+  DELIVERED: { label: 'تم التسليم', color: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' },
+  COMPLETED: { label: 'مكتمل', color: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' },
+  CANCELLED: { label: 'ملغي', color: 'bg-red-100 text-red-800 dark:bg-red-900/35 dark:text-red-200' },
+  DELAYED: { label: 'متأخر', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/35 dark:text-amber-200' },
+  REJECTED: { label: 'مرفوض', color: 'bg-red-100 text-red-800 dark:bg-red-900/35 dark:text-red-200' },
 };
 
 const statusFlow: ShipmentStatus[] = [
@@ -207,7 +207,7 @@ export default function ShipmentExecutionPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            className="text-orange-600 border-orange-600 hover:bg-orange-50"
+            className="text-orange-600 border-orange-600 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-500/60 dark:hover:bg-orange-900/30"
             onClick={() => setShowIssueForm(true)}
           >
             <AlertTriangle className="ml-2 h-4 w-4" />
@@ -541,7 +541,7 @@ export default function ShipmentExecutionPage() {
                       key={index}
                       className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"
                     >
-                      <FileText className="h-8 w-8 text-blue-600" />
+                      <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                       <div>
                         <p className="font-medium text-sm">{doc.name || `مستند ${index + 1}`}</p>
                         <p className="text-xs text-muted-foreground">{doc.documentType}</p>

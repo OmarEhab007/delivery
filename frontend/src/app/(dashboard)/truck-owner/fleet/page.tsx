@@ -93,27 +93,27 @@ export default function FleetManagementPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.08),rgba(241,214,178,0.35))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.08),_hsl(var(--muted)_/_0.45))]">
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{totalTrucks}</div>
             <p className="text-sm text-muted-foreground">إجمالي الشاحنات</p>
           </CardContent>
         </Card>
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.06),rgba(255,244,230,0.6))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.06),_hsl(var(--background)_/_0.8))]">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">{availableTrucks}</div>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{availableTrucks}</div>
             <p className="text-sm text-muted-foreground">شاحنات متاحة</p>
           </CardContent>
         </Card>
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.08),rgba(241,214,178,0.35))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.08),_hsl(var(--muted)_/_0.45))]">
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{totalDrivers}</div>
             <p className="text-sm text-muted-foreground">إجمالي السائقين</p>
           </CardContent>
         </Card>
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.06),rgba(255,244,230,0.6))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.06),_hsl(var(--background)_/_0.8))]">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">{availableDrivers}</div>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{availableDrivers}</div>
             <p className="text-sm text-muted-foreground">سائقون متاحون</p>
           </CardContent>
         </Card>

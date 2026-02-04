@@ -21,10 +21,26 @@ interface DriverStatusToggleProps {
 }
 
 const statusConfig: Record<DriverStatus, { label: string; icon: typeof Clock; color: string }> = {
-  ACTIVE: { label: 'نشط', icon: CheckCircle2, color: 'text-green-600 bg-green-100' },
-  OFF_DUTY: { label: 'خارج العمل', icon: Power, color: 'text-gray-600 bg-gray-100' },
-  ON_BREAK: { label: 'في استراحة', icon: Coffee, color: 'text-yellow-600 bg-yellow-100' },
-  INACTIVE: { label: 'غير نشط', icon: Power, color: 'text-red-600 bg-red-100' },
+  ACTIVE: {
+    label: 'نشط',
+    icon: CheckCircle2,
+    color: 'text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900/30',
+  },
+  OFF_DUTY: {
+    label: 'خارج العمل',
+    icon: Power,
+    color: 'text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-800/40',
+  },
+  ON_BREAK: {
+    label: 'في استراحة',
+    icon: Coffee,
+    color: 'text-yellow-600 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/30',
+  },
+  INACTIVE: {
+    label: 'غير نشط',
+    icon: Power,
+    color: 'text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900/30',
+  },
 };
 
 export function DriverStatusToggle({
@@ -65,7 +81,7 @@ export function DriverStatusToggle({
           onClick={() => handleStatusChange('ACTIVE')}
           className="gap-2"
         >
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
           <span>نشط</span>
           {currentStatus === 'ACTIVE' && (
             <CheckCircle2 className="h-4 w-4 mr-auto" />
@@ -75,7 +91,7 @@ export function DriverStatusToggle({
           onClick={() => handleStatusChange('ON_BREAK')}
           className="gap-2"
         >
-          <Coffee className="h-4 w-4 text-yellow-600" />
+          <Coffee className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
           <span>في استراحة</span>
           {currentStatus === 'ON_BREAK' && (
             <CheckCircle2 className="h-4 w-4 mr-auto" />
@@ -86,7 +102,7 @@ export function DriverStatusToggle({
           onClick={() => handleStatusChange('OFF_DUTY')}
           className="gap-2"
         >
-          <Power className="h-4 w-4 text-gray-600" />
+          <Power className="h-4 w-4 text-gray-600 dark:text-gray-400" />
           <span>خارج العمل</span>
           {currentStatus === 'OFF_DUTY' && (
             <CheckCircle2 className="h-4 w-4 mr-auto" />

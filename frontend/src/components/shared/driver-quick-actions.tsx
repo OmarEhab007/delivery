@@ -55,8 +55,8 @@ export function DriverQuickActions({
           onClick={onStartDelivery}
         >
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/10">
-              <Play className="h-6 w-6 text-green-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/10 dark:bg-green-500/20">
+              <Play className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <h3 className="font-semibold text-green-700 dark:text-green-400">بدء التسليم</h3>
@@ -89,8 +89,8 @@ export function DriverQuickActions({
           onClick={onCompleteDelivery}
         >
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
-              <CheckCircle2 className="h-6 w-6 text-blue-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 dark:bg-blue-500/20">
+              <CheckCircle2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <h3 className="font-semibold text-blue-700 dark:text-blue-400">إتمام التسليم</h3>
@@ -123,8 +123,8 @@ export function DriverQuickActions({
           onClick={onReportIssue}
         >
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10">
-              <AlertTriangle className="h-6 w-6 text-orange-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10 dark:bg-orange-500/20">
+              <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
               <h3 className="font-semibold">الإبلاغ عن مشكلة</h3>

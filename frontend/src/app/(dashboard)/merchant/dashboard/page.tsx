@@ -125,8 +125,8 @@ export default function MerchantDashboardPage() {
         <Card className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50">
           <Link href="/merchant/shipments?status=REQUESTED">
             <CardContent className="flex items-center gap-4 p-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-500/10">
-                <Clock className="h-6 w-6 text-yellow-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-500/10 dark:bg-yellow-500/20">
+                <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
               </div>
               <div>
                 <h3 className="font-semibold">مراجعة العروض</h3>
@@ -141,8 +141,8 @@ export default function MerchantDashboardPage() {
         <Card className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50">
           <Link href="/merchant/shipments?status=IN_TRANSIT">
             <CardContent className="flex items-center gap-4 p-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 dark:bg-blue-500/20">
+                <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <h3 className="font-semibold">تتبع الشحنات</h3>

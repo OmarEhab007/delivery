@@ -32,26 +32,26 @@ const statusConfig: Record<
   connecting: {
     icon: Loader2,
     label: 'جاري الاتصال...',
-    color: 'text-yellow-600',
+    color: 'text-yellow-600 dark:text-yellow-300',
     bgColor: 'bg-yellow-100 dark:bg-yellow-900/20',
     animate: true,
   },
   connected: {
     icon: Wifi,
     label: 'متصل',
-    color: 'text-green-600',
+    color: 'text-green-600 dark:text-green-300',
     bgColor: 'bg-green-100 dark:bg-green-900/20',
   },
   disconnected: {
     icon: WifiOff,
     label: 'غير متصل',
-    color: 'text-gray-500',
+    color: 'text-gray-500 dark:text-gray-300',
     bgColor: 'bg-gray-100 dark:bg-gray-800',
   },
   error: {
     icon: AlertCircle,
     label: 'خطأ في الاتصال',
-    color: 'text-red-600',
+    color: 'text-red-600 dark:text-red-300',
     bgColor: 'bg-red-100 dark:bg-red-900/20',
   },
 };
@@ -209,7 +209,7 @@ export function LiveIndicator({
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
         <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
       </span>
-      <span className="text-xs font-medium text-green-600">{label}</span>
+      <span className="text-xs font-medium text-green-600 dark:text-green-300">{label}</span>
     </div>
   );
 }

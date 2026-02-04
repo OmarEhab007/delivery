@@ -66,7 +66,7 @@ export default function DriverShipmentsPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.08),rgba(241,214,178,0.35))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.08),_hsl(var(--muted)_/_0.45))]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">إجمالي الشحنات</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
@@ -76,33 +76,33 @@ export default function DriverShipmentsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.06),rgba(255,244,230,0.6))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.06),_hsl(var(--background)_/_0.8))]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">النشطة</CardTitle>
-            <Clock className="h-4 w-4 text-blue-600" />
+            <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{activeCount}</div>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{activeCount}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.06),rgba(255,244,230,0.6))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.06),_hsl(var(--background)_/_0.8))]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">قيد الانتظار</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{pendingCount}</div>
+            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{pendingCount}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.08),rgba(241,214,178,0.35))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.08),_hsl(var(--muted)_/_0.45))]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">المكتملة</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{completedCount}</div>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{completedCount}</div>
           </CardContent>
         </Card>
       </div>

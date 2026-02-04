@@ -28,9 +28,18 @@ const roleIcons: Record<string, React.ElementType> = {
 };
 
 const stateConfig: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'قيد المراجعة', color: 'bg-yellow-500/10 text-yellow-700' },
-  APPROVED: { label: 'مقبول', color: 'bg-green-500/10 text-green-600' },
-  REJECTED: { label: 'مرفوض', color: 'bg-red-500/10 text-red-600' },
+  PENDING: {
+    label: 'قيد المراجعة',
+    color: 'bg-yellow-500/10 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300',
+  },
+  APPROVED: {
+    label: 'مقبول',
+    color: 'bg-green-500/10 text-green-600 dark:bg-green-500/15 dark:text-green-300',
+  },
+  REJECTED: {
+    label: 'مرفوض',
+    color: 'bg-red-500/10 text-red-600 dark:bg-red-500/15 dark:text-red-300',
+  },
 };
 
 function formatDate(dateString?: string) {
@@ -142,7 +151,7 @@ export function ApprovalCards({
               {/* Rejection reason */}
               {request.state === 'REJECTED' && request.rejectionReason && (
                 <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
-                  <p className="text-xs text-red-600">سبب الرفض:</p>
+                  <p className="text-xs text-red-600 dark:text-red-300">سبب الرفض:</p>
                   <p className="text-sm">{request.rejectionReason}</p>
                 </div>
               )}

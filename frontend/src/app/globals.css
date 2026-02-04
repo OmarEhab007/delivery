@@ -95,6 +95,44 @@
     --sidebar-border: 0 0% 25%;
     --sidebar-ring: 32 100% 45%;
   }
+
+  .brand-theme {
+    color-scheme: light;
+    --background: 30 40% 97%; /* #FBF4EA */
+    --foreground: 18 38% 15%; /* #3B2418 */
+    --surface: 30 38% 99%; /* #FFF9F3 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 18 38% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 18 38% 15%;
+
+    --muted: 30 36% 92%; /* #F3E7D8 */
+    --muted-foreground: 24 20% 40%; /* #7B5F46 */
+
+    --primary: 32 100% 49%; /* #FB8500 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 24 24% 40%; /* #8A6B52 */
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 28 92% 45%; /* #E57F00 */
+    --accent-foreground: 0 0% 100%;
+
+    --border: 30 24% 85%; /* #E6D6C4 */
+    --input: 30 24% 85%;
+    --ring: 32 100% 49%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 18 38% 15%;
+    --sidebar-primary: 32 100% 49%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 36% 92%;
+    --sidebar-accent-foreground: 18 38% 15%;
+    --sidebar-border: 30 24% 85%;
+    --sidebar-ring: 32 100% 49%;
+  }
 }
 
 @layer base {
@@ -104,6 +142,22 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+@layer utilities {
+  .brand-hero {
+    background:
+      radial-gradient(circle at top, hsl(var(--primary) / 0.22), transparent 58%),
+      radial-gradient(circle at 12% 18%, hsl(var(--accent) / 0.12), transparent 42%),
+      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 55%, hsl(var(--muted)) 100%);
+  }
+
+  .brand-glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(48px);
+    opacity: 0.75;
   }
 }
 

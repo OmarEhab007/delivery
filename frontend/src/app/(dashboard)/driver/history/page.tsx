@@ -38,19 +38,19 @@ import { PortalHero } from '@/components/shared/portal-hero';
 import type { ShipmentStatus } from '@/types/api';
 
 const statusConfig: Record<ShipmentStatus, { label: string; color: string }> = {
-  PENDING_APPROVAL: { label: 'في انتظار الموافقة', color: 'bg-yellow-100 text-yellow-800' },
-  REQUESTED: { label: 'مطلوب', color: 'bg-blue-100 text-blue-800' },
-  CONFIRMED: { label: 'مؤكد', color: 'bg-indigo-100 text-indigo-800' },
-  ASSIGNED: { label: 'تم التخصيص', color: 'bg-purple-100 text-purple-800' },
-  LOADING: { label: 'جاري التحميل', color: 'bg-cyan-100 text-cyan-800' },
-  IN_TRANSIT: { label: 'في الطريق', color: 'bg-blue-100 text-blue-800' },
-  UNLOADING: { label: 'جاري التفريغ', color: 'bg-teal-100 text-teal-800' },
-  AT_BORDER: { label: 'عند الحدود', color: 'bg-orange-100 text-orange-800' },
-  DELIVERED: { label: 'تم التسليم', color: 'bg-green-100 text-green-800' },
-  COMPLETED: { label: 'مكتمل', color: 'bg-green-100 text-green-800' },
-  CANCELLED: { label: 'ملغي', color: 'bg-red-100 text-red-800' },
-  DELAYED: { label: 'متأخر', color: 'bg-amber-100 text-amber-800' },
-  REJECTED: { label: 'مرفوض', color: 'bg-red-100 text-red-800' },
+  PENDING_APPROVAL: { label: 'في انتظار الموافقة', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/35 dark:text-yellow-200' },
+  REQUESTED: { label: 'مطلوب', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/35 dark:text-blue-200' },
+  CONFIRMED: { label: 'مؤكد', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/35 dark:text-indigo-200' },
+  ASSIGNED: { label: 'تم التخصيص', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/35 dark:text-purple-200' },
+  LOADING: { label: 'جاري التحميل', color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/35 dark:text-cyan-200' },
+  IN_TRANSIT: { label: 'في الطريق', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/35 dark:text-blue-200' },
+  UNLOADING: { label: 'جاري التفريغ', color: 'bg-teal-100 text-teal-800 dark:bg-teal-900/35 dark:text-teal-200' },
+  AT_BORDER: { label: 'عند الحدود', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/35 dark:text-orange-200' },
+  DELIVERED: { label: 'تم التسليم', color: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' },
+  COMPLETED: { label: 'مكتمل', color: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' },
+  CANCELLED: { label: 'ملغي', color: 'bg-red-100 text-red-800 dark:bg-red-900/35 dark:text-red-200' },
+  DELAYED: { label: 'متأخر', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/35 dark:text-amber-200' },
+  REJECTED: { label: 'مرفوض', color: 'bg-red-100 text-red-800 dark:bg-red-900/35 dark:text-red-200' },
 };
 
 export default function DriverHistoryPage() {
@@ -106,10 +106,10 @@ export default function DriverHistoryPage() {
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.08),rgba(241,214,178,0.35))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.08),_hsl(var(--muted)_/_0.45))]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">إجمالي التسليمات</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalDeliveries}</div>
@@ -117,10 +117,10 @@ export default function DriverHistoryPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.06),rgba(255,244,230,0.6))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.06),_hsl(var(--background)_/_0.8))]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">المسافة الإجمالية</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
+            <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalDistance.toLocaleString('ar-SA')}</div>
@@ -128,10 +128,10 @@ export default function DriverHistoryPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.06),rgba(255,244,230,0.6))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.06),_hsl(var(--background)_/_0.8))]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">متوسط التقييم</CardTitle>
-            <Star className="h-4 w-4 text-yellow-500" />
+            <Star className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{avgRating}</div>
@@ -139,10 +139,10 @@ export default function DriverHistoryPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.08),rgba(241,214,178,0.35))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.08),_hsl(var(--muted)_/_0.45))]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">معدل الإنجاز</CardTitle>
-            <Clock className="h-4 w-4 text-purple-600" />
+            <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">98%</div>
@@ -317,21 +317,21 @@ export default function DriverHistoryPage() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20">
-              <div className="flex items-center gap-2 text-green-600">
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                 <CheckCircle2 className="h-5 w-5" />
                 <span className="font-medium">تسليمات مكتملة</span>
               </div>
               <p className="text-2xl font-bold mt-2">{totalDeliveries}</p>
             </div>
             <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-              <div className="flex items-center gap-2 text-blue-600">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
                 <TrendingUp className="h-5 w-5" />
                 <span className="font-medium">كيلومترات</span>
               </div>
               <p className="text-2xl font-bold mt-2">{totalDistance.toLocaleString('ar-SA')}</p>
             </div>
             <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
-              <div className="flex items-center gap-2 text-yellow-600">
+              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
                 <Star className="h-5 w-5" />
                 <span className="font-medium">التقييم</span>
               </div>

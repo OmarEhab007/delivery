@@ -154,7 +154,7 @@ export default function AdminUserDetailPage({
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               معلومات المستخدم
-              <Badge className={user.active ? 'bg-green-500/10 text-green-600' : ''} variant={user.active ? 'default' : 'destructive'}>
+              <Badge className={user.active ? 'bg-green-500/10 text-green-600 dark:bg-green-500/15 dark:text-green-300' : ''} variant={user.active ? 'default' : 'destructive'}>
                 {user.active ? 'مفعل' : 'معطل'}
               </Badge>
             </CardTitle>

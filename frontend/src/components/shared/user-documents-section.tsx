@@ -168,7 +168,7 @@ export function UserDocumentsSection({
                 {documents.length > 0 && (
                   <div className="flex gap-1">
                     {verifiedCount > 0 && (
-                      <Badge variant="default" className="bg-green-100 text-green-800 text-xs">
+                      <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200 text-xs">
                         {verifiedCount} موثق
                       </Badge>
                     )}
@@ -282,7 +282,7 @@ export function UserDocumentsSection({
                         <Badge
                           key={docType.value}
                           variant={hasDocument ? (isExpired ? 'destructive' : 'default') : 'outline'}
-                          className={hasDocument && !isExpired ? 'bg-green-100 text-green-800' : ''}
+                          className={hasDocument && !isExpired ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' : ''}
                         >
                           {docType.label}
                           {hasDocument ? (isExpired ? ' ⚠' : ' ✓') : ''}

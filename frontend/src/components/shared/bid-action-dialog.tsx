@@ -89,7 +89,7 @@ export function BidActionDialog({
           <div className="flex items-center gap-3">
             <div
               className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                isAccept ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                isAccept ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-200' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-200'
               }`}
             >
               <Icon className="h-5 w-5" />

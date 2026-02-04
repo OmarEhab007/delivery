@@ -161,13 +161,13 @@ export default function DriverProfilePage() {
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">التقييم</span>
                 <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 dark:text-yellow-400 dark:fill-yellow-400" />
                   <span className="font-semibold">{stats.rating}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">معدل الالتزام</span>
-                <span className="font-semibold text-green-600">{stats.onTimePercentage}%</span>
+                <span className="font-semibold text-green-600 dark:text-green-400">{stats.onTimePercentage}%</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">الخبرة</span>
@@ -342,7 +342,7 @@ export default function DriverProfilePage() {
                       key={index}
                       className="flex flex-col items-center text-center p-4 rounded-lg border bg-gradient-to-b from-yellow-50 to-transparent dark:from-yellow-900/20"
                     >
-                      <div className="p-3 rounded-full bg-yellow-100 text-yellow-600 mb-3">
+                      <div className="p-3 rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-200 mb-3">
                         <Icon className="h-6 w-6" />
                       </div>
                       <h4 className="font-semibold">{achievement.title}</h4>

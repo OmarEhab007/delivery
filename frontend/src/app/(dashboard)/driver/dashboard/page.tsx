@@ -73,7 +73,7 @@ export default function DriverDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">التسليمات المكتملة</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.completedDeliveries}</div>
@@ -84,7 +84,7 @@ export default function DriverDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">التسليمات النشطة</CardTitle>
-            <Package className="h-4 w-4 text-blue-600" />
+            <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.activeDeliveries}</div>
@@ -95,7 +95,7 @@ export default function DriverDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">المسافة الإجمالية</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-600" />
+            <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalDistance.toLocaleString('ar-SA')}</div>
@@ -106,7 +106,7 @@ export default function DriverDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">التقييم</CardTitle>
-            <TrendingUp className="h-4 w-4 text-yellow-600" />
+            <TrendingUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.rating.toFixed(1)}</div>
@@ -264,7 +264,7 @@ export default function DriverDashboardPage() {
       {dashboard?.alerts && dashboard.alerts.length > 0 && (
         <Card className="border-yellow-200 dark:border-yellow-900">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-yellow-600">
+            <CardTitle className="flex items-center gap-2 text-yellow-600 dark:text-yellow-300">
               <AlertTriangle className="h-5 w-5" />
               تنبيهات
             </CardTitle>
@@ -276,7 +276,7 @@ export default function DriverDashboardPage() {
                   key={index}
                   className="flex items-center gap-2 p-2 rounded bg-yellow-50 dark:bg-yellow-900/20 text-sm"
                 >
-                  <AlertTriangle className="h-4 w-4 text-yellow-600 shrink-0" />
+                  <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-300 shrink-0" />
                   <span>{alert}</span>
                 </div>
               ))}

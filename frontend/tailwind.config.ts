@@ -12,17 +12,15 @@ const config: Config = {
       colors: {
         // Figma Design System
         primary: {
-          DEFAULT: '#E57F00',
-          light: '#FDA058',
-          bright: '#FB8500',
-          foreground: '#FFFFFF',
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
-          DEFAULT: '#90735A',
-          foreground: '#FFFFFF',
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
         },
-        dark: '#2F0F01',
-        cream: '#F1D6B2',
+        dark: 'hsl(var(--foreground))',
+        cream: 'hsl(var(--muted))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         surface: 'hsl(var(--surface))',

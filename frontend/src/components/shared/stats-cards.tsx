@@ -26,9 +26,11 @@ interface StatsCardsProps {
 
 const variantStyles = {
   default: 'bg-card text-card-foreground',
-  primary: 'bg-primary/10 text-primary border-primary/20',
-  success: 'bg-green-500/10 text-green-600 border-green-500/20',
-  warning: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+  primary: 'bg-primary/10 text-primary border-primary/20 dark:bg-primary/20',
+  success:
+    'bg-green-500/10 text-green-600 border-green-500/20 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30',
+  warning:
+    'bg-yellow-500/10 text-yellow-600 border-yellow-500/20 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30',
   danger: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
@@ -73,7 +75,9 @@ function StatCard({ stat }: { stat: StatCardData }) {
             <span
               className={cn(
                 'font-medium',
-                stat.trend.isPositive ? 'text-green-600' : 'text-red-600'
+                stat.trend.isPositive
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-red-600 dark:text-red-400'
               )}
             >
               {stat.trend.isPositive ? '+' : ''}{stat.trend.value}%

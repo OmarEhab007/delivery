@@ -35,9 +35,11 @@ const roles = [
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(251,133,0,0.15),_transparent_45%)]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-primary/20 via-transparent to-transparent" />
-      <div className="pointer-events-none absolute bottom-0 left-0 h-40 w-full bg-gradient-to-t from-[#2B1407] to-transparent opacity-90" />
+    <div className="brand-theme brand-hero relative min-h-screen overflow-hidden">
+      <div className="pointer-events-none brand-glow -left-28 top-8 h-64 w-64 bg-primary/18" />
+      <div className="pointer-events-none brand-glow -right-24 top-24 h-72 w-72 bg-secondary/18" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-primary/18 via-transparent to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-0 h-48 w-full bg-gradient-to-t from-foreground/90 to-transparent opacity-80" />
 
       <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-6 py-12">
         <div className="flex w-full flex-col items-center gap-6 text-center">
@@ -60,7 +62,7 @@ export default function HomePage() {
         <div className="mt-10 grid w-full grid-cols-1 gap-4 md:grid-cols-2">
           {roles.map((role) => (
             <Link key={role.title} href={role.href} className="group">
-              <Card className="border-border/70 bg-white/90 shadow-[0_10px_30px_rgba(59,36,24,0.12)] transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/50">
+              <Card className="border-border/60 bg-surface/90 shadow-[0_18px_45px_rgba(59,36,24,0.14)] backdrop-blur transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/50 group-hover:bg-surface/95">
                 <CardContent className="flex items-start gap-4 p-6">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
                     <role.icon className="h-6 w-6" />
@@ -75,7 +77,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="mt-12 flex w-full flex-col items-start gap-2 rounded-3xl border border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.2),rgba(241,214,178,0.6))] px-6 py-5 text-sm text-foreground md:flex-row md:items-center md:justify-between">
+        <div className="mt-12 flex w-full flex-col items-start gap-2 rounded-3xl border border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.18),_hsl(var(--muted)_/_0.9))] px-6 py-5 text-sm text-foreground md:flex-row md:items-center md:justify-between">
           <span>ابدأ الآن وابقَ على اطلاع دائم بحالة شحناتك.</span>
           <span className="font-semibold text-primary">Almarine Logistics</span>
         </div>

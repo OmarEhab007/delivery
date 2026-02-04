@@ -150,7 +150,7 @@ export default function AdminUsersPage() {
                       </TableCell>
                       <TableCell>
                         {user.active ? (
-                          <Badge className="bg-green-500/10 text-green-600">مفعل</Badge>
+                          <Badge className="bg-green-500/10 text-green-600 dark:bg-green-500/15 dark:text-green-300">مفعل</Badge>
                         ) : (
                           <Badge variant="destructive">معطل</Badge>
                         )}

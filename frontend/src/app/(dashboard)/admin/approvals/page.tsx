@@ -130,10 +130,10 @@ export default function AdminApprovalsPage() {
                         <Badge
                           className={
                             request.state === 'PENDING'
-                              ? 'bg-yellow-500/10 text-yellow-700'
+                              ? 'bg-yellow-500/10 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300'
                               : request.state === 'APPROVED'
-                              ? 'bg-green-500/10 text-green-600'
-                              : 'bg-red-500/10 text-red-600'
+                              ? 'bg-green-500/10 text-green-600 dark:bg-green-500/15 dark:text-green-300'
+                              : 'bg-red-500/10 text-red-600 dark:bg-red-500/15 dark:text-red-300'
                           }
                         >
                           {request.state}
@@ -146,7 +146,7 @@ export default function AdminApprovalsPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-9 w-9 p-0 text-green-600 hover:bg-green-100"
+                              className="h-9 w-9 p-0 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
                               onClick={() => approveMutation.mutate(request._id)}
                             >
                               <CheckCircle2 className="h-4 w-4" />
@@ -154,7 +154,7 @@ export default function AdminApprovalsPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-9 w-9 p-0 text-red-600 hover:bg-red-100"
+                              className="h-9 w-9 p-0 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
                               onClick={() => {
                                 setSelectedRequest(request);
                                 setRejectReason('');

@@ -82,7 +82,7 @@ export default function AdminTrucksPage() {
                       </TableCell>
                       <TableCell>
                         {truck.available ? (
-                          <Badge className="bg-green-500/10 text-green-600">نعم</Badge>
+                          <Badge className="bg-green-500/10 text-green-600 dark:bg-green-500/15 dark:text-green-300">نعم</Badge>
                         ) : (
                           <Badge variant="destructive">لا</Badge>
                         )}

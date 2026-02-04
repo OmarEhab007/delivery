@@ -133,7 +133,7 @@ export function DocumentPreview({ document, open, onOpenChange }: DocumentPrevie
         <div className="flex items-center justify-between px-1 shrink-0">
           <div className="flex items-center gap-2">
             {document.isVerified ? (
-              <Badge variant="default" className="bg-green-100 text-green-800 gap-1">
+              <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200 gap-1">
                 <CheckCircle className="h-3 w-3" />
                 موثق
               </Badge>

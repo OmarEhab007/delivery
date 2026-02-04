@@ -54,12 +54,12 @@ const verificationStatusConfig: Record<
   pending: {
     label: 'قيد المراجعة',
     icon: Clock,
-    color: 'bg-yellow-100 text-yellow-800',
+    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/35 dark:text-yellow-200',
   },
   verified: {
     label: 'موثق',
     icon: CheckCircle2,
-    color: 'bg-green-100 text-green-800',
+    color: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200',
   },
 };
 

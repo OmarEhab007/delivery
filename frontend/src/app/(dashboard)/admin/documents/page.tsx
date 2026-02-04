@@ -153,7 +153,7 @@ export default function AdminDocumentsPage() {
                       <TableCell>{doc.documentType}</TableCell>
                       <TableCell>
                         {doc.isVerified ? (
-                          <Badge className="bg-green-500/10 text-green-600">موثق</Badge>
+                          <Badge className="bg-green-500/10 text-green-600 dark:bg-green-500/15 dark:text-green-300">موثق</Badge>
                         ) : (
                           <Badge variant="secondary">غير موثق</Badge>
                         )}

@@ -76,7 +76,7 @@ export default function AssignedShipmentsPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.08),rgba(241,214,178,0.35))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.08),_hsl(var(--muted)_/_0.45))]">
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">
               {assignedShipments.filter((s) => s.status === 'ASSIGNED' || s.status === 'LOADING').length}
@@ -84,17 +84,17 @@ export default function AssignedShipmentsPage() {
             <p className="text-sm text-muted-foreground">في انتظار البدء</p>
           </CardContent>
         </Card>
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.06),rgba(255,244,230,0.6))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.06),_hsl(var(--background)_/_0.8))]">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {assignedShipments.filter((s) => s.status === 'IN_TRANSIT' || s.status === 'AT_BORDER').length}
             </div>
             <p className="text-sm text-muted-foreground">في الطريق</p>
           </CardContent>
         </Card>
-        <Card className="border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.08),rgba(241,214,178,0.35))]">
+        <Card className="border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.08),_hsl(var(--muted)_/_0.45))]">
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {assignedShipments.filter((s) => s.status === 'DELIVERED' || s.status === 'UNLOADING').length}
             </div>
             <p className="text-sm text-muted-foreground">وصلت للوجهة</p>

@@ -55,7 +55,7 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="rounded-3xl border-border/70 bg-white/95 shadow-[0_20px_40px_rgba(59,36,24,0.15)]">
+    <Card className="rounded-3xl border-border/60 bg-surface/95 shadow-[0_24px_55px_rgba(59,36,24,0.18)] backdrop-blur">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-semibold text-foreground">تسجيل الدخول</CardTitle>
         <CardDescription className="text-sm text-secondary/90">

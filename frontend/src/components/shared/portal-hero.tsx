@@ -21,7 +21,7 @@ export function PortalHero({
   actionHref,
 }: PortalHeroProps) {
   return (
-    <Card className="relative overflow-hidden border-border/60 bg-[linear-gradient(135deg,rgba(251,133,0,0.16),rgba(241,214,178,0.55))] p-6">
+    <Card className="relative overflow-hidden border-border/60 bg-[linear-gradient(135deg,_hsl(var(--primary)_/_0.16),_hsl(var(--muted)_/_0.65))] p-6">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <p className="text-sm font-medium text-secondary">{subtitle}</p>

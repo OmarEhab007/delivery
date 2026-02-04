@@ -113,7 +113,7 @@ export default function DriverCheckinPage() {
         <Card className="border-yellow-200 dark:border-yellow-900">
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <Truck className="h-16 w-16 mx-auto text-yellow-600 mb-4" />
+              <Truck className="h-16 w-16 mx-auto text-yellow-600 dark:text-yellow-400 mb-4" />
               <h2 className="text-xl font-semibold mb-2">لم يتم تخصيص شاحنة</h2>
               <p className="text-muted-foreground mb-4">
                 يجب أن يتم تخصيص شاحنة لك قبل أن تتمكن من تسجيل الدخول
@@ -262,8 +262,8 @@ export default function DriverCheckinPage() {
                     <div
                       className={`p-2 rounded-full ${
                         record.type === 'checkin'
-                          ? 'bg-green-100 text-green-600'
-                          : 'bg-red-100 text-red-600'
+                          ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-200'
+                          : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-200'
                       }`}
                     >
                       {record.type === 'checkin' ? (
@@ -312,7 +312,7 @@ export default function DriverCheckinPage() {
         <Card className="border-yellow-200 dark:border-yellow-900">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
               <div>
                 <p className="font-medium">تذكير</p>
                 <p className="text-sm text-muted-foreground">

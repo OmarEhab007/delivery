@@ -34,10 +34,10 @@ interface AdminStatsCardsProps {
 
 const variantStyles: Record<string, { bg: string; icon: string }> = {
   default: { bg: '', icon: 'text-muted-foreground' },
-  primary: { bg: 'bg-blue-50 dark:bg-blue-900/20', icon: 'text-blue-600' },
-  success: { bg: 'bg-green-50 dark:bg-green-900/20', icon: 'text-green-600' },
-  warning: { bg: 'bg-yellow-50 dark:bg-yellow-900/20', icon: 'text-yellow-600' },
-  danger: { bg: 'bg-red-50 dark:bg-red-900/20', icon: 'text-red-600' },
+  primary: { bg: 'bg-blue-50 dark:bg-blue-900/20', icon: 'text-blue-600 dark:text-blue-400' },
+  success: { bg: 'bg-green-50 dark:bg-green-900/20', icon: 'text-green-600 dark:text-green-400' },
+  warning: { bg: 'bg-yellow-50 dark:bg-yellow-900/20', icon: 'text-yellow-600 dark:text-yellow-400' },
+  danger: { bg: 'bg-red-50 dark:bg-red-900/20', icon: 'text-red-600 dark:text-red-400' },
 };
 
 const defaultIcons: Record<string, LucideIcon> = {
@@ -83,8 +83,8 @@ export function AdminStatsCards({
                   <span
                     className={cn(
                       'flex items-center text-xs font-medium',
-                      stat.trend.type === 'increase' && 'text-green-600',
-                      stat.trend.type === 'decrease' && 'text-red-600',
+                      stat.trend.type === 'increase' && 'text-green-600 dark:text-green-400',
+                      stat.trend.type === 'decrease' && 'text-red-600 dark:text-red-400',
                       stat.trend.type === 'neutral' && 'text-muted-foreground'
                     )}
                   >
