@@ -1,0 +1,113 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { Bell, LogOut, User, Settings, Menu } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ThemeToggle } from './theme-toggle';
+import { useAuthStore } from '@/stores/auth-store';
+import { toast } from 'sonner';
+
+interface HeaderProps {
+  onMobileMenuToggle?: () => void;
+}
+
+export function Header({ onMobileMenuToggle }: HeaderProps) {
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('تم تسجيل الخروج بنجاح');
+      router.push('/login');
+    } catch {
+      toast.error('تعذر تسجيل الخروج');
+    }
+  };
+
+  const initials = user?.name
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : 'U';
+
+  return (
+    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
+      {/* Mobile menu button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
+        onClick={onMobileMenuToggle}
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
+      {/* Search placeholder - can be expanded later */}
+      <div className="hidden flex-1 md:block" />
+
+      {/* Right side actions */}
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+
+        {/* Notifications */}
+        <Button variant="ghost" size="icon" className="relative">
+          <Bell className="h-5 w-5" />
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+            3
+          </span>
+        </Button>
+
+        {/* User menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+              <Avatar className="h-9 w-9">
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium">{user?.name || 'مستخدم'}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push('/profile')}>
+              <User className="ml-2 h-4 w-4" />
+              الملف الشخصي
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/settings')}>
+              <Settings className="ml-2 h-4 w-4" />
+              الإعدادات
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+              <LogOut className="ml-2 h-4 w-4" />
+              تسجيل الخروج
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
+  );
+}
+
+export default Header;
