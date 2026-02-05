@@ -17,19 +17,37 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useDriverDashboard } from '@/hooks/use-drivers';
 import { useCurrentUser } from '@/hooks/use-user';
 import { DriverQuickActions } from '@/components/shared/driver-quick-actions';
 import { DriverStatusToggle } from '@/components/shared/driver-status-toggle';
 import type { DriverStatus } from '@/types/api';
+import { useUpdateDriverStatus } from '@/hooks/use-drivers';
 
 export default function DriverDashboardPage() {
   const { data: user } = useCurrentUser();
   const { data: dashboard, isLoading } = useDriverDashboard();
+  const updateStatus = useUpdateDriverStatus();
+  const router = useRouter();
 
   const handleStatusChange = async (status: DriverStatus) => {
-    // This would call the API to update driver status
-    console.log('Status changed to:', status);
+    await updateStatus.mutateAsync({ status });
+  };
+
+  const currentShipment = dashboard?.currentShipment;
+  const activeShipmentId = currentShipment?._id;
+  const canStartDelivery = currentShipment
+    ? ['ASSIGNED', 'LOADING'].includes(currentShipment.status)
+    : false;
+  const canCompleteDelivery = currentShipment
+    ? ['IN_TRANSIT', 'UNLOADING'].includes(currentShipment.status)
+    : false;
+
+  const navigateToShipment = () => {
+    if (activeShipmentId) {
+      router.push(`/driver/shipments/${activeShipmentId}`);
+    }
   };
 
   if (isLoading) {
@@ -40,7 +58,7 @@ export default function DriverDashboardPage() {
     completedDeliveries: 0,
     activeDeliveries: 0,
     totalDistance: 0,
-    rating: 0,
+    rating: null,
   };
 
   return (
@@ -60,13 +78,22 @@ export default function DriverDashboardPage() {
           <p className="text-muted-foreground">لوحة تحكم السائق</p>
         </div>
         <DriverStatusToggle
-          currentStatus={'OFF_DUTY'}
+          currentStatus={dashboard?.driver?.driverStatus || 'OFF_DUTY'}
           onStatusChange={handleStatusChange}
+          isLoading={updateStatus.isPending}
         />
       </div>
 
       {/* Quick Actions */}
-      <DriverQuickActions />
+      <DriverQuickActions
+        hasActiveShipment={!!currentShipment}
+        activeShipmentId={activeShipmentId}
+        canStartDelivery={canStartDelivery}
+        canCompleteDelivery={canCompleteDelivery}
+        onStartDelivery={navigateToShipment}
+        onCompleteDelivery={navigateToShipment}
+        onReportIssue={navigateToShipment}
+      />
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -109,7 +136,9 @@ export default function DriverDashboardPage() {
             <TrendingUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.rating.toFixed(1)}</div>
+            <div className="text-2xl font-bold">
+              {stats.rating !== null ? stats.rating.toFixed(1) : '—'}
+            </div>
             <p className="text-xs text-muted-foreground">من 5 نجوم</p>
           </CardContent>
         </Card>

@@ -1,0 +1,3454 @@
+{
+	"info": {
+		"_postman_id": "delivery-app-api-collection",
+		"name": "Delivery App API",
+		"description": "Complete API collection for the Delivery App - connecting Merchants with Truck Owners for international shipments.\n\n## Getting Started - IMPORTANT!\n\n**Registration requires admin approval!** When Merchants/TruckOwners/Drivers register, they create a PENDING request that must be approved by an admin before they can login.\n\n### Quick Start Flow:\n1. **Create Admin**: Use `Register Test Admin` to create an admin user (no approval needed)\n2. **Login as Admin**: Use the admin credentials to login\n3. **Approve Registrations**: Go to Admin > Registration Requests to approve pending users\n4. **Login as User**: Now approved users can login\n\n## Authentication\nThis API uses JWT Bearer token authentication. Tokens are auto-saved to collection variables on login.\n\n## Roles\n- **Admin**: Full system access, can approve registrations\n- **Merchant**: Create and manage shipments\n- **TruckOwner**: Manage fleet, drivers, and bid on shipments\n- **Driver**: Handle deliveries and tracking\n\n## Base URL\nSet the `baseUrl` variable to your server address (default: http://localhost:5000)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "shipmentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "truckId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "driverId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "applicationId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "documentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "brokerId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "apiKey",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "registrationRequestId",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"// Automatically adds Content-Type header for JSON requests"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"if (pm.response.code === 401) {",
+					"    console.log('Token may be expired. Please login again.');",
+					"}"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "Auth",
+			"description": "Authentication and authorization endpoints.\n\n**IMPORTANT**: Merchant/TruckOwner/Driver registration creates a PENDING request that requires admin approval before login. Use 'Register Test Admin' first to create an admin who can approve registrations.",
+			"item": [
+				{
+					"name": "1. Register Test Admin (START HERE)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Admin\",\n    \"email\": \"admin@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+201234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register/testadmin",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register", "testadmin"]
+						},
+						"description": "**START HERE** - Creates an admin user directly (bypasses approval). Use this first to create an admin who can approve other user registrations."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.accessToken) {",
+									"        pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"        pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+									"    }",
+									"    if (jsonData.data && jsonData.data.user) {",
+									"        pm.collectionVariables.set('userId', jsonData.data.user.id);",
+									"    }",
+									"    console.log('Admin created! Token saved. You can now approve other registrations.');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "2. Register Merchant (Requires Approval)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Merchant\",\n    \"email\": \"merchant@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+201234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register/merchant",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register", "merchant"]
+						},
+						"description": "Creates a PENDING registration request. **User CANNOT login until an admin approves the request** via Admin > Registration Requests > Approve. Returns 202 with requestId."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.requestId) {",
+									"        pm.collectionVariables.set('registrationRequestId', jsonData.data.requestId);",
+									"        console.log('Registration request created: ' + jsonData.data.requestId);",
+									"        console.log('State: ' + jsonData.data.state + ' - Admin must approve before user can login');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "3. Register Truck Owner (Requires Approval)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Truck Owner\",\n    \"email\": \"truckowner@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+201234567891\",\n    \"companyName\": \"Test Trucking Co.\",\n    \"companyAddress\": \"123 Fleet Street, Cairo, Egypt\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register/truckOwner",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register", "truckOwner"]
+						},
+						"description": "Creates a PENDING registration request. **User CANNOT login until an admin approves the request** via Admin > Registration Requests > Approve. Returns 202 with requestId."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.requestId) {",
+									"        pm.collectionVariables.set('registrationRequestId', jsonData.data.requestId);",
+									"        console.log('Registration request created: ' + jsonData.data.requestId);",
+									"        console.log('State: ' + jsonData.data.state + ' - Admin must approve before user can login');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "4. Register Driver (TruckOwner - Requires Approval)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Driver\",\n    \"email\": \"driver@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+201234567892\",\n    \"licenseNumber\": \"DL-12345678\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register/driver",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register", "driver"]
+						},
+						"description": "Creates a PENDING driver registration request. Requires TruckOwner authentication. **Driver CANNOT login until an admin approves the request**. The ownerId is automatically set from the authenticated TruckOwner."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 202) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.requestId) {",
+									"        pm.collectionVariables.set('registrationRequestId', jsonData.data.requestId);",
+									"        console.log('Driver registration request created: ' + jsonData.data.requestId);",
+									"        console.log('State: ' + jsonData.data.state + ' - Admin must approve before driver can login');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Register Admin (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Admin\",\n    \"email\": \"newadmin@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+201234567893\",\n    \"adminPermissions\": [\"FULL_ACCESS\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register/admin",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register", "admin"]
+						},
+						"description": "Register a new admin user. Requires Admin authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login with email and password to get access and refresh tokens.\n\n**IMPORTANT**: Only users in the User collection can login. If you get 'Invalid credentials':\n- For Admin: Use 'Register Test Admin' first\n- For Merchant/TruckOwner/Driver: Registration creates a PENDING request - an admin must approve it first via Admin > Registration Requests"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.accessToken) {",
+									"        pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"        pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+									"    }",
+									"    if (jsonData.data && jsonData.data.user) {",
+									"        pm.collectionVariables.set('userId', jsonData.data.user._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "refresh"]
+						},
+						"description": "Get a new access token using the refresh token."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.accessToken) {",
+									"        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+									"        pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "logout"]
+						},
+						"description": "Logout and invalidate the refresh token."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "me"]
+						},
+						"description": "Get the currently authenticated user's profile."
+					},
+					"response": []
+				},
+				{
+					"name": "Request OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"+201234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/otp/request",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "otp", "request"]
+						},
+						"description": "Request an OTP code to be sent to the phone number."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"+201234567890\",\n    \"otp\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/otp/verify",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "otp", "verify"]
+						},
+						"description": "Verify the OTP code sent to the phone number."
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/forgotPassword",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "forgotPassword"]
+						},
+						"description": "Request a password reset token to be sent to the email."
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"password\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/resetPassword/:token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "resetPassword", ":token"],
+							"variable": [
+								{
+									"key": "token",
+									"value": "reset-token-here"
+								}
+							]
+						},
+						"description": "Reset password using the token received via email."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Password",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currentPassword\": \"password123\",\n    \"newPassword\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/updatePassword",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "updatePassword"]
+						},
+						"description": "Update password for the authenticated user."
+					},
+					"response": []
+				},
+				{
+					"name": "Get CSRF Token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/csrf-token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "csrf-token"]
+						},
+						"description": "Get a CSRF token for cookie-based authentication."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"description": "User management endpoints",
+			"item": [
+				{
+					"name": "Update My Profile",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Name\",\n    \"phone\": \"+201234567899\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/updateMe",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "updateMe"]
+						},
+						"description": "Update the current user's profile. Allowed fields: name, email, phone. TruckOwner can also update: companyName, companyAddress. Driver can also update: licenseNumber."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete My Account",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/deleteMe",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "deleteMe"]
+						},
+						"description": "Soft delete the current user's account."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						},
+						"description": "Get all users. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Drivers (TruckOwner)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/myDrivers",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "myDrivers"]
+						},
+						"description": "Get all drivers belonging to the current truck owner."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Trucks",
+			"description": "Truck fleet management endpoints (TruckOwner)",
+			"item": [
+				{
+					"name": "Create Truck",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"plateNumber\": \"ABC-1234\",\n    \"model\": \"Volvo FH16\",\n    \"capacity\": 25,\n    \"year\": 2022,\n    \"dimensions\": {\n        \"length\": 13.6,\n        \"width\": 2.45,\n        \"height\": 2.7\n    },\n    \"features\": [\"GPS\", \"Refrigerated\", \"Air Suspension\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/trucks",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "trucks"]
+						},
+						"description": "Create a new truck. TruckOwner only."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data._id) {",
+									"        pm.collectionVariables.set('truckId', jsonData.data._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get My Trucks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/trucks",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "trucks"]
+						},
+						"description": "Get all trucks belonging to the current truck owner."
+					},
+					"response": []
+				},
+				{
+					"name": "Search Trucks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/trucks/search?available=true&capacity=20&page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "trucks", "search"],
+							"query": [
+								{
+									"key": "available",
+									"value": "true",
+									"description": "Filter by availability (true/false)"
+								},
+								{
+									"key": "capacity",
+									"value": "20",
+									"description": "Minimum capacity in tons"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page (default: 10)"
+								}
+							]
+						},
+						"description": "Search trucks with filters."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Truck by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/trucks/{{truckId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "trucks", "{{truckId}}"]
+						},
+						"description": "Get a specific truck by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Truck",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"capacity\": 30,\n    \"available\": true,\n    \"status\": \"AVAILABLE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/trucks/{{truckId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "trucks", "{{truckId}}"]
+						},
+						"description": "Update a truck. Status options: AVAILABLE, IN_SERVICE, IN_MAINTENANCE, OUT_OF_SERVICE"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Truck",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/trucks/{{truckId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "trucks", "{{truckId}}"]
+						},
+						"description": "Delete a truck."
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Driver to Truck",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/trucks/{{truckId}}/assign/{{driverId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "trucks", "{{truckId}}", "assign", "{{driverId}}"]
+						},
+						"description": "Assign a driver to a truck."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Shipments",
+			"description": "Shipment management endpoints",
+			"item": [
+				{
+					"name": "Create Shipment (Merchant)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"origin\": {\n        \"address\": \"123 Export Street, Cairo, Egypt\",\n        \"coordinates\": {\n            \"lat\": 30.0444,\n            \"lng\": 31.2357\n        },\n        \"country\": \"EG\"\n    },\n    \"destination\": {\n        \"address\": \"456 Import Avenue, Riyadh, Saudi Arabia\",\n        \"coordinates\": {\n            \"lat\": 24.7136,\n            \"lng\": 46.6753\n        },\n        \"country\": \"SA\"\n    },\n    \"cargoDetails\": {\n        \"description\": \"Electronic goods - computers and accessories\",\n        \"weight\": 5000,\n        \"volume\": 25,\n        \"category\": \"Electronics\",\n        \"hazardous\": false,\n        \"specialInstructions\": \"Handle with care, keep dry\"\n    },\n    \"pricingType\": \"BIDDING\",\n    \"notes\": \"Urgent delivery required\",\n    \"scheduledDate\": \"2024-02-15T10:00:00Z\",\n    \"specialRequirements\": {\n        \"refrigerated\": false,\n        \"fragile\": true\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments"]
+						},
+						"description": "Create a new shipment. Merchant only. pricingType options: BIDDING, FIXED_PRICE"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data._id) {",
+									"        pm.collectionVariables.set('shipmentId', jsonData.data._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Fixed-Price Shipment (Merchant)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"origin\": {\n        \"address\": \"123 Export Street, Cairo, Egypt\",\n        \"coordinates\": {\n            \"lat\": 30.0444,\n            \"lng\": 31.2357\n        },\n        \"country\": \"EG\"\n    },\n    \"destination\": {\n        \"address\": \"456 Import Avenue, Riyadh, Saudi Arabia\",\n        \"coordinates\": {\n            \"lat\": 24.7136,\n            \"lng\": 46.6753\n        },\n        \"country\": \"SA\"\n    },\n    \"cargoDetails\": {\n        \"description\": \"Food products - canned goods\",\n        \"weight\": 10000,\n        \"volume\": 40,\n        \"category\": \"Food\",\n        \"hazardous\": false\n    },\n    \"fixedPriceDetails\": {\n        \"amount\": 5000,\n        \"currency\": \"USD\",\n        \"requirements\": {\n            \"minTruckCapacity\": 15,\n            \"requiredFeatures\": [\"Refrigerated\"],\n            \"maxDeliveryDays\": 5\n        }\n    },\n    \"notes\": \"Fixed price shipment - first come first served\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/fixed-price",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "fixed-price"]
+						},
+						"description": "Create a fixed-price shipment. Merchant only."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data._id) {",
+									"        pm.collectionVariables.set('shipmentId', jsonData.data._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get My Shipments (Merchant)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get all shipments for the current merchant."
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Fixed-Price Shipments (Merchant)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/fixed-price/my",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "fixed-price", "my"]
+						},
+						"description": "Get all fixed-price shipments for the current merchant."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Shipments (TruckOwner)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/available",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "available"]
+						},
+						"description": "Get shipments available for bidding. TruckOwner only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Fixed-Price Shipments (TruckOwner)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/available-fixed-price?page=1&limit=10&minPrice=1000&maxPrice=10000",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "available-fixed-price"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "minPrice",
+									"value": "1000",
+									"description": "Minimum price filter"
+								},
+								{
+									"key": "maxPrice",
+									"value": "10000",
+									"description": "Maximum price filter"
+								}
+							]
+						},
+						"description": "Get available fixed-price shipments. TruckOwner only."
+					},
+					"response": []
+				},
+				{
+					"name": "Search Shipments (Merchant)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/search?status=REQUESTED&origin=EG&destination=SA&page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "search"],
+							"query": [
+								{
+									"key": "status",
+									"value": "REQUESTED",
+									"description": "Filter by status"
+								},
+								{
+									"key": "origin",
+									"value": "EG",
+									"description": "Origin country code"
+								},
+								{
+									"key": "destination",
+									"value": "SA",
+									"description": "Destination country code"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Search shipments with filters. Status options: PENDING_APPROVAL, REQUESTED, CONFIRMED, ASSIGNED, LOADING, IN_TRANSIT, UNLOADING, AT_BORDER, DELIVERED, COMPLETED, CANCELLED, DELAYED, REJECTED"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipment by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}"]
+						},
+						"description": "Get a specific shipment by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Shipment (Merchant)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"cargoDetails\": {\n        \"description\": \"Updated cargo description\",\n        \"weight\": 5500\n    },\n    \"notes\": \"Updated notes for the shipment\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}"]
+						},
+						"description": "Update a shipment. Merchant only."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Shipment (Merchant)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Customer requested cancellation\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/cancel",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "cancel"]
+						},
+						"description": "Cancel a shipment. Merchant only."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Timeline Entry",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"IN_TRANSIT\",\n    \"note\": \"Shipment has departed from origin\",\n    \"location\": {\n        \"type\": \"Point\",\n        \"coordinates\": [31.2357, 30.0444],\n        \"address\": \"Cairo, Egypt\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/timeline",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "timeline"]
+						},
+						"description": "Add a timeline entry to the shipment."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipment Applications (Merchant)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/applications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "applications"]
+						},
+						"description": "Get all applications for a shipment. Merchant only."
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Driver to Shipment (TruckOwner)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"driverId\": \"{{driverId}}\",\n    \"truckId\": \"{{truckId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/assign-driver",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "assign-driver"]
+						},
+						"description": "Assign a driver to the shipment. TruckOwner only."
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Fixed-Price Shipment (TruckOwner)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"truckId\": \"{{truckId}}\",\n    \"driverId\": \"{{driverId}}\",\n    \"acceptanceNote\": \"Ready to start immediately\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/accept-fixed-price",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "accept-fixed-price"]
+						},
+						"description": "Accept a fixed-price shipment. TruckOwner only."
+					},
+					"response": []
+				},
+				{
+					"name": "Convert to Bidding (Merchant)",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/convert-to-bidding",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "convert-to-bidding"]
+						},
+						"description": "Convert a fixed-price shipment to bidding. Merchant only."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Fixed-Price Details (Merchant)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 5500,\n    \"currency\": \"USD\",\n    \"requirements\": {\n        \"minTruckCapacity\": 20\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/fixed-price-details",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "fixed-price-details"]
+						},
+						"description": "Update fixed-price details. Merchant only."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Compliance (Merchant)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"acidNumber\": \"ACID-2024-001234\",\n    \"gaftaRequested\": true,\n    \"incoterm\": \"CIF\",\n    \"saberStatus\": \"PENDING\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/compliance",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "compliance"]
+						},
+						"description": "Update compliance details. Merchant only. saberStatus options: NOT_APPLICABLE, PENDING, SUBMITTED, APPROVED, REJECTED. incoterm options: CIF, CIP, FOB, etc."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Compliance Status (Merchant)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/compliance",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "compliance"]
+						},
+						"description": "Get compliance status for a shipment."
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Compliance Document (Merchant)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"description": "Document file (PDF, JPEG, PNG, GIF, Word)"
+								},
+								{
+									"key": "documentType",
+									"value": "COMMERCIAL_INVOICE",
+									"type": "text",
+									"description": "COMMERCIAL_INVOICE, PACKING_LIST, BILL_OF_LADING, WAYBILL, CERTIFICATE_OF_ORIGIN, ACID_PROOF, INSURANCE_CERTIFICATE"
+								},
+								{
+									"key": "name",
+									"value": "Commercial Invoice Q1 2024",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Commercial invoice for shipment",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/compliance/documents",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "compliance", "documents"]
+						},
+						"description": "Upload a compliance document. Merchant only."
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Payment Proof (Merchant)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"description": "Payment proof file (PDF, JPEG, PNG)"
+								},
+								{
+									"key": "name",
+									"value": "Payment Receipt",
+									"type": "text"
+								},
+								{
+									"key": "amount",
+									"value": "5000",
+									"type": "text"
+								},
+								{
+									"key": "currency",
+									"value": "USD",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/payment-proof",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "payment-proof"]
+						},
+						"description": "Upload payment proof. Merchant only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tracking Info (Merchant)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/tracking",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "tracking"]
+						},
+						"description": "Get current tracking information for a shipment."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tracking History (Merchant)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/tracking/history",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "shipments", "{{shipmentId}}", "tracking", "history"]
+						},
+						"description": "Get tracking history for a shipment."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Applications",
+			"description": "Bidding/application endpoints",
+			"item": [
+				{
+					"name": "Create Application (TruckOwner)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"shipmentId\": \"{{shipmentId}}\",\n    \"assignedTruckId\": \"{{truckId}}\",\n    \"driverId\": \"{{driverId}}\",\n    \"bidDetails\": {\n        \"price\": 4500,\n        \"currency\": \"USD\",\n        \"notes\": \"Experienced driver, can deliver within 3 days\",\n        \"validUntil\": \"2024-02-20T23:59:59Z\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/applications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "applications"]
+						},
+						"description": "Create a new application/bid for a shipment. TruckOwner only."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data._id) {",
+									"        pm.collectionVariables.set('applicationId', jsonData.data._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get My Applications (TruckOwner)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/applications?status=PENDING",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "applications"],
+							"query": [
+								{
+									"key": "status",
+									"value": "PENDING",
+									"description": "Filter by status: PENDING, ACCEPTED, REJECTED, CANCELLED"
+								}
+							]
+						},
+						"description": "Get all applications for the current truck owner."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Application by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/applications/{{applicationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "applications", "{{applicationId}}"]
+						},
+						"description": "Get a specific application by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Application (TruckOwner)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bidDetails\": {\n        \"price\": 4200,\n        \"notes\": \"Updated bid with competitive pricing\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/applications/{{applicationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "applications", "{{applicationId}}"]
+						},
+						"description": "Update an application. Only possible if status is PENDING. TruckOwner only."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Application (TruckOwner)",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/applications/{{applicationId}}/cancel",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "applications", "{{applicationId}}", "cancel"]
+						},
+						"description": "Cancel an application. TruckOwner only."
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Application (Merchant)",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/applications/{{applicationId}}/accept",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "applications", "{{applicationId}}", "accept"]
+						},
+						"description": "Accept an application. Merchant only."
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Application (Merchant)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Found a better offer\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/applications/{{applicationId}}/reject",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "applications", "{{applicationId}}", "reject"]
+						},
+						"description": "Reject an application. Merchant only."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Driver",
+			"description": "Driver operation endpoints",
+			"item": [
+				{
+					"name": "Get Driver Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "profile"]
+						},
+						"description": "Get the current driver's profile."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current Truck",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/truck",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "truck"]
+						},
+						"description": "Get the truck assigned to the current driver."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Driver Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "dashboard"]
+						},
+						"description": "Get driver dashboard with statistics and active shipments."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Shipments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/shipments/active",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "shipments", "active"]
+						},
+						"description": "Get active shipments assigned to the driver."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Assigned Shipments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/shipments/assigned",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "shipments", "assigned"]
+						},
+						"description": "Get all shipments assigned to the driver."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipment History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/shipments/history",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "shipments", "history"]
+						},
+						"description": "Get completed shipment history."
+					},
+					"response": []
+				},
+				{
+					"name": "Start Delivery",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notes\": \"Starting delivery, all cargo loaded\",\n    \"startOdometer\": 125000\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/shipments/{{shipmentId}}/start",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "shipments", "{{shipmentId}}", "start"]
+						},
+						"description": "Start a delivery for an assigned shipment."
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Delivery",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notes\": \"Delivery completed successfully\",\n    \"endOdometer\": 125850,\n    \"recipientName\": \"John Doe\",\n    \"recipientSignature\": \"base64_signature_data\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/shipments/{{shipmentId}}/complete",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "shipments", "{{shipmentId}}", "complete"]
+						},
+						"description": "Complete a delivery."
+					},
+					"response": []
+				},
+				{
+					"name": "Report Issue",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"issueType\": \"VEHICLE_BREAKDOWN\",\n    \"description\": \"Flat tire, waiting for roadside assistance\",\n    \"latitude\": 29.9876,\n    \"longitude\": 31.1234\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/shipments/{{shipmentId}}/issues",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "shipments", "{{shipmentId}}", "issues"]
+						},
+						"description": "Report a delivery issue. issueType options: DELIVERY_FAILED, ACCIDENT, CARGO_DAMAGED, VEHICLE_BREAKDOWN, TRAFFIC, WEATHER, OTHER"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Proof of Delivery",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "proof",
+									"type": "file",
+									"description": "Proof file (JPEG, PNG, PDF - max 5MB)"
+								},
+								{
+									"key": "type",
+									"value": "PHOTO",
+									"type": "text",
+									"description": "PHOTO, SIGNATURE, DOCUMENT, OTHER"
+								},
+								{
+									"key": "notes",
+									"value": "Delivered to warehouse entrance",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/shipments/{{shipmentId}}/proof",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "shipments", "{{shipmentId}}", "proof"]
+						},
+						"description": "Upload proof of delivery."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Delivery Route",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/route/{{shipmentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "route", "{{shipmentId}}"]
+						},
+						"description": "Get the delivery route for a shipment."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Shipment Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"IN_TRANSIT\",\n    \"notes\": \"En route to destination\",\n    \"location\": {\n        \"type\": \"Point\",\n        \"coordinates\": [31.5, 30.2]\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/shipments/{{shipmentId}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "shipments", "{{shipmentId}}", "status"]
+						},
+						"description": "Update the shipment status. Valid statuses: LOADING, IN_TRANSIT, UNLOADING, AT_BORDER, DELIVERED"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Availability",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"isAvailable\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/availability",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "availability"]
+						},
+						"description": "Update driver availability status."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Driver Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"ACTIVE\",\n    \"reason\": \"Starting shift\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "status"]
+						},
+						"description": "Update driver status. Options: ACTIVE, OFF_DUTY, ON_BREAK, INACTIVE"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Location",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"latitude\": 30.0444,\n    \"longitude\": 31.2357,\n    \"shipmentId\": \"{{shipmentId}}\",\n    \"address\": \"Cairo, Egypt\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/location",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "location"]
+						},
+						"description": "Update driver's current location."
+					},
+					"response": []
+				},
+				{
+					"name": "Driver Check-In",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"latitude\": 30.0444,\n    \"longitude\": 31.2357,\n    \"truckCondition\": \"Good, all lights working\",\n    \"fuelLevel\": 85,\n    \"notes\": \"Starting morning shift\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/checkin",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "checkin"]
+						},
+						"description": "Driver check-in at start of shift."
+					},
+					"response": []
+				},
+				{
+					"name": "Driver Check-Out",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"latitude\": 30.0444,\n    \"longitude\": 31.2357,\n    \"totalMiles\": 250,\n    \"fuelLevel\": 45,\n    \"notes\": \"End of shift, truck parked at depot\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/driver/checkout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "driver", "checkout"]
+						},
+						"description": "Driver check-out at end of shift."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Truck Owner",
+			"description": "Truck owner portal endpoints",
+			"item": [
+				{
+					"name": "Get Assigned Shipments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/truck-owner/shipments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "truck-owner", "shipments"]
+						},
+						"description": "Get shipments assigned to the truck owner."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Shipments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/truck-owner/shipments/available?page=1&limit=10&originCountry=EG&destinationCountry=SA",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "truck-owner", "shipments", "available"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "originCountry",
+									"value": "EG"
+								},
+								{
+									"key": "destinationCountry",
+									"value": "SA"
+								}
+							]
+						},
+						"description": "Get available shipments for bidding."
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Shipment to Driver",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"driverId\": \"{{driverId}}\",\n    \"truckId\": \"{{truckId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/truck-owner/shipments/{{shipmentId}}/assign",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "truck-owner", "shipments", "{{shipmentId}}", "assign"]
+						},
+						"description": "Assign a shipment to a specific driver."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Drivers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/truck-owner/drivers/available",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "truck-owner", "drivers", "available"]
+						},
+						"description": "Get available drivers for assignment."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Trucks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/truck-owner/trucks/available",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "truck-owner", "trucks", "available"]
+						},
+						"description": "Get available trucks for assignment."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Drivers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/truck-owner/drivers",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "truck-owner", "drivers"]
+						},
+						"description": "Get all drivers belonging to the truck owner."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Driver",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"isAvailable\": true,\n    \"driverStatus\": \"ACTIVE\",\n    \"phone\": \"+201234567899\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/truck-owner/drivers/{{driverId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "truck-owner", "drivers", "{{driverId}}"]
+						},
+						"description": "Update a driver's details. Allowed fields: isAvailable, driverStatus, licenseNumber, phone"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Fixed-Price Shipments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/truck-owner/fixed-price-shipments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "truck-owner", "fixed-price-shipments"]
+						},
+						"description": "Get accepted fixed-price shipments."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Documents",
+			"description": "Document management endpoints",
+			"item": [
+				{
+					"name": "Upload Document",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"description": "Document file to upload"
+								},
+								{
+									"key": "entityType",
+									"value": "Shipment",
+									"type": "text",
+									"description": "Shipment, Application, Truck, User"
+								},
+								{
+									"key": "entityId",
+									"value": "{{shipmentId}}",
+									"type": "text"
+								},
+								{
+									"key": "documentType",
+									"value": "COMMERCIAL_INVOICE",
+									"type": "text",
+									"description": "COMMERCIAL_INVOICE, PACKING_LIST, BILL_OF_LADING, WAYBILL, CERTIFICATE_OF_ORIGIN, ACID_PROOF, CUSTOMS_DECLARATION, PROOF_OF_DELIVERY, DRIVER_LICENSE, VEHICLE_REGISTRATION, INSURANCE_CERTIFICATE, PAYMENT_RECEIPT, OTHER"
+								},
+								{
+									"key": "name",
+									"value": "Invoice 2024-001",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Commercial invoice for shipment",
+									"type": "text"
+								},
+								{
+									"key": "expiryDate",
+									"value": "2025-12-31",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "documents", "upload"]
+						},
+						"description": "Upload a single document."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data._id) {",
+									"        pm.collectionVariables.set('documentId', jsonData.data._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Upload Multiple Documents",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "files",
+									"type": "file",
+									"description": "Multiple document files (up to 5)"
+								},
+								{
+									"key": "entityType",
+									"value": "Shipment",
+									"type": "text"
+								},
+								{
+									"key": "entityId",
+									"value": "{{shipmentId}}",
+									"type": "text"
+								},
+								{
+									"key": "fileData_invoice.pdf",
+									"value": "{\"documentType\": \"COMMERCIAL_INVOICE\", \"name\": \"Invoice\", \"description\": \"Commercial invoice\"}",
+									"type": "text",
+									"description": "JSON metadata for each file (use actual filename)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/upload-multiple",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "documents", "upload-multiple"]
+						},
+						"description": "Upload multiple documents (up to 5). Use fileData_[filename] for metadata."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Document by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/{{documentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "documents", "{{documentId}}"]
+						},
+						"description": "Get document details by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Download Document",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/{{documentId}}/download",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "documents", "{{documentId}}", "download"]
+						},
+						"description": "Download a document file."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Entity Documents",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/entity/Shipment/{{shipmentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "documents", "entity", "Shipment", "{{shipmentId}}"]
+						},
+						"description": "Get all documents for a specific entity. entityType: Shipment, Application, Truck, User"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Document",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Document Name\",\n    \"documentType\": \"BILL_OF_LADING\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/{{documentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "documents", "{{documentId}}"]
+						},
+						"description": "Update document details."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Document (Admin)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notes\": \"Document verified and approved\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/{{documentId}}/verify",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "documents", "{{documentId}}", "verify"]
+						},
+						"description": "Verify a document. Admin/Manager only."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Document",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/{{documentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "documents", "{{documentId}}"]
+						},
+						"description": "Delete a document."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"description": "Administrative endpoints (Admin only)",
+			"item": [
+				{
+					"name": "Dashboard",
+					"item": [
+						{
+							"name": "Get Dashboard Statistics",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/dashboard",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "dashboard"]
+								},
+								"description": "Get admin dashboard statistics."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Users",
+					"item": [
+						{
+							"name": "Get All Users",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users?page=1&limit=10&role=Merchant",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "users"],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "role",
+											"value": "Merchant",
+											"description": "Admin, Merchant, TruckOwner, Driver"
+										}
+									]
+								},
+								"description": "Get all users with pagination and filters."
+							},
+							"response": []
+						},
+						{
+							"name": "Get User by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users/{{userId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "users", "{{userId}}"]
+								},
+								"description": "Get a specific user by ID."
+							},
+							"response": []
+						},
+						{
+							"name": "Create User",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"New User\",\n    \"email\": \"newuser@example.com\",\n    \"password\": \"password123\",\n    \"phone\": \"+201234567899\",\n    \"role\": \"Merchant\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "users"]
+								},
+								"description": "Create a new user. For TruckOwner: include companyName, companyAddress. For Driver: include licenseNumber, ownerId. For Admin: include adminPermissions."
+							},
+							"response": []
+						},
+						{
+							"name": "Update User",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Updated Name\",\n    \"active\": true\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users/{{userId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "users", "{{userId}}"]
+								},
+								"description": "Update a user."
+							},
+							"response": []
+						},
+						{
+							"name": "Delete User",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/users/{{userId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "users", "{{userId}}"]
+								},
+								"description": "Delete a user."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Shipments",
+					"item": [
+						{
+							"name": "Get All Shipments",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/shipments?page=1&limit=10&status=IN_TRANSIT",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "shipments"],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "status",
+											"value": "IN_TRANSIT"
+										}
+									]
+								},
+								"description": "Get all shipments with filters."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Shipment by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/shipments/{{shipmentId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "shipments", "{{shipmentId}}"]
+								},
+								"description": "Get a specific shipment."
+							},
+							"response": []
+						},
+						{
+							"name": "Update Shipment",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"IN_TRANSIT\",\n    \"notes\": \"Admin updated shipment\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/shipments/{{shipmentId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "shipments", "{{shipmentId}}"]
+								},
+								"description": "Update a shipment."
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Shipment",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/shipments/{{shipmentId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "shipments", "{{shipmentId}}"]
+								},
+								"description": "Delete a shipment."
+							},
+							"response": []
+						},
+						{
+							"name": "Approve Shipment",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/shipments/{{shipmentId}}/approve",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "shipments", "{{shipmentId}}", "approve"]
+								},
+								"description": "Approve a pending shipment."
+							},
+							"response": []
+						},
+						{
+							"name": "Reject Shipment",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"reason\": \"Invalid cargo details\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/shipments/{{shipmentId}}/reject",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "shipments", "{{shipmentId}}", "reject"]
+								},
+								"description": "Reject a pending shipment."
+							},
+							"response": []
+						},
+						{
+							"name": "Change Shipment Status",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"IN_TRANSIT\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/shipments/{{shipmentId}}/status",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "shipments", "{{shipmentId}}", "status"]
+								},
+								"description": "Change shipment status."
+							},
+							"response": []
+						},
+						{
+							"name": "Assign Shipment to Driver",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"driverId\": \"{{driverId}}\",\n    \"assignedTruckId\": \"{{truckId}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/shipments/{{shipmentId}}/assign",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "shipments", "{{shipmentId}}", "assign"]
+								},
+								"description": "Assign a shipment to a driver."
+							},
+							"response": []
+						},
+						{
+							"name": "Assign Broker",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"brokerId\": \"{{brokerId}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/shipments/{{shipmentId}}/broker",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "shipments", "{{shipmentId}}", "broker"]
+								},
+								"description": "Assign a broker to a shipment."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Applications",
+					"item": [
+						{
+							"name": "Get All Applications",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/applications?page=1&limit=10&status=PENDING",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "applications"],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "status",
+											"value": "PENDING"
+										}
+									]
+								},
+								"description": "Get all applications with filters."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Application by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/applications/{{applicationId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "applications", "{{applicationId}}"]
+								},
+								"description": "Get a specific application."
+							},
+							"response": []
+						},
+						{
+							"name": "Update Application Status",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"ACCEPTED\",\n    \"adminNotes\": \"Approved by admin\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/applications/{{applicationId}}/status",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "applications", "{{applicationId}}", "status"]
+								},
+								"description": "Update application status."
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Application",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/applications/{{applicationId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "applications", "{{applicationId}}"]
+								},
+								"description": "Delete an application."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Application Statistics",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/applications/stats",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "applications", "stats"]
+								},
+								"description": "Get application statistics."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Trucks",
+					"item": [
+						{
+							"name": "Get All Trucks",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/trucks",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "trucks"]
+								},
+								"description": "Get all trucks."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Truck by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/trucks/{{truckId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "trucks", "{{truckId}}"]
+								},
+								"description": "Get a specific truck."
+							},
+							"response": []
+						},
+						{
+							"name": "Create Truck",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"ownerId\": \"{{userId}}\",\n    \"plateNumber\": \"XYZ-5678\",\n    \"model\": \"Mercedes Actros\",\n    \"capacity\": 30,\n    \"year\": 2023\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/trucks",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "trucks"]
+								},
+								"description": "Create a new truck."
+							},
+							"response": []
+						},
+						{
+							"name": "Update Truck",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"capacity\": 35,\n    \"status\": \"AVAILABLE\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/trucks/{{truckId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "trucks", "{{truckId}}"]
+								},
+								"description": "Update a truck."
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Truck",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/trucks/{{truckId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "trucks", "{{truckId}}"]
+								},
+								"description": "Delete a truck."
+							},
+							"response": []
+						},
+						{
+							"name": "Change Truck Status",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"IN_MAINTENANCE\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/trucks/{{truckId}}/status",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "trucks", "{{truckId}}", "status"]
+								},
+								"description": "Change truck status. Options: AVAILABLE, IN_SERVICE, IN_MAINTENANCE, OUT_OF_SERVICE"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Brokers",
+					"item": [
+						{
+							"name": "Get All Brokers",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/brokers",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "brokers"]
+								},
+								"description": "Get all brokers."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Broker by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/brokers/{{brokerId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "brokers", "{{brokerId}}"]
+								},
+								"description": "Get a specific broker."
+							},
+							"response": []
+						},
+						{
+							"name": "Create Broker",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Cairo Customs Broker\",\n    \"licenseNumber\": \"BRK-2024-001\",\n    \"countriesServed\": [\"EG\", \"SA\", \"AE\"],\n    \"contacts\": {\n        \"email\": \"broker@example.com\",\n        \"phone\": \"+201234567890\"\n    },\n    \"notes\": \"Specialized in food products\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/brokers",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "brokers"]
+								},
+								"description": "Create a new broker."
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    var jsonData = pm.response.json();",
+											"    if (jsonData.data && jsonData.data._id) {",
+											"        pm.collectionVariables.set('brokerId', jsonData.data._id);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							]
+						},
+						{
+							"name": "Update Broker",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"countriesServed\": [\"EG\", \"SA\", \"AE\", \"JO\"],\n    \"status\": \"ACTIVE\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/brokers/{{brokerId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "brokers", "{{brokerId}}"]
+								},
+								"description": "Update a broker."
+							},
+							"response": []
+						},
+						{
+							"name": "Deactivate Broker",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/brokers/{{brokerId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "brokers", "{{brokerId}}"]
+								},
+								"description": "Deactivate a broker."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Registration Requests",
+					"item": [
+						{
+							"name": "Get Registration Requests",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/registration-requests?page=1&limit=10&state=PENDING",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "registration-requests"],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "state",
+											"value": "PENDING",
+											"description": "PENDING, APPROVED, REJECTED"
+										}
+									]
+								},
+								"description": "Get pending registration requests."
+							},
+							"response": []
+						},
+						{
+							"name": "Approve Registration",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/registration-requests/:id/approve",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "registration-requests", ":id", "approve"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "registration-request-id"
+										}
+									]
+								},
+								"description": "Approve a registration request."
+							},
+							"response": []
+						},
+						{
+							"name": "Reject Registration",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"reason\": \"Incomplete documentation\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/admin/registration-requests/:id/reject",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "admin", "registration-requests", ":id", "reject"],
+									"variable": [
+										{
+											"key": "id",
+											"value": "registration-request-id"
+										}
+									]
+								},
+								"description": "Reject a registration request."
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Integrations",
+			"description": "API integration endpoints for external systems",
+			"item": [
+				{
+					"name": "Create Integration Credential",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"ERP Integration\",\n    \"scopes\": [\"shipments:read\", \"shipments:write\", \"webhooks:read\", \"webhooks:write\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/integrations/credentials",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "integrations", "credentials"]
+						},
+						"description": "Create API credentials for integration. Merchant/Admin only."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.apiKey) {",
+									"        pm.collectionVariables.set('apiKey', jsonData.data.apiKey);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "List Integration Credentials",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/integrations/credentials",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "integrations", "credentials"]
+						},
+						"description": "List all integration credentials."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"endpointUrl\": \"https://your-server.com/webhook\",\n    \"eventTypes\": [\"shipment.status.updated\", \"shipment.created\", \"shipment.completed\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/integrations/webhooks",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "integrations", "webhooks"]
+						},
+						"description": "Create a webhook subscription."
+					},
+					"response": []
+				},
+				{
+					"name": "List Webhooks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/integrations/webhooks",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "integrations", "webhooks"]
+						},
+						"description": "List all webhook subscriptions."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Shipment via API",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}"
+							}
+						],
+						"auth": {
+							"type": "noauth"
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"origin\": {\n        \"address\": \"123 Export Street, Cairo, Egypt\",\n        \"country\": \"EG\"\n    },\n    \"destination\": {\n        \"address\": \"456 Import Avenue, Riyadh, Saudi Arabia\",\n        \"country\": \"SA\"\n    },\n    \"cargoDetails\": {\n        \"description\": \"Electronic goods\",\n        \"weight\": 5000\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/integrations/shipments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "integrations", "shipments"]
+						},
+						"description": "Create a shipment using API key authentication. Requires shipments:write scope."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipment Status via API",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{apiKey}}"
+							}
+						],
+						"auth": {
+							"type": "noauth"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/integrations/shipments/{{shipmentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "integrations", "shipments", "{{shipmentId}}"]
+						},
+						"description": "Get shipment status using API key authentication. Requires shipments:read scope."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Automation",
+			"description": "Automation rule endpoints",
+			"item": [
+				{
+					"name": "Create Automation Rule",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Delay Alert Rule\",\n    \"triggerType\": \"delay\",\n    \"threshold\": 24,\n    \"thresholdUnit\": \"hours\",\n    \"action\": \"notify\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/automation/rules",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "automation", "rules"]
+						},
+						"description": "Create an automation rule. triggerType: delay, missing-update. action: notify, escalate."
+					},
+					"response": []
+				},
+				{
+					"name": "List Automation Rules",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/automation/rules",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "automation", "rules"]
+						},
+						"description": "List all automation rules."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Automation Rule",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"threshold\": 48,\n    \"active\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/automation/rules/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "automation", "rules", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "rule-id"
+								}
+							]
+						},
+						"description": "Update an automation rule."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reports",
+			"description": "Analytics and reporting endpoints",
+			"item": [
+				{
+					"name": "Get KPIs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/kpis",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "kpis"]
+						},
+						"description": "Get key performance indicators. Merchant/Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Lane Performance",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/lanes",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "lanes"]
+						},
+						"description": "Get lane performance report. Merchant/Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipment Status Trends (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/shipments/status-trends",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "shipments", "status-trends"]
+						},
+						"description": "Get shipment status trends. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Revenue Analysis (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/revenue",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "revenue"]
+						},
+						"description": "Get revenue analysis report. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Performance Metrics (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/performance",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "performance"]
+						},
+						"description": "Get performance metrics. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customer Insights (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/customers",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "customers"]
+						},
+						"description": "Get customer insights. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Operational Efficiency (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/efficiency",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "efficiency"]
+						},
+						"description": "Get operational efficiency metrics. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Geospatial Analytics (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/geo",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "geo"]
+						},
+						"description": "Get geospatial analytics. Admin only."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Metrics",
+			"description": "System metrics endpoints (Admin only)",
+			"item": [
+				{
+					"name": "Get Prometheus Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/metrics",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "metrics"]
+						},
+						"description": "Get Prometheus metrics. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Status Counts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/metrics/status-counts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "metrics", "status-counts"]
+						},
+						"description": "Get status count metrics. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Error Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/metrics/errors",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "metrics", "errors"]
+						},
+						"description": "Get error statistics. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Database Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/metrics/database",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "metrics", "database"]
+						},
+						"description": "Get database metrics. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Log Level",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"level\": \"debug\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/metrics/log-level",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "metrics", "log-level"]
+						},
+						"description": "Update the log level. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Metrics Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/metrics/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "metrics", "health"]
+						},
+						"description": "Get metrics system health. Admin only."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Health",
+			"description": "Health check endpoints",
+			"item": [
+				{
+					"name": "Basic Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"auth": {
+							"type": "noauth"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						},
+						"description": "Basic health check. Public endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Debug User Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health/debug",
+							"host": ["{{baseUrl}}"],
+							"path": ["health", "debug"]
+						},
+						"description": "Debug current user info. Requires authentication."
+					},
+					"response": []
+				},
+				{
+					"name": "System Health (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health/system",
+							"host": ["{{baseUrl}}"],
+							"path": ["health", "system"]
+						},
+						"description": "Get system resources health. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Storage Health (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health/storage",
+							"host": ["{{baseUrl}}"],
+							"path": ["health", "storage"]
+						},
+						"description": "Get storage health. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Database Health (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health/database",
+							"host": ["{{baseUrl}}"],
+							"path": ["health", "database"]
+						},
+						"description": "Get database health. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Comprehensive Health (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health/comprehensive",
+							"host": ["{{baseUrl}}"],
+							"path": ["health", "comprehensive"]
+						},
+						"description": "Get comprehensive health check. Admin only."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

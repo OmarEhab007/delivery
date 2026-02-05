@@ -10,7 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Figma Design System
+        // Refined palette
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
@@ -18,6 +18,12 @@ const config: Config = {
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
+        },
+        brand: {
+          ink: 'hsl(var(--foreground))',
+          sand: 'hsl(var(--muted))',
+          sun: 'hsl(var(--primary))',
+          tide: 'hsl(var(--accent))',
         },
         dark: 'hsl(var(--foreground))',
         cream: 'hsl(var(--muted))',

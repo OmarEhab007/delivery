@@ -80,7 +80,7 @@ export default function DriverProfilePage() {
   // Mock driver stats
   const stats = {
     totalDeliveries: 156,
-    rating: 4.8,
+    rating: null as number | null,
     onTimePercentage: 97,
     experience: '2 سنوات',
   };
@@ -162,7 +162,7 @@ export default function DriverProfilePage() {
                 <span className="text-muted-foreground">التقييم</span>
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 dark:text-yellow-400 dark:fill-yellow-400" />
-                  <span className="font-semibold">{stats.rating}</span>
+                  <span className="font-semibold">{stats.rating !== null ? stats.rating : '—'}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">

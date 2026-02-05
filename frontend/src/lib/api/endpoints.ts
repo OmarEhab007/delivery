@@ -30,15 +30,22 @@ export const API_ENDPOINTS = {
     documents: (id: string) => `/users/${id}/documents`,
   },
 
-  // Drivers (subset of users with driver-specific actions)
-  drivers: {
-    list: '/drivers',
-    get: (id: string) => `/drivers/${id}`,
-    updateStatus: (id: string) => `/drivers/${id}/status`,
-    updateLocation: (id: string) => `/drivers/${id}/location`,
-    checkIn: (id: string) => `/drivers/${id}/check-in`,
-    checkOut: (id: string) => `/drivers/${id}/check-out`,
-    assignedShipments: (id: string) => `/drivers/${id}/shipments`,
+  // Driver (current user) endpoints
+  driver: {
+    dashboard: '/driver/dashboard',
+    shipmentsAssigned: '/driver/shipments/assigned',
+    shipmentsHistory: '/driver/shipments/history',
+    startDelivery: (id: string) => `/driver/shipments/${id}/start`,
+    completeDelivery: (id: string) => `/driver/shipments/${id}/complete`,
+    reportIssue: (id: string) => `/driver/shipments/${id}/issues`,
+    updateShipmentStatus: (id: string) => `/driver/shipments/${id}/status`,
+    uploadProof: (id: string) => `/driver/shipments/${id}/proof`,
+    status: '/driver/status',
+    availability: '/driver/availability',
+    checkin: '/driver/checkin',
+    checkout: '/driver/checkout',
+    location: '/driver/location',
+    route: (id: string) => `/driver/route/${id}`,
   },
 
   // Shipments
@@ -128,10 +135,21 @@ export const API_ENDPOINTS = {
     broker: (id: string) => `/admin/brokers/${id}`,
   },
 
+  // Truck Owner
+  truckOwner: {
+    shipments: '/truck-owner/shipments',
+    shipmentsAvailable: '/truck-owner/shipments/available',
+    assignShipment: (id: string) => `/truck-owner/shipments/${id}/assign`,
+    drivers: '/truck-owner/drivers',
+    driversAvailable: '/truck-owner/drivers/available',
+    trucksAvailable: '/truck-owner/trucks/available',
+    updateDriver: (id: string) => `/truck-owner/drivers/${id}`,
+  },
+
   // Analytics & Reporting
   analytics: {
-    merchantKPIs: '/analytics/merchant/kpis',
-    merchantLanes: '/analytics/merchant/lanes',
+    merchantKPIs: '/analytics/kpis',
+    merchantLanes: '/analytics/lanes',
     truckOwnerStats: '/analytics/truck-owner/stats',
     truckPerformance: '/analytics/truck-owner/trucks',
   },

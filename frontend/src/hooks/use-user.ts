@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { toast } from 'sonner';
+import type { User } from '@/types/entities';
 
 export const userKeys = {
   all: ['user'] as const,
@@ -25,8 +26,10 @@ export function useCurrentUser() {
     enabled: !!user,
   });
 
+  const resolvedUser = (query.data as User | undefined) || user;
+
   return {
-    data: query.data || user,
+    data: resolvedUser ?? null,
     isLoading: isLoading || query.isLoading,
     isError: query.isError,
     error: query.error,
@@ -46,6 +49,8 @@ export function useUpdateProfile() {
       email?: string;
       address?: string;
       emergencyContact?: string;
+      companyName?: string;
+      companyAddress?: string;
     }) => {
       // This would call an update profile endpoint
       // For now simulating the update

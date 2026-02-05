@@ -24,6 +24,8 @@ interface RequestConfig extends RequestInit {
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let refreshPromise: Promise<void> | null = null;
+let csrfToken: string | null = null;
+let csrfPromise: Promise<string | null> | null = null;
 
 export function setTokens(access: string | null, refresh: string | null) {
   accessToken = access;
@@ -55,6 +57,30 @@ export function getTokens() {
 
 export function clearTokens() {
   setTokens(null, null);
+}
+
+async function fetchCsrfToken(): Promise<string | null> {
+  if (csrfToken) return csrfToken;
+  if (csrfPromise) return csrfPromise;
+
+  csrfPromise = (async () => {
+    try {
+      const { accessToken: token } = getTokens();
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.auth.csrf}`, {
+        method: 'GET',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: 'include',
+      });
+      const headerToken =
+        response.headers.get('X-CSRF-Token') || response.headers.get('x-csrf-token');
+      csrfToken = headerToken || null;
+      return csrfToken;
+    } finally {
+      csrfPromise = null;
+    }
+  })();
+
+  return csrfPromise;
 }
 
 async function refreshAccessToken(): Promise<void> {
@@ -105,6 +131,9 @@ async function handleRequest<T>(
   // Get current access token
   const { accessToken: token } = getTokens();
 
+  const method = (fetchConfig.method || 'GET').toUpperCase();
+  const needsCsrf = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+
   // Build headers
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -113,6 +142,13 @@ async function handleRequest<T>(
 
   if (token) {
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+
+  if (needsCsrf) {
+    const csrf = await fetchCsrfToken();
+    if (csrf) {
+      (headers as Record<string, string>)['X-CSRF-Token'] = csrf;
+    }
   }
 
   // Make request
@@ -149,6 +185,28 @@ async function handleRequest<T>(
       // Refresh failed, clear tokens and throw
       clearTokens();
       throw new ApiClientError('Session expired. Please log in again.', 401);
+    }
+  }
+
+  // Handle CSRF token errors (403)
+  if (response.status === 403 && needsCsrf) {
+    try {
+      const clone = response.clone();
+      const errorData = (await clone.json()) as ApiError;
+      if (errorData?.message && /csrf/i.test(errorData.message)) {
+        csrfToken = null;
+        const newCsrf = await fetchCsrfToken();
+        if (newCsrf) {
+          (headers as Record<string, string>)['X-CSRF-Token'] = newCsrf;
+        }
+        response = await fetch(url, {
+          ...fetchConfig,
+          headers,
+          credentials: 'include',
+        });
+      }
+    } catch {
+      // Ignore parse errors and fall through to error handling
     }
   }
 
@@ -215,13 +273,40 @@ export const apiClient = {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    const csrf = await fetchCsrfToken();
+    if (csrf) {
+      headers['X-CSRF-Token'] = csrf;
+    }
+
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       method: 'POST',
       headers,
       body: formData,
       credentials: 'include',
     });
+
+    if (response.status === 403) {
+      try {
+        const clone = response.clone();
+        const errorData = (await clone.json()) as ApiError;
+        if (errorData?.message && /csrf/i.test(errorData.message)) {
+          csrfToken = null;
+          const newCsrf = await fetchCsrfToken();
+          if (newCsrf) {
+            headers['X-CSRF-Token'] = newCsrf;
+          }
+          response = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: formData,
+            credentials: 'include',
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }
 
     const data = await response.json();
 

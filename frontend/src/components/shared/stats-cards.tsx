@@ -26,12 +26,10 @@ interface StatsCardsProps {
 
 const variantStyles = {
   default: 'bg-card text-card-foreground',
-  primary: 'bg-primary/10 text-primary border-primary/20 dark:bg-primary/20',
-  success:
-    'bg-green-500/10 text-green-600 border-green-500/20 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30',
-  warning:
-    'bg-yellow-500/10 text-yellow-600 border-yellow-500/20 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30',
-  danger: 'bg-destructive/10 text-destructive border-destructive/20',
+  primary: 'bg-primary/10 text-foreground border-primary/25',
+  success: 'bg-emerald-500/10 text-foreground border-emerald-500/20',
+  warning: 'bg-amber-500/10 text-foreground border-amber-500/20',
+  danger: 'bg-rose-500/10 text-foreground border-rose-500/20',
 };
 
 function StatCardSkeleton() {
@@ -54,30 +52,38 @@ function StatCard({ stat }: { stat: StatCardData }) {
   const variant = stat.variant || 'default';
 
   return (
-    <Card className={cn('border transition-all hover:shadow-md', variantStyles[variant])}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <Card
+      className={cn(
+        'relative overflow-hidden border transition-all hover:-translate-y-0.5 hover:shadow-lg',
+        variantStyles[variant]
+      )}
+    >
+      <div className="absolute -right-8 top-0 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
+      <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {stat.title}
         </CardTitle>
         {Icon && (
-          <div className={cn(
-            'flex h-9 w-9 items-center justify-center rounded-lg',
-            variant === 'default' ? 'bg-primary/10 text-primary' : 'bg-current/10'
-          )}>
-            <Icon className="h-5 w-5" />
+          <div
+            className={cn(
+              'flex h-10 w-10 items-center justify-center rounded-2xl border border-border/60 bg-background/80',
+              variant !== 'default' && 'border-transparent bg-background/80'
+            )}
+          >
+            <Icon className="h-5 w-5 text-primary" />
           </div>
         )}
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{stat.value}</div>
+      <CardContent className="relative">
+        <div className="text-2xl font-semibold">{stat.value}</div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {stat.trend && (
             <span
               className={cn(
                 'font-medium',
                 stat.trend.isPositive
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-red-600 dark:text-red-400'
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-rose-600 dark:text-rose-400'
               )}
             >
               {stat.trend.isPositive ? '+' : ''}{stat.trend.value}%

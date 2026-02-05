@@ -15,7 +15,7 @@ import {
   AlertTriangle,
   Calendar,
 } from 'lucide-react';
-import { useDriverDashboard } from '@/hooks/use-drivers';
+import { useDriverDashboard, useDriverCheckIn, useDriverCheckOut } from '@/hooks/use-drivers';
 import { CheckinForm } from '@/components/forms/checkin-form';
 import { toast } from 'sonner';
 
@@ -29,12 +29,13 @@ interface CheckinRecord {
 
 export default function DriverCheckinPage() {
   const { data: dashboard, isLoading } = useDriverDashboard();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCheckinForm, setShowCheckinForm] = useState(false);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const checkIn = useDriverCheckIn();
+  const checkOut = useDriverCheckOut();
 
   // Mock checkin status - would come from API
-  const isCheckedIn = false;
+  const isCheckedIn = dashboard?.driver?.driverStatus === 'ACTIVE';
   // When API is integrated, lastCheckin will be populated
   // For now using useState to allow proper typing
   const [lastCheckin] = useState<CheckinRecord | null>(null);
@@ -74,31 +75,56 @@ export default function DriverCheckinPage() {
 
   const truck = dashboard?.assignedTruck;
 
-  const handleCheckin = async () => {
-    setIsSubmitting(true);
+  const getCurrentPosition = () =>
+    new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('الموقع غير مدعوم على هذا الجهاز'));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) =>
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          }),
+        (error) => reject(error),
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
+  const handleCheckin = async (data: { odometer: number; fuelLevel: number; truckCondition: string; notes?: string }) => {
     try {
-      // API call would go here
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('تم تسجيل الدخول بنجاح');
+      const location = await getCurrentPosition();
+      await checkIn.mutateAsync({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        truckCondition: data.truckCondition,
+        fuelLevel: data.fuelLevel,
+        notes: data.notes,
+      });
       setShowCheckinForm(false);
-    } catch {
-      toast.error('فشل تسجيل الدخول');
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      toast.error('فشل تسجيل الدخول', {
+        description: error instanceof Error ? error.message : 'تعذر تحديد الموقع',
+      });
     }
   };
 
-  const handleCheckout = async () => {
-    setIsSubmitting(true);
+  const handleCheckout = async (data: { odometer: number; fuelLevel: number; truckCondition: string; notes?: string }) => {
     try {
-      // API call would go here
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('تم تسجيل الخروج بنجاح');
+      const location = await getCurrentPosition();
+      await checkOut.mutateAsync({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        totalMiles: data.odometer,
+        fuelLevel: data.fuelLevel,
+        notes: data.notes,
+      });
       setShowCheckoutForm(false);
-    } catch {
-      toast.error('فشل تسجيل الخروج');
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      toast.error('فشل تسجيل الخروج', {
+        description: error instanceof Error ? error.message : 'تعذر تحديد الموقع',
+      });
     }
   };
 
@@ -228,7 +254,7 @@ export default function DriverCheckinPage() {
           type="checkin"
           onSubmit={handleCheckin}
           onCancel={() => setShowCheckinForm(false)}
-          isLoading={isSubmitting}
+          isLoading={checkIn.isPending}
         />
       )}
 
@@ -238,7 +264,7 @@ export default function DriverCheckinPage() {
           type="checkout"
           onSubmit={handleCheckout}
           onCancel={() => setShowCheckoutForm(false)}
-          isLoading={isSubmitting}
+          isLoading={checkOut.isPending}
         />
       )}
 

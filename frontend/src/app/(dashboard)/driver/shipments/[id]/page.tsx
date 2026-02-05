@@ -40,7 +40,13 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useShipment, useUpdateShipmentStatus } from '@/hooks/use-shipments';
+import { useShipment, useShipmentTracking } from '@/hooks/use-shipments';
+import {
+  useDriverStartDelivery,
+  useDriverCompleteDelivery,
+  useDriverReportIssue,
+  useDriverUpdateShipmentStatus,
+} from '@/hooks/use-drivers';
 import { useDriverLocationTracking } from '@/hooks/use-tracking-socket';
 import { useCurrentUser } from '@/hooks/use-user';
 import { StartDeliveryForm } from '@/components/forms/start-delivery-form';
@@ -49,8 +55,21 @@ import { ReportIssueForm } from '@/components/forms/report-issue-form';
 import { TrackingMap } from '@/components/maps/tracking-map';
 import { TrackingHistory } from '@/components/shared/tracking-history';
 import { ConnectionStatusIndicator, LiveIndicator } from '@/components/shared/connection-status';
-import { toast } from 'sonner';
 import type { ShipmentStatus } from '@/types/api';
+import { driversApi } from '@/lib/api';
+import { toast } from 'sonner';
+
+function dataUrlToBlob(dataUrl: string) {
+  const [header, base64] = dataUrl.split(',');
+  const match = header?.match(/data:(.*);base64/);
+  const mime = match?.[1] || 'image/png';
+  const binary = atob(base64 || '');
+  const array = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    array[i] = binary.charCodeAt(i);
+  }
+  return new Blob([array], { type: mime });
+}
 
 const statusConfig: Record<ShipmentStatus, { label: string; color: string }> = {
   PENDING_APPROVAL: { label: 'في انتظار الموافقة', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/35 dark:text-yellow-200' },
@@ -87,7 +106,11 @@ export default function ShipmentExecutionPage() {
   const [showIssueForm, setShowIssueForm] = useState(false);
 
   const { data: response, isLoading, refetch } = useShipment(shipmentId);
-  const updateStatus = useUpdateShipmentStatus();
+  const updateStatus = useDriverUpdateShipmentStatus();
+  const startDelivery = useDriverStartDelivery();
+  const completeDelivery = useDriverCompleteDelivery();
+  const reportIssue = useDriverReportIssue();
+  const { data: trackingData } = useShipmentTracking(shipmentId);
   const shipment = response?.data;
 
   // Get current user for driver ID
@@ -105,6 +128,18 @@ export default function ShipmentExecutionPage() {
     stopTracking,
     isTracking,
   } = useDriverLocationTracking(user?._id || '', shipmentId);
+
+  const persistedHistory = (trackingData?.data || [])
+    .map((point) => ({
+      lat: point.location?.coordinates?.[1],
+      lng: point.location?.coordinates?.[0],
+      timestamp: point.timestamp,
+    }))
+    .filter(
+      (point) =>
+        typeof point.lat === 'number' && typeof point.lng === 'number' && !!point.timestamp
+    ) as Array<{ lat: number; lng: number; timestamp: string }>;
+  const trackingHistory = locationHistory.length > 0 ? locationHistory : persistedHistory;
 
   if (isLoading) {
     return <ShipmentDetailSkeleton />;
@@ -136,48 +171,69 @@ export default function ShipmentExecutionPage() {
   };
 
   const handleStatusUpdate = async (newStatus: ShipmentStatus) => {
-    try {
-      await updateStatus.mutateAsync({
-        id: shipmentId,
-        data: { status: newStatus },
-      });
-      toast.success('تم تحديث حالة الشحنة بنجاح');
-      refetch();
-    } catch {
-      toast.error('فشل تحديث حالة الشحنة');
-    }
+    await updateStatus.mutateAsync({ shipmentId, status: newStatus });
+    refetch();
   };
 
-  const handleStartDelivery = async () => {
-    try {
-      await updateStatus.mutateAsync({
-        id: shipmentId,
-        data: { status: 'LOADING' },
-      });
-      toast.success('تم بدء التسليم بنجاح');
-      setShowStartForm(false);
-      refetch();
-    } catch {
-      toast.error('فشل بدء التسليم');
-    }
+  const handleStartDelivery = async (data: { startOdometer: number; notes?: string }) => {
+    await startDelivery.mutateAsync({
+      shipmentId,
+      data: {
+        startOdometer: data.startOdometer,
+        notes: data.notes,
+      },
+    });
+    setShowStartForm(false);
+    refetch();
   };
 
-  const handleCompleteDelivery = async () => {
-    try {
-      await updateStatus.mutateAsync({
-        id: shipmentId,
-        data: { status: 'DELIVERED' },
-      });
-      toast.success('تم تأكيد التسليم بنجاح');
-      setShowCompleteForm(false);
-      refetch();
-    } catch {
-      toast.error('فشل تأكيد التسليم');
+  const handleCompleteDelivery = async (data: {
+    endOdometer: number;
+    recipientName: string;
+    recipientSignature?: string;
+    notes?: string;
+    photos?: string[];
+  }) => {
+    await completeDelivery.mutateAsync({
+      shipmentId,
+      data: {
+        endOdometer: data.endOdometer,
+        recipientName: data.recipientName,
+        recipientSignature: data.recipientSignature,
+        notes: data.notes,
+      },
+    });
+
+    if (data.photos && data.photos.length > 0) {
+      try {
+        await Promise.all(
+          data.photos.map((photo, index) => {
+            const blob = dataUrlToBlob(photo);
+            const file = new File([blob], `proof-${shipmentId}-${index + 1}.png`, {
+              type: blob.type || 'image/png',
+            });
+            const formData = new FormData();
+            formData.append('proof', file);
+            return driversApi.uploadProof(shipmentId, formData);
+          })
+        );
+      } catch {
+        toast.error('تعذر رفع إثباتات التسليم، يرجى المحاولة لاحقاً');
+      }
     }
+
+    setShowCompleteForm(false);
+    refetch();
   };
 
-  const handleReportIssue = async () => {
-    toast.success('تم إرسال التقرير بنجاح');
+  const handleReportIssue = async (data: { type: string; description: string }) => {
+    await reportIssue.mutateAsync({
+      shipmentId,
+      data: {
+        issueType: data.type,
+        description: data.description,
+      },
+    });
     setShowIssueForm(false);
   };
 
@@ -509,17 +565,17 @@ export default function ShipmentExecutionPage() {
                   }
                 : undefined)
             }
-            trackingHistory={locationHistory}
-            showHistory={locationHistory.length > 0}
+            trackingHistory={trackingHistory}
+            showHistory={trackingHistory.length > 0}
             isLive={isTracking}
             height="400px"
             title="خريطة المسار"
           />
 
           {/* Tracking History */}
-          {locationHistory.length > 0 && (
+          {trackingHistory.length > 0 && (
             <TrackingHistory
-              history={locationHistory}
+              history={trackingHistory}
               maxHeight="300px"
             />
           )}
@@ -573,7 +629,7 @@ export default function ShipmentExecutionPage() {
             shipment={shipment}
             onSubmit={handleStartDelivery}
             onCancel={() => setShowStartForm(false)}
-            isLoading={updateStatus.isPending}
+            isLoading={startDelivery.isPending}
           />
         </DialogContent>
       </Dialog>
@@ -591,7 +647,7 @@ export default function ShipmentExecutionPage() {
             shipment={shipment}
             onSubmit={handleCompleteDelivery}
             onCancel={() => setShowCompleteForm(false)}
-            isLoading={updateStatus.isPending}
+            isLoading={completeDelivery.isPending}
           />
         </DialogContent>
       </Dialog>
@@ -609,6 +665,7 @@ export default function ShipmentExecutionPage() {
             shipment={shipment}
             onSubmit={handleReportIssue}
             onCancel={() => setShowIssueForm(false)}
+            isLoading={reportIssue.isPending}
           />
         </DialogContent>
       </Dialog>

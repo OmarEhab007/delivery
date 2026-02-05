@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DriverForm } from '@/components/forms/driver-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
 
 export default function AddDriverPage() {
   const router = useRouter();
@@ -24,21 +25,13 @@ export default function AddDriverPage() {
       licenseIssuedBy?: string;
       isAvailable: boolean;
     }) => {
-      // Register as driver
-      const response = await apiClient.post('/auth/register', {
+      // Register driver (TruckOwner-protected endpoint)
+      const response = await apiClient.post(API_ENDPOINTS.auth.registerDriver, {
         name: data.name,
         email: data.email,
         phone: data.phone,
         password: data.password,
-        role: 'Driver',
         licenseNumber: data.licenseNumber,
-        driverLicense: {
-          issueDate: data.licenseIssueDate,
-          expiryDate: data.licenseExpiryDate,
-          issuedBy: data.licenseIssuedBy,
-          verified: false,
-        },
-        isAvailable: data.isAvailable,
       });
       return response;
     },

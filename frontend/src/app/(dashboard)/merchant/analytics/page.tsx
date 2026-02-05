@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Calendar, Download } from 'lucide-react';
+import { ArrowRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -15,7 +15,15 @@ import {
 import { KPIDashboard } from '@/components/charts/kpi-charts';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
-import type { MerchantKPIsResponse, GetMerchantKPIsParams } from '@/types/api';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
+import type {
+  MerchantKpiSummaryResponse,
+  MerchantLanePerformanceResponse,
+  GetMerchantKPIsParams,
+} from '@/types/api';
+import { ExportButton } from '@/components/shared/export-button';
+import { exportToCSV, exportToPDF, formatExportFilename, type PdfSection } from '@/lib/export';
+import { toast } from 'sonner';
 
 // Helper to get date range based on period
 function getDateRange(period: string): { startDate?: string; endDate?: string } {
@@ -45,8 +53,21 @@ function useMerchantKPIs(params?: GetMerchantKPIsParams) {
   return useQuery({
     queryKey: ['merchant-kpis', params],
     queryFn: async () => {
-      const response = await apiClient.get<MerchantKPIsResponse>(
-        '/analytics/merchant/kpis',
+      const response = await apiClient.get<MerchantKpiSummaryResponse>(
+        API_ENDPOINTS.analytics.merchantKPIs,
+        params as Record<string, string | number | boolean | undefined>
+      );
+      return response;
+    },
+  });
+}
+
+function useMerchantLanes(params?: GetMerchantKPIsParams) {
+  return useQuery({
+    queryKey: ['merchant-lanes', params],
+    queryFn: async () => {
+      const response = await apiClient.get<MerchantLanePerformanceResponse>(
+        API_ENDPOINTS.analytics.merchantLanes,
         params as Record<string, string | number | boolean | undefined>
       );
       return response;
@@ -66,9 +87,100 @@ export default function MerchantAnalyticsPage() {
   const [period, setPeriod] = useState('30d');
   const dateRange = getDateRange(period);
 
-  const { data: kpisData, isLoading } = useMerchantKPIs(dateRange);
+  const { data: kpisData, isLoading: kpisLoading } = useMerchantKPIs(dateRange);
+  const { data: lanesData, isLoading: lanesLoading } = useMerchantLanes(dateRange);
 
-  const kpis = kpisData?.data;
+  const summary = kpisData?.data?.summary;
+  const lanes = lanesData?.data?.lanes || [];
+  const isLoading = kpisLoading || lanesLoading;
+
+  const kpis = summary
+    ? {
+        totalShipments: summary.totalShipments,
+        completedShipments: summary.deliveredCount,
+        averageDeliveryTime: summary.averageTransitHours,
+        onTimeDeliveryRate: summary.onTimeRate * 100,
+        totalSpend: 0,
+        lanePerformance: lanes.map((lane) => ({
+          origin: lane.originCountry || '--',
+          destination: lane.destinationCountry || '--',
+          shipmentCount: lane.shipmentCount,
+          averageCost: 0,
+          averageTime: lane.avgTransitHours,
+        })),
+      }
+    : undefined;
+
+  const handleExport = async (format: 'csv' | 'pdf') => {
+    if (!kpis) {
+      toast.error('لا توجد بيانات للتصدير');
+      return;
+    }
+
+    const summaryRows = [
+      { metric: 'إجمالي الشحنات', value: kpis.totalShipments },
+      { metric: 'الشحنات المكتملة', value: kpis.completedShipments },
+      { metric: 'متوسط زمن التسليم (ساعة)', value: kpis.averageDeliveryTime },
+      { metric: 'نسبة التسليم في الوقت', value: `${kpis.onTimeDeliveryRate}%` },
+      { metric: 'إجمالي الإنفاق', value: kpis.totalSpend },
+    ];
+
+    const laneRows = (kpis.lanePerformance || []).map((lane) => ({
+      route: `${lane.origin} → ${lane.destination}`,
+      shipments: lane.shipmentCount,
+      averageCost: lane.averageCost,
+      averageTime: lane.averageTime,
+    }));
+
+    if (format === 'csv') {
+      const rows = [
+        ...summaryRows.map((row) => ({
+          القسم: 'ملخص',
+          المؤشر: row.metric,
+          القيمة: row.value,
+          الشحنات: '',
+          'التكلفة المتوسطة': '',
+          'الزمن المتوسط (ساعة)': '',
+        })),
+        ...laneRows.map((row) => ({
+          القسم: 'أداء المسارات',
+          المؤشر: row.route,
+          القيمة: '',
+          الشحنات: row.shipments,
+          'التكلفة المتوسطة': row.averageCost,
+          'الزمن المتوسط (ساعة)': row.averageTime,
+        })),
+      ];
+
+      exportToCSV(rows, formatExportFilename('merchant-analytics', 'csv'));
+      return;
+    }
+
+    const sections: PdfSection[] = [
+      {
+        title: 'ملخص الأداء',
+        columns: ['المؤشر', 'القيمة'],
+        rows: summaryRows.map((row) => ({ المؤشر: row.metric, القيمة: row.value })),
+      },
+      {
+        title: 'أداء المسارات',
+        columns: ['المسار', 'الشحنات', 'التكلفة المتوسطة', 'الزمن المتوسط (ساعة)'],
+        rows: laneRows.map((row) => ({
+          المسار: row.route,
+          الشحنات: row.shipments,
+          'التكلفة المتوسطة': row.averageCost,
+          'الزمن المتوسط (ساعة)': row.averageTime,
+        })),
+      },
+    ];
+
+    exportToPDF({
+      title: 'تقرير تحليلات التاجر',
+      subtitle: `الفترة المحددة: ${periodOptions.find((p) => p.value === period)?.label ?? ''}`,
+      filename: formatExportFilename('merchant-analytics', 'pdf'),
+      sections,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -103,10 +215,7 @@ export default function MerchantAnalyticsPage() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" disabled>
-            <Download className="ml-2 h-4 w-4" />
-            تصدير
-          </Button>
+          <ExportButton onExport={handleExport} disabled={!kpis} />
         </div>
       </div>
 

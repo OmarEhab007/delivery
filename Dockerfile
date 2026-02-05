@@ -21,7 +21,6 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy application sources with secure ownership
 COPY --chown=node:node package*.json ./
 COPY --chown=node:node src ./src
-COPY --chown=node:node docs ./docs
 COPY --chown=node:node env.sample ./env.sample
 
 # Ensure runtime directories exist with proper ownership

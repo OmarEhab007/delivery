@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, UserX, UserCheck, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Search, UserX, UserCheck, MoreHorizontal, Trash2, UserPlus } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -22,13 +22,25 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAdminUsers, useAdminUpdateUser, useAdminDeleteUser } from '@/hooks/use-admin';
+import {
+  useAdminUsers,
+  useAdminUpdateUser,
+  useAdminDeleteUser,
+  useAdminCreateUser,
+} from '@/hooks/use-admin';
 import type { UserRole } from '@/types/api';
 
 const roleOptions: Array<{ value: UserRole | 'all'; label: string }> = [
@@ -52,6 +64,18 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createRole, setCreateRole] = useState<UserRole>('Merchant');
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    companyName: '',
+    companyAddress: '',
+    licenseNumber: '',
+    ownerId: '',
+  });
   const limit = 10;
 
   const { data, isLoading } = useAdminUsers({
@@ -59,11 +83,18 @@ export default function AdminUsersPage() {
     page,
     limit,
   });
+  const { data: truckOwnersData } = useAdminUsers({
+    role: 'TruckOwner',
+    page: 1,
+    limit: 100,
+  });
   const updateUser = useAdminUpdateUser();
   const deleteUser = useAdminDeleteUser();
+  const createUser = useAdminCreateUser();
 
   const users = data?.data.users ?? [];
   const pagination = data?.data.pagination;
+  const truckOwners = truckOwnersData?.data.users ?? [];
 
   const filteredUsers = search
     ? users.filter((user) => {
@@ -85,6 +116,10 @@ export default function AdminUsersPage() {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>قائمة المستخدمين</CardTitle>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <Button className="sm:order-last" onClick={() => setCreateOpen(true)}>
+              <UserPlus className="ml-2 h-4 w-4" />
+              إضافة مستخدم
+            </Button>
             <div className="relative w-full sm:w-64">
               <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -233,6 +268,131 @@ export default function AdminUsersPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>إضافة مستخدم جديد</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <Input
+              placeholder="الاسم الكامل"
+              value={createForm.name}
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+            />
+            <Input
+              placeholder="البريد الإلكتروني"
+              value={createForm.email}
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
+            />
+            <Input
+              placeholder="رقم الهاتف"
+              value={createForm.phone}
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, phone: e.target.value }))}
+            />
+            <Input
+              type="password"
+              placeholder="كلمة المرور"
+              value={createForm.password}
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
+            />
+            <Select
+              value={createRole}
+              onValueChange={(value) => setCreateRole(value as UserRole)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="اختر الدور" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Merchant">تاجر</SelectItem>
+                <SelectItem value="TruckOwner">مالك شاحنة</SelectItem>
+                <SelectItem value="Driver">سائق</SelectItem>
+                <SelectItem value="Admin">مدير</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {createRole === 'TruckOwner' && (
+              <>
+                <Input
+                  placeholder="اسم الشركة"
+                  value={createForm.companyName}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, companyName: e.target.value }))}
+                />
+                <Input
+                  placeholder="عنوان الشركة"
+                  value={createForm.companyAddress}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, companyAddress: e.target.value }))}
+                />
+              </>
+            )}
+
+            {createRole === 'Driver' && (
+              <>
+                <Input
+                  placeholder="رقم رخصة القيادة"
+                  value={createForm.licenseNumber}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, licenseNumber: e.target.value }))}
+                />
+                <Select
+                  value={createForm.ownerId}
+                  onValueChange={(value) => setCreateForm((prev) => ({ ...prev, ownerId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر مالك الشاحنة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {truckOwners.map((owner) => (
+                      <SelectItem key={owner._id} value={owner._id}>
+                        {owner.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => {
+                createUser.mutate(
+                  {
+                    name: createForm.name,
+                    email: createForm.email,
+                    phone: createForm.phone,
+                    password: createForm.password,
+                    role: createRole,
+                    companyName: createRole === 'TruckOwner' ? createForm.companyName : undefined,
+                    companyAddress: createRole === 'TruckOwner' ? createForm.companyAddress : undefined,
+                    licenseNumber: createRole === 'Driver' ? createForm.licenseNumber : undefined,
+                    ownerId: createRole === 'Driver' ? createForm.ownerId : undefined,
+                  },
+                  {
+                    onSuccess: () => {
+                      setCreateOpen(false);
+                      setCreateForm({
+                        name: '',
+                        email: '',
+                        phone: '',
+                        password: '',
+                        companyName: '',
+                        companyAddress: '',
+                        licenseNumber: '',
+                        ownerId: '',
+                      });
+                    },
+                  }
+                );
+              }}
+              disabled={createUser.isPending}
+            >
+              إنشاء المستخدم
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

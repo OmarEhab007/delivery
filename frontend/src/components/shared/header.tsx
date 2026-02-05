@@ -24,6 +24,9 @@ interface HeaderProps {
 export function Header({ onMobileMenuToggle }: HeaderProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const rolePath = user?.role ? user.role.toLowerCase().replace('owner', '-owner') : null;
+  const settingsHref = rolePath ? `/${rolePath}/settings` : '/settings';
+  const profileHref = user?.role === 'Driver' ? '/driver/profile' : settingsHref;
 
   const handleLogout = async () => {
     try {
@@ -45,7 +48,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
     : 'U';
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
+    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border/60 bg-background/90 px-4 backdrop-blur md:px-6">
       {/* Mobile menu button */}
       <Button
         variant="ghost"
@@ -64,7 +67,12 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
         <ThemeToggle />
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative rounded-full"
+          onClick={() => router.push('/notifications')}
+        >
           <Bell className="h-5 w-5" />
           <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
             3
@@ -82,7 +90,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-56 rounded-2xl border-border/70 bg-background/95 p-2 shadow-xl">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">{user?.name || 'مستخدم'}</p>
@@ -90,11 +98,11 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/profile')}>
+            <DropdownMenuItem onClick={() => router.push(profileHref)}>
               <User className="ml-2 h-4 w-4" />
               الملف الشخصي
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/settings')}>
+            <DropdownMenuItem onClick={() => router.push(settingsHref)}>
               <Settings className="ml-2 h-4 w-4" />
               الإعدادات
             </DropdownMenuItem>

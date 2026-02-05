@@ -12,19 +12,48 @@ import { BidForm } from '@/components/forms/bid-form';
 import { TrackingMap } from '@/components/maps/tracking-map';
 import { TrackingHistory } from '@/components/shared/tracking-history';
 import { ConnectionStatusIndicator } from '@/components/shared/connection-status';
-import { useShipment } from '@/hooks/use-shipments';
+import { useShipment, useShipmentTracking } from '@/hooks/use-shipments';
 import { useTrackingSocket } from '@/hooks/use-tracking-socket';
+import { useTruckOwnerAvailableShipments, useTruckOwnerShipments } from '@/hooks/use-truck-owner';
 
 export default function TruckOwnerShipmentDetailPage() {
   const params = useParams();
   const router = useRouter();
   const shipmentId = params.id as string;
 
-  const { data: shipmentData, isLoading } = useShipment(shipmentId);
-  const shipment = shipmentData?.data;
+  const { data: shipmentData, isLoading: shipmentLoading } = useShipment(shipmentId);
+  const { data: trackingData } = useShipmentTracking(shipmentId);
+  const { data: availableData, isLoading: availableLoading } = useTruckOwnerAvailableShipments({
+    page: 1,
+    limit: 50,
+  });
+  const { data: assignedData, isLoading: assignedLoading } = useTruckOwnerShipments();
+
+  const availableShipments = availableData?.data.shipments || [];
+  const assignedShipments = assignedData?.data.shipments || [];
+
+  const shipment =
+    shipmentData?.data ||
+    availableShipments.find((item) => item._id === shipmentId) ||
+    assignedShipments.find((item) => item._id === shipmentId);
+
+  const persistedHistory = (trackingData?.data || [])
+    .map((point) => ({
+      lat: point.location?.coordinates?.[1],
+      lng: point.location?.coordinates?.[0],
+      timestamp: point.timestamp,
+    }))
+    .filter(
+      (point) =>
+        typeof point.lat === 'number' && typeof point.lng === 'number' && !!point.timestamp
+    ) as Array<{ lat: number; lng: number; timestamp: string }>;
+  const trackingHistory = locationHistory.length > 0 ? locationHistory : persistedHistory;
 
   // Real-time tracking for assigned shipments
-  const isAssigned = !!(shipment?.assignedTruckId && ['ASSIGNED', 'LOADING', 'IN_TRANSIT', 'AT_BORDER', 'UNLOADING'].includes(shipment?.status || ''));
+  const isAssigned = !!(
+    shipment?.assignedTruckId &&
+    ['ASSIGNED', 'LOADING', 'IN_TRANSIT', 'AT_BORDER', 'UNLOADING'].includes(shipment?.status || '')
+  );
 
   const {
     connectionStatus,
@@ -39,6 +68,8 @@ export default function TruckOwnerShipmentDetailPage() {
   const handleBidSuccess = () => {
     router.push('/truck-owner/applications');
   };
+
+  const isLoading = shipmentLoading || (!shipmentData?.data && (availableLoading || assignedLoading));
 
   if (isLoading) {
     return (
@@ -125,15 +156,15 @@ export default function TruckOwnerShipmentDetailPage() {
                     }
                   : undefined)
               }
-              trackingHistory={locationHistory}
-              showHistory={locationHistory.length > 0}
+              trackingHistory={trackingHistory}
+              showHistory={trackingHistory.length > 0}
               isLive={connectionStatus === 'connected'}
               height="400px"
             />
 
-            {locationHistory.length > 0 && (
+            {trackingHistory.length > 0 && (
               <TrackingHistory
-                history={locationHistory}
+                history={trackingHistory}
                 maxHeight="250px"
               />
             )}

@@ -23,6 +23,7 @@ import type { Truck as TruckType } from '@/types/entities';
 const checkinSchema = z.object({
   odometer: z.number().min(0, 'قراءة العداد مطلوبة'),
   fuelLevel: z.number().min(0).max(100),
+  truckCondition: z.string().min(2, 'حالة الشاحنة مطلوبة'),
   notes: z.string().optional(),
 });
 
@@ -49,6 +50,7 @@ export function CheckinForm({
     defaultValues: {
       odometer: truck?.odometer || 0,
       fuelLevel: truck?.currentFuelLevel || 50,
+      truckCondition: '',
       notes: '',
     },
   });
@@ -163,6 +165,24 @@ export function CheckinForm({
                       placeholder="أي ملاحظات عن حالة المركبة..."
                       className="resize-none"
                       rows={3}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Truck Condition */}
+            <FormField
+              control={form.control}
+              name="truckCondition"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>حالة الشاحنة</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="مثال: حالة جيدة، تحتاج فحص..."
                       {...field}
                     />
                   </FormControl>

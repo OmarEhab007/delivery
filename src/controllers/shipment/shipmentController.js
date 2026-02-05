@@ -51,6 +51,10 @@ const ALLOWED_CREATE_FIELDS = [
   'scheduledDate',
   'pricingType',
   'specialRequirements',
+  'incoterm',
+  'fixedPriceDetails',
+  'estimatedPickupDate',
+  'estimatedDeliveryDate',
 ];
 
 /**
@@ -64,6 +68,10 @@ const ALLOWED_UPDATE_FIELDS = [
   'notes',
   'scheduledDate',
   'specialRequirements',
+  'incoterm',
+  'fixedPriceDetails',
+  'estimatedPickupDate',
+  'estimatedDeliveryDate',
 ];
 
 /**

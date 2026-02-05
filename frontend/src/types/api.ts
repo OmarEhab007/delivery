@@ -102,18 +102,45 @@ export interface UpdateDriverStatusRequest {
 }
 
 export interface UpdateDriverLocationRequest {
-  lat: number;
-  lng: number;
+  latitude: number;
+  longitude: number;
   address?: string;
+  shipmentId?: string;
 }
 
 export interface DriverCheckInRequest {
-  truckId: string;
-  location: { lat: number; lng: number };
-  truckCondition?: string;
-  fuelLevel?: number;
-  odometer?: number;
+  latitude: number;
+  longitude: number;
+  truckCondition: string;
+  fuelLevel: number;
   notes?: string;
+}
+
+export interface DriverCheckOutRequest {
+  latitude: number;
+  longitude: number;
+  totalMiles: number;
+  fuelLevel: number;
+  notes?: string;
+}
+
+export interface DriverStartDeliveryRequest {
+  startOdometer: number;
+  notes?: string;
+}
+
+export interface DriverCompleteDeliveryRequest {
+  endOdometer: number;
+  recipientName: string;
+  recipientSignature?: string;
+  notes?: string;
+}
+
+export interface DriverIssueRequest {
+  issueType: IssueType;
+  description: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 // =============================================================================
@@ -395,20 +422,29 @@ export interface GetMerchantKPIsParams {
   endDate?: string;
 }
 
-export interface MerchantKPIsResponse {
+export interface MerchantKpiSummaryResponse {
   success: true;
   data: {
-    totalShipments: number;
-    completedShipments: number;
-    averageDeliveryTime: number; // hours
-    onTimeDeliveryRate: number; // percentage
-    totalSpend: number;
-    lanePerformance: Array<{
-      origin: string;
-      destination: string;
+    summary: {
+      totalShipments: number;
+      deliveredCount: number;
+      onTimeRate: number; // 0-1
+      averageTransitHours: number;
+      averageDelayHours: number;
+    };
+  };
+}
+
+export interface MerchantLanePerformanceResponse {
+  success: true;
+  data: {
+    lanes: Array<{
+      originCountry?: string;
+      destinationCountry?: string;
       shipmentCount: number;
-      averageCost: number;
-      averageTime: number;
+      deliveredCount: number;
+      onTimeRate: number; // 0-1
+      avgTransitHours: number;
     }>;
   };
 }

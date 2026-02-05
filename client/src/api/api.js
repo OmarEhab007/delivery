@@ -32,8 +32,12 @@ export const getCsrfToken = async () => {
   try {
     // Make a GET request to a safe endpoint that will return a CSRF token
     const response = await api.get('/api/auth/csrf-token');
-    if (response.headers['x-csrf-token']) {
-      csrfToken = response.headers['x-csrf-token'];
+    const headerToken = response.headers['x-csrf-token'];
+    const bodyToken = response?.data?.data?.csrfToken || response?.data?.csrfToken;
+    if (headerToken) {
+      csrfToken = headerToken;
+    } else if (bodyToken) {
+      csrfToken = bodyToken;
     }
     return csrfToken;
   } catch (error) {

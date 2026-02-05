@@ -55,10 +55,10 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="rounded-3xl border-border/60 bg-surface/95 shadow-[0_24px_55px_rgba(59,36,24,0.18)] backdrop-blur">
+    <Card className="rounded-[32px] border-border/70 bg-surface/95 shadow-[0_30px_70px_rgba(30,38,51,0.18)] backdrop-blur">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-semibold text-foreground">تسجيل الدخول</CardTitle>
-        <CardDescription className="text-sm text-secondary/90">
+        <CardDescription className="text-sm text-muted-foreground">
           أدخل بياناتك للوصول إلى حسابك {roleParam ? 'والبدء بدورك المحدد' : ''}
         </CardDescription>
       </CardHeader>

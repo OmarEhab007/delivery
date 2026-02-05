@@ -1,14 +1,19 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { driversApi } from '@/lib/api';
+import { driversApi, truckOwnerApi } from '@/lib/api';
 import type {
   GetUsersParams,
   UpdateDriverStatusRequest,
   UpdateDriverLocationRequest,
   DriverCheckInRequest,
+  DriverCheckOutRequest,
+  DriverIssueRequest,
+  DriverStartDeliveryRequest,
+  DriverCompleteDeliveryRequest,
 } from '@/types/api';
 import { toast } from 'sonner';
+import type { Shipment, User } from '@/types/entities';
 
 export const driverKeys = {
   all: ['drivers'] as const,
@@ -24,14 +29,31 @@ export const driverKeys = {
 export function useDrivers(params?: GetUsersParams) {
   return useQuery({
     queryKey: driverKeys.list(params),
-    queryFn: () => driversApi.list(params),
+    queryFn: async () => {
+      const response = await truckOwnerApi.getDrivers(params as Record<string, string | number | boolean | undefined>);
+      const drivers = response.data?.drivers || [];
+      return {
+        success: true,
+        data: drivers,
+        pagination: {
+          page: 1,
+          limit: drivers.length,
+          total: response.data?.count || drivers.length,
+          totalPages: 1,
+        },
+      };
+    },
   });
 }
 
 export function useDriver(id: string) {
   return useQuery({
     queryKey: driverKeys.detail(id),
-    queryFn: () => driversApi.get(id),
+    queryFn: async () => {
+      const response = await truckOwnerApi.getDrivers();
+      const driver = response.data?.drivers.find((item) => item._id === id);
+      return { success: true, data: driver } as { success: true; data: User | undefined };
+    },
     enabled: !!id,
   });
 }
@@ -39,7 +61,20 @@ export function useDriver(id: string) {
 export function useDriverAssignedShipments(id: string) {
   return useQuery({
     queryKey: driverKeys.assignedShipments(id),
-    queryFn: () => driversApi.getAssignedShipments(id),
+    queryFn: async () => {
+      const response = await truckOwnerApi.getShipments();
+      const shipments = response.data?.shipments || [];
+      const assigned = shipments.filter((shipment) => {
+        const assignedDriver = (shipment as Shipment).assignedDriver;
+        const assignedDriverId = (shipment as Shipment).assignedDriverId;
+        return (
+          assignedDriver?._id === id ||
+          assignedDriverId === id ||
+          (typeof assignedDriverId === 'object' && (assignedDriverId as { _id?: string })._id === id)
+        );
+      });
+      return { success: true, data: assigned } as { success: true; data: Shipment[] };
+    },
     enabled: !!id,
   });
 }
@@ -48,11 +83,9 @@ export function useUpdateDriverStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateDriverStatusRequest }) =>
-      driversApi.updateStatus(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: driverKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: driverKeys.lists() });
+    mutationFn: (data: UpdateDriverStatusRequest) => driversApi.updateStatus(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: driverKeys.dashboard() });
       toast.success('تم تحديث حالة السائق');
     },
     onError: (error: Error) => {
@@ -65,10 +98,9 @@ export function useUpdateDriverLocation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateDriverLocationRequest }) =>
-      driversApi.updateLocation(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: driverKeys.detail(id) });
+    mutationFn: (data: UpdateDriverLocationRequest) => driversApi.updateLocation(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: driverKeys.dashboard() });
     },
     onError: (error: Error) => {
       toast.error('فشل في تحديث الموقع', { description: error.message });
@@ -80,11 +112,9 @@ export function useDriverCheckIn() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: DriverCheckInRequest }) =>
-      driversApi.checkIn(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: driverKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: driverKeys.lists() });
+    mutationFn: (data: DriverCheckInRequest) => driversApi.checkIn(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: driverKeys.dashboard() });
       toast.success('تم تسجيل الحضور بنجاح');
     },
     onError: (error: Error) => {
@@ -97,13 +127,80 @@ export function useDriverCheckOut() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => driversApi.checkOut(id),
+    mutationFn: (data: DriverCheckOutRequest) => driversApi.checkOut(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: driverKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: driverKeys.dashboard() });
       toast.success('تم تسجيل الانصراف بنجاح');
     },
     onError: (error: Error) => {
       toast.error('فشل في تسجيل الانصراف', { description: error.message });
+    },
+  });
+}
+
+export function useDriverStartDelivery() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ shipmentId, data }: { shipmentId: string; data: DriverStartDeliveryRequest }) =>
+      driversApi.startDelivery(shipmentId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: driverKeys.dashboard() });
+      queryClient.invalidateQueries({ queryKey: driverKeys.myShipments() });
+      toast.success('تم بدء التوصيل بنجاح');
+    },
+    onError: (error: Error) => {
+      toast.error('فشل بدء التوصيل', { description: error.message });
+    },
+  });
+}
+
+export function useDriverCompleteDelivery() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ shipmentId, data }: { shipmentId: string; data: DriverCompleteDeliveryRequest }) =>
+      driversApi.completeDelivery(shipmentId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: driverKeys.dashboard() });
+      queryClient.invalidateQueries({ queryKey: driverKeys.myShipments() });
+      toast.success('تم إتمام التوصيل بنجاح');
+    },
+    onError: (error: Error) => {
+      toast.error('فشل إتمام التوصيل', { description: error.message });
+    },
+  });
+}
+
+export function useDriverReportIssue() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ shipmentId, data }: { shipmentId: string; data: DriverIssueRequest }) =>
+      driversApi.reportIssue(shipmentId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: driverKeys.dashboard() });
+      toast.success('تم إرسال التقرير بنجاح');
+    },
+    onError: (error: Error) => {
+      toast.error('فشل إرسال التقرير', { description: error.message });
+    },
+  });
+}
+
+export function useDriverUpdateShipmentStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ shipmentId, status, notes }: { shipmentId: string; status: Shipment['status']; notes?: string }) =>
+      driversApi.updateShipmentStatus(shipmentId, { status, notes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: driverKeys.dashboard() });
+      queryClient.invalidateQueries({ queryKey: driverKeys.myShipments() });
+      toast.success('تم تحديث حالة الشحنة');
+    },
+    onError: (error: Error) => {
+      toast.error('فشل تحديث حالة الشحنة', { description: error.message });
     },
   });
 }
@@ -113,30 +210,24 @@ export function useDriverDashboard() {
   return useQuery({
     queryKey: driverKeys.dashboard(),
     queryFn: async () => {
-      // This would call a driver dashboard endpoint
-      // For now returning mock data structure
+      const response = await driversApi.getDashboard();
+      const data = response.data;
+      const activeShipments = data?.activeShipments || [];
+      const nextDelivery = data?.nextDelivery || null;
+      const upcomingDeliveries = activeShipments.filter((shipment) => shipment._id !== nextDelivery?._id);
+
       return {
         stats: {
-          completedDeliveries: 0,
-          activeDeliveries: 0,
+          completedDeliveries: data?.metrics?.totalDeliveriesCompleted || 0,
+          activeDeliveries: data?.metrics?.activeShipmentCount || activeShipments.length,
           totalDistance: 0,
-          rating: 0,
+          rating: null as number | null,
         },
-        currentShipment: null,
-        assignedTruck: null,
-        upcomingDeliveries: [],
-        alerts: [],
-      } as {
-        stats: {
-          completedDeliveries: number;
-          activeDeliveries: number;
-          totalDistance: number;
-          rating: number;
-        };
-        currentShipment: import('@/types/entities').Shipment | null;
-        assignedTruck: import('@/types/entities').Truck | null;
-        upcomingDeliveries: import('@/types/entities').Shipment[];
-        alerts: string[];
+        driver: data?.driver || null,
+        currentShipment: nextDelivery,
+        assignedTruck: data?.truck || null,
+        upcomingDeliveries,
+        alerts: (data?.openIssues || []).map((issue) => `مشكلة مفتوحة للشحنة #${issue._id?.slice?.(-8) || ''}`),
       };
     },
   });
@@ -155,15 +246,27 @@ export function useDriverShipments(params?: DriverShipmentsParams) {
   return useQuery({
     queryKey: driverKeys.myShipments(params),
     queryFn: async () => {
-      // This would call a driver shipments endpoint
-      // For now returning mock data structure
+      const page = params?.page || 1;
+      const limit = params?.limit || 10;
+      const status = params?.shipmentStatus;
+
+      const isHistory = status === 'DELIVERED' || status === 'COMPLETED';
+      const response = isHistory
+        ? await driversApi.getShipmentHistory()
+        : await driversApi.getAssignedShipments();
+
+      const shipments = response.data?.shipments || [];
+      const filtered = status ? shipments.filter((shipment) => shipment.status === status) : shipments;
+      const start = (page - 1) * limit;
+      const paged = filtered.slice(start, start + limit);
+
       return {
-        data: [] as import('@/types/entities').Shipment[],
+        data: paged,
         pagination: {
-          page: 1,
-          limit: 10,
-          total: 0,
-          pages: 0,
+          page,
+          limit,
+          total: filtered.length,
+          pages: Math.max(1, Math.ceil(filtered.length / limit)),
         },
       };
     },
