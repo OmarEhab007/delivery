@@ -103,7 +103,7 @@ export function useCommandPalette(): UseCommandPaletteReturn {
             id: truck._id,
             title: `${truck.plateNumber} - ${truck.model}`,
             subtitle: `الحمولة: ${truck.capacity} طن`,
-            link: `/truck-owner/fleet/trucks/${truck._id}`,
+            link: `/${routePrefix}/fleet/trucks/${truck._id}`,
           });
         });
       }

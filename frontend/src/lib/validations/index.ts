@@ -292,7 +292,7 @@ export const automationRuleFormSchema = z.object({
   name: z.string().min(2, 'Rule name is required'),
   triggerType: z.enum(['delay', 'missing-update'], { message: 'Select a trigger type' }),
   threshold: z.number().positive('Threshold must be a positive number'),
-  thresholdUnit: z.literal('hours'),
+  thresholdUnit: z.enum(['hours', 'minutes', 'days']),
   action: z.enum(['notify', 'escalate'], { message: 'Select an action' }),
 });
 

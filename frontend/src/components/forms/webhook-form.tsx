@@ -96,7 +96,6 @@ export function WebhookForm({ onSubmit, onCancel, isLoading = false }: WebhookFo
                         name="eventTypes"
                         render={({ field }) => (
                           <FormItem
-                            key={event.id}
                             className="flex flex-row items-start space-x-3 space-x-reverse space-y-0"
                           >
                             <FormControl>

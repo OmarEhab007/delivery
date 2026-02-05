@@ -128,6 +128,9 @@ export default function AdminAnalyticsPage() {
           }
           await exportGeoData(format, geoData.data);
           break;
+        default:
+          toast.error('نوع التصدير غير معروف');
+          return;
       }
     } catch {
       toast.error('فشل في تصدير البيانات');
@@ -270,6 +273,7 @@ async function exportStatusData(
   format: 'csv' | 'pdf',
   data: Array<{ period: string; statuses: Record<string, number> }>
 ) {
+  if (data.length === 0) return;
   if (format === 'csv') {
     const rows = data.flatMap((item) =>
       Object.entries(item.statuses).map(([status, count]) => ({
@@ -280,7 +284,6 @@ async function exportStatusData(
     );
     exportToCSV(rows, formatExportFilename('status-trends', 'csv'));
   } else {
-    if (data.length === 0) return;
     const rows = data.map((item) => ({
       الفترة: item.period,
       ...item.statuses,

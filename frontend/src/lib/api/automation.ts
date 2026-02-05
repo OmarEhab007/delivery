@@ -11,7 +11,7 @@ export interface CreateAutomationRuleRequest {
   name: string;
   triggerType: 'delay' | 'missing-update';
   threshold: number;
-  thresholdUnit: 'hours';
+  thresholdUnit: 'hours' | 'minutes' | 'days';
   action: 'notify' | 'escalate';
 }
 
@@ -19,7 +19,7 @@ export interface UpdateAutomationRuleRequest {
   name?: string;
   triggerType?: 'delay' | 'missing-update';
   threshold?: number;
-  thresholdUnit?: 'hours';
+  thresholdUnit?: 'hours' | 'minutes' | 'days';
   action?: 'notify' | 'escalate';
   active?: boolean;
 }

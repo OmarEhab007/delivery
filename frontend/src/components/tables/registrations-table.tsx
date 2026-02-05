@@ -49,13 +49,15 @@ interface RegistrationsTableProps {
 
 function formatDate(dateString?: string) {
   if (!dateString) return '--';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '--';
   return new Intl.DateTimeFormat('ar-SA', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(dateString));
+  }).format(date);
 }
 
 function getRoleLabel(role: string) {
