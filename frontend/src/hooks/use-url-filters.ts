@@ -6,7 +6,7 @@
 'use client';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { useCallback, useMemo, useRef, useEffect } from 'react';
+import { useCallback, useMemo, useRef, useEffect, type MutableRefObject } from 'react';
 
 type FilterValue = string | undefined;
 type FilterState<T extends Record<string, FilterValue>> = T;
@@ -66,6 +66,10 @@ export function useUrlFilters<T extends Record<string, FilterValue>>(
     });
   }, [filters, defaults]);
 
+  // Use a ref to track the latest filters to avoid stale closures in debounced callback
+  const filtersRef = useRef(filters) as MutableRefObject<FilterState<T>>;
+  filtersRef.current = filters;
+
   // Debounced URL update function
   const updateUrl = useCallback(
     (newFilters: Partial<T>) => {
@@ -76,8 +80,8 @@ export function useUrlFilters<T extends Record<string, FilterValue>>(
       debounceTimerRef.current = setTimeout(() => {
         const params = new URLSearchParams();
 
-        // Merge current filters with new ones
-        const mergedFilters = { ...filters, ...newFilters };
+        // Merge current filters with new ones (use ref to avoid stale closure)
+        const mergedFilters = { ...filtersRef.current, ...newFilters };
 
         // Add non-empty filters to params
         Object.entries(mergedFilters).forEach(([key, value]) => {
@@ -93,7 +97,7 @@ export function useUrlFilters<T extends Record<string, FilterValue>>(
         router.push(newUrl, { scroll: false });
       }, debounceMs);
     },
-    [filters, pathname, router, debounceMs]
+    [pathname, router, debounceMs]
   );
 
   // Set a single filter

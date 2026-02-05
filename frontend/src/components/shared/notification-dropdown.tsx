@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { CheckCheck, Eye, Trash2 } from 'lucide-react';
+import { Bell, CheckCheck, Eye, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import {
@@ -162,8 +162,5 @@ export function NotificationDropdown({ trigger }: NotificationDropdownProps) {
     </Popover>
   );
 }
-
-// Fix the import for Bell icon
-import { Bell } from 'lucide-react';
 
 export default NotificationDropdown;

@@ -31,6 +31,9 @@ export default function MerchantShipmentsPage() {
     limit: 10,
     status: filters.status && filters.status !== 'all' ? (filters.status as ShipmentStatus) : undefined,
     search: filters.search || undefined,
+    fromDate: filters.dateFrom || undefined,
+    toDate: filters.dateTo || undefined,
+    origin: filters.origin || undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });

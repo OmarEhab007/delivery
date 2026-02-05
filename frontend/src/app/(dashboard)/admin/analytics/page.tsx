@@ -280,6 +280,7 @@ async function exportStatusData(
     );
     exportToCSV(rows, formatExportFilename('status-trends', 'csv'));
   } else {
+    if (data.length === 0) return;
     const rows = data.map((item) => ({
       الفترة: item.period,
       ...item.statuses,

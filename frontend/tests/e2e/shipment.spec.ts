@@ -38,8 +38,6 @@ test.describe('Shipment Creation', () => {
     // Should see the form with steps
     await expect(page.locator('form, [role="form"]').first()).toBeVisible();
 
-    // Should have step indicators or tabs
-    const stepIndicators = page.locator('[data-step], [role="tablist"], .step-indicator');
     // Form should have origin/destination fields or step navigation
     const formContent = page.locator('input, select, [role="combobox"]');
     await expect(formContent.first()).toBeVisible();
@@ -50,15 +48,16 @@ test.describe('Shipment Creation', () => {
 
     // Try to submit/proceed without filling required fields
     const nextBtn = page.locator('button:has-text("التالي"), button:has-text("إنشاء"), button[type="submit"]');
-    if (await nextBtn.first().isVisible()) {
-      await nextBtn.first().click();
+    const btnVisible = await nextBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
+    test.skip(!btnVisible, 'No submit button found on form');
 
-      // Should show validation errors
-      await page.waitForTimeout(500);
-      const errors = page.locator('.text-destructive, [role="alert"], [data-state="invalid"]');
-      const errorCount = await errors.count();
-      expect(errorCount).toBeGreaterThan(0);
-    }
+    await nextBtn.first().click();
+
+    // Wait for validation errors to appear
+    const errors = page.locator('.text-destructive, [role="alert"], [data-state="invalid"]');
+    await expect(errors.first()).toBeVisible({ timeout: 3000 });
+    const errorCount = await errors.count();
+    expect(errorCount).toBeGreaterThan(0);
   });
 
   test('should show shipments list with table', async ({ page }) => {

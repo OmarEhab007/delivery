@@ -31,8 +31,7 @@ export function BrokerForm({ broker, onSubmit, onCancel, isLoading = false }: Br
   const [countryInput, setCountryInput] = useState('');
 
   const form = useForm<BrokerFormData>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(brokerFormSchema) as any,
+    resolver: zodResolver(brokerFormSchema),
     defaultValues: {
       name: broker?.name || '',
       licenseNumber: broker?.licenseNumber || '',

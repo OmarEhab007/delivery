@@ -39,11 +39,13 @@ interface BrokersTableProps {
 
 function formatDate(dateString?: string) {
   if (!dateString) return '--';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '--';
   return new Intl.DateTimeFormat('ar-SA', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  }).format(new Date(dateString));
+  }).format(date);
 }
 
 function TableSkeleton() {

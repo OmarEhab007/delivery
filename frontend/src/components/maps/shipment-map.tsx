@@ -30,10 +30,10 @@ export function ShipmentMap({
 }: ShipmentMapProps) {
   const [showHistory, setShowHistory] = useState(false);
 
-  // Use tracking socket to get live location updates
+  // Use tracking socket to get live location updates (only connect when live)
   const { currentLocation, locationHistory, isConnected } = useTrackingSocket({
     shipmentId,
-    autoConnect: true,
+    autoConnect: isLive,
   });
 
   // Convert origin to TrackingPoint if available

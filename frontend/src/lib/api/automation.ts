@@ -40,9 +40,13 @@ export const automationApi = {
       API_ENDPOINTS.automation.rules,
       data
     );
+    const rule = response.data?.rule;
+    if (!rule) {
+      throw new Error('Invalid response: automation rule data missing');
+    }
     return {
       success: true,
-      data: response.data?.rule || (response.data as unknown as AutomationRule),
+      data: rule,
     };
   },
 
@@ -54,9 +58,13 @@ export const automationApi = {
       API_ENDPOINTS.automation.rule(id),
       data
     );
+    const rule = response.data?.rule;
+    if (!rule) {
+      throw new Error('Invalid response: automation rule data missing');
+    }
     return {
       success: true,
-      data: response.data?.rule || (response.data as unknown as AutomationRule),
+      data: rule,
     };
   },
 };

@@ -7,7 +7,15 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { shipmentsApi, trucksApi, adminApi } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth-store';
 import type { Shipment, Truck, User } from '@/types/entities';
+
+const ROLE_ROUTE_PREFIX: Record<string, string> = {
+  Admin: 'admin',
+  Merchant: 'merchant',
+  TruckOwner: 'truck-owner',
+  Driver: 'driver',
+};
 
 export interface SearchResult {
   type: 'shipment' | 'truck' | 'driver' | 'user';
@@ -49,6 +57,9 @@ export function useCommandPalette(): UseCommandPaletteReturn {
   }, []);
   const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
 
+  const user = useAuthStore((s) => s.user);
+  const routePrefix = ROLE_ROUTE_PREFIX[user?.role || 'Merchant'] || 'merchant';
+
   // Perform parallel searches across all entity types
   const performSearch = useCallback(async (searchQuery: string) => {
     if (searchQuery.length < MIN_QUERY_LENGTH) {
@@ -78,7 +89,7 @@ export function useCommandPalette(): UseCommandPaletteReturn {
             id: shipment._id,
             title: `شحنة #${shipment._id.slice(-6)}`,
             subtitle: `${shipment.origin.address} → ${shipment.destination.address}`,
-            link: `/merchant/shipments/${shipment._id}`,
+            link: `/${routePrefix}/shipments/${shipment._id}`,
           });
         });
       }
@@ -119,7 +130,7 @@ export function useCommandPalette(): UseCommandPaletteReturn {
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [routePrefix]);
 
   // Debounced search effect
   useEffect(() => {

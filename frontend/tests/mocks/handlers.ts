@@ -2,7 +2,7 @@
  * MSW v2 Mock Handlers for API endpoints
  */
 
-const { http, HttpResponse } = require('msw');
+import { http, HttpResponse } from 'msw';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +16,7 @@ interface DateRangeFilterProps {
 
 export function DateRangeFilter({ onRangeChange }: DateRangeFilterProps) {
   const [selectedRange, setSelectedRange] = useState<string>('30days');
+  const initialEmitted = useRef(false);
 
   const ranges = [
     { label: 'آخر 7 أيام', value: '7days', days: 7 },
@@ -37,11 +38,26 @@ export function DateRangeFilter({ onRangeChange }: DateRangeFilterProps) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    onRangeChange(
-      startDate.toISOString().split('T')[0],
-      endDate.toISOString().split('T')[0]
-    );
+    const formatLocalDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    onRangeChange(formatLocalDate(startDate), formatLocalDate(endDate));
   };
+
+  // Emit initial range on mount (default: 30 days)
+  useEffect(() => {
+    if (initialEmitted.current) return;
+    initialEmitted.current = true;
+    const defaultRange = ranges.find(r => r.value === '30days');
+    if (defaultRange?.days) {
+      handleRangeSelect('30days', defaultRange.days);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const selectedLabel = ranges.find(r => r.value === selectedRange)?.label || 'اختر الفترة';
 

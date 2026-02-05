@@ -20,6 +20,7 @@ export function NotificationBell({ onClick, className }: NotificationBellProps) 
       size="icon"
       className={cn('relative rounded-full', className)}
       onClick={onClick}
+      aria-label={count > 0 ? `الإشعارات (${count} غير مقروءة)` : 'الإشعارات'}
     >
       <Bell className="h-5 w-5" />
       {count > 0 && (

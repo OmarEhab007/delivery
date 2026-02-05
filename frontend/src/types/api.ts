@@ -86,6 +86,7 @@ export interface GetUsersParams {
   limit?: number;
   role?: UserRole;
   status?: 'active' | 'inactive';
+  active?: boolean;
   search?: string;
 }
 
@@ -195,6 +196,9 @@ export interface GetShipmentsParams {
   pricingType?: PricingType;
   merchantId?: string;
   search?: string;
+  fromDate?: string;
+  toDate?: string;
+  origin?: string;
   sortBy?: 'createdAt' | 'estimatedPickupDate' | 'status';
   sortOrder?: 'asc' | 'desc';
 }

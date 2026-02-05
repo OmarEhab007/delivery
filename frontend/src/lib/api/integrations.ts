@@ -58,9 +58,13 @@ export const integrationsApi = {
       API_ENDPOINTS.integration.webhooks,
       data
     );
+    const webhook = response.data?.webhook;
+    if (!webhook) {
+      throw new Error('Invalid response: webhook data missing');
+    }
     return {
       success: true,
-      data: response.data?.webhook || (response.data as unknown as WebhookSubscription),
+      data: webhook,
     };
   },
 };

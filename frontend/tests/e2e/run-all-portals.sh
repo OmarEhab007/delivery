@@ -5,8 +5,6 @@
 # Usage: ./tests/e2e/run-all-portals.sh
 # Requires: docker (backend runs in delivery-app-1 container)
 
-set -e
-
 PORTALS=("admin" "merchant" "truckowner" "driver")
 WORKERS="${WORKERS:-2}"
 TOTAL_PASS=0
@@ -23,8 +21,8 @@ for portal in "${PORTALS[@]}"; do
   sleep 5
 
   echo "--- Running $portal portal tests ---"
-  OUTPUT=$(npx playwright test --project="$portal" --workers="$WORKERS" 2>&1)
-  EXIT_CODE=$?
+  EXIT_CODE=0
+  OUTPUT=$(npx playwright test --project="$portal" --workers="$WORKERS" 2>&1) || EXIT_CODE=$?
 
   # Extract pass/fail counts from output
   PASSED=$(echo "$OUTPUT" | grep -oE '[0-9]+ passed' | head -1 | grep -oE '[0-9]+' || echo "0")

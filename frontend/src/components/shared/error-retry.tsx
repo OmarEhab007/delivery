@@ -19,8 +19,9 @@ export function ErrorRetry({
       <h3 className="text-lg font-semibold">Error</h3>
       <p className="text-muted-foreground mt-1 max-w-sm text-sm">{message}</p>
       <button
+        type="button"
         onClick={onRetry}
-        className="bg-primary text-primary-foreground hover:bg-primary/90 mt-4 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium"
+        className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary mt-4 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium"
       >
         <RefreshCw className="h-4 w-4" />
         Try Again

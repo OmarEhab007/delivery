@@ -81,6 +81,8 @@ export default function AdminUsersPage() {
 
   const { data, isLoading } = useAdminUsers({
     role: filters.role && filters.role !== 'all' ? (filters.role as UserRole) : undefined,
+    search: filters.search || undefined,
+    active: filters.status === 'active' ? true : filters.status === 'inactive' ? false : undefined,
     page,
     limit,
   });
@@ -97,24 +99,8 @@ export default function AdminUsersPage() {
   const pagination = data?.data.pagination;
   const truckOwners = truckOwnersData?.data.users ?? [];
 
-  // Apply filters
-  let filteredUsers = users;
-
-  // Filter by search
-  if (filters.search) {
-    filteredUsers = filteredUsers.filter((user) => {
-      const query = filters.search!.toLowerCase();
-      return [user.name, user.email, user.phone].some((field) =>
-        field?.toLowerCase().includes(query)
-      );
-    });
-  }
-
-  // Filter by status
-  if (filters.status && filters.status !== 'all') {
-    const isActive = filters.status === 'active';
-    filteredUsers = filteredUsers.filter((user) => user.active === isActive);
-  }
+  // Server-side filtering is applied via useAdminUsers params above
+  const filteredUsers = users;
 
   // Calculate active filter count
   const activeFilterCount = hasActiveFilters ? Object.values(filters).filter(v => v && v !== 'all').length : 0;

@@ -84,8 +84,12 @@ export function GeoChart({ data, isLoading }: GeoChartProps) {
     if (hours < 24) {
       return `${hours.toFixed(1)} ساعة`;
     }
-    const days = Math.floor(hours / 24);
-    const remainingHours = Math.round(hours % 24);
+    let days = Math.floor(hours / 24);
+    let remainingHours = Math.round(hours % 24);
+    if (remainingHours === 24) {
+      days += 1;
+      remainingHours = 0;
+    }
     return `${days} يوم${remainingHours > 0 ? ` و ${remainingHours} ساعة` : ''}`;
   };
 

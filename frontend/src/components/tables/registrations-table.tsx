@@ -135,7 +135,7 @@ export function RegistrationsTable({
   };
 
   const handleReject = () => {
-    if (rejectDialog) {
+    if (rejectDialog && rejectReason.trim()) {
       onReject?.(rejectDialog, rejectReason);
       setRejectDialog(null);
       setRejectReason('');
@@ -275,7 +275,7 @@ export function RegistrationsTable({
             <Button variant="outline" onClick={() => setRejectDialog(null)}>
               إلغاء
             </Button>
-            <Button variant="destructive" onClick={handleReject}>
+            <Button variant="destructive" onClick={handleReject} disabled={!rejectReason.trim()}>
               رفض الطلب
             </Button>
           </DialogFooter>

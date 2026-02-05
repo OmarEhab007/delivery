@@ -20,6 +20,8 @@ export default function AdminShipmentsPage() {
 
   const { data, isLoading } = useAdminShipments({
     status: filters.status && filters.status !== 'all' ? (filters.status as ShipmentStatus) : undefined,
+    fromDate: filters.dateFrom || undefined,
+    toDate: filters.dateTo || undefined,
     limit: 10,
   });
 

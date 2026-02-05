@@ -4,7 +4,7 @@ import { useEffect, useCallback, useRef } from 'react';
 
 /**
  * Hook to auto-save form data to sessionStorage with debouncing.
- * Restores data on mount and clears on successful submission.
+ * Call `restore()` manually to retrieve saved data, and `clear()` on successful submission.
  */
 export function useFormAutosave<T>(
   key: string,

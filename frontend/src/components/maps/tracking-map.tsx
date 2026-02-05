@@ -239,7 +239,7 @@ export function TrackingMap({
             )}
             {showRoute && route.length > 0 && !showActualRoute && (
               <div className="flex items-center gap-1">
-                <div className="h-1 w-4 bg-blue-500 opacity-70" style={{ borderStyle: 'dashed' }} />
+                <div className="h-0 w-4 border-t-2 border-dashed border-blue-500 opacity-70" />
                 <span>المسار المخطط</span>
               </div>
             )}

@@ -114,43 +114,10 @@ export function useAdminRejectRegistration() {
   });
 }
 
-export function useRegistrationRequests(params?: GetPendingApprovalsParams) {
-  return useQuery({
-    queryKey: adminKeys.registrations(params),
-    queryFn: () => adminApi.getRegistrationRequests(params),
-    staleTime: STALE_TIME_LIST,
-  });
-}
-
-export function useApproveRegistration() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => adminApi.approveRegistrationRequest(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.registrations() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.users() });
-      toast.success('تمت الموافقة على الطلب');
-    },
-    onError: (error: Error) => {
-      toast.error('فشل الموافقة', { description: error.message });
-    },
-  });
-}
-
-export function useRejectRegistration() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-      adminApi.rejectRegistrationRequest(id, reason),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.registrations() });
-      toast.success('تم رفض الطلب');
-    },
-    onError: (error: Error) => {
-      toast.error('فشل الرفض', { description: error.message });
-    },
-  });
-}
+// Aliases for backward compatibility
+export const useRegistrationRequests = useAdminRegistrationRequests;
+export const useApproveRegistration = useAdminApproveRegistration;
+export const useRejectRegistration = useAdminRejectRegistration;
 
 export function useAdminShipments(params?: GetShipmentsParams) {
   return useQuery({

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { BrokersTable } from '@/components/tables/brokers-table';
 import { BrokerForm } from '@/components/forms/broker-form';
-import { useBrokers, useCreateBroker, useDeactivateBroker } from '@/hooks/use-brokers';
+import { useBrokers, useCreateBroker, useUpdateBroker, useDeactivateBroker } from '@/hooks/use-brokers';
 import type { Broker } from '@/types/entities';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -40,13 +40,29 @@ export default function BrokersPage() {
 
   const { data: brokersResponse, isLoading } = useBrokers();
   const createMutation = useCreateBroker();
+  const updateMutation = useUpdateBroker();
   const deactivateMutation = useDeactivateBroker();
 
   const brokers = brokersResponse?.data?.brokers || [];
 
   const handleCreate = async (data: Parameters<typeof createMutation.mutateAsync>[0]) => {
-    await createMutation.mutateAsync(data);
-    setCreateDialogOpen(false);
+    try {
+      await createMutation.mutateAsync(data);
+      setCreateDialogOpen(false);
+    } catch {
+      // Error toast shown by mutation onError
+    }
+  };
+
+  const handleUpdate = async (data: Parameters<typeof createMutation.mutateAsync>[0]) => {
+    if (!selectedBroker) return;
+    try {
+      await updateMutation.mutateAsync({ id: selectedBroker._id, data });
+      setCreateDialogOpen(false);
+      setSelectedBroker(null);
+    } catch {
+      // Error toast shown by mutation onError
+    }
   };
 
   const handleDeactivate = (broker: Broker) => {
@@ -84,7 +100,10 @@ export default function BrokersPage() {
         </>
       )}
 
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+      <Dialog open={createDialogOpen} onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) setSelectedBroker(null);
+        }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -98,12 +117,12 @@ export default function BrokersPage() {
           </DialogHeader>
           <BrokerForm
             broker={selectedBroker || undefined}
-            onSubmit={handleCreate}
+            onSubmit={selectedBroker ? handleUpdate : handleCreate}
             onCancel={() => {
               setCreateDialogOpen(false);
               setSelectedBroker(null);
             }}
-            isLoading={createMutation.isPending}
+            isLoading={selectedBroker ? updateMutation.isPending : createMutation.isPending}
           />
         </DialogContent>
       </Dialog>

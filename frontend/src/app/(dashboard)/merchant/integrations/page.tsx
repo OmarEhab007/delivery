@@ -56,10 +56,14 @@ export default function IntegrationsPage() {
 
   const handleCopyApiKey = async () => {
     if (!newApiKey) return;
-    await navigator.clipboard.writeText(newApiKey);
-    setCopiedKey(true);
-    toast.success('تم نسخ المفتاح');
-    setTimeout(() => setCopiedKey(false), 2000);
+    try {
+      await navigator.clipboard.writeText(newApiKey);
+      setCopiedKey(true);
+      toast.success('تم نسخ المفتاح');
+      setTimeout(() => setCopiedKey(false), 2000);
+    } catch {
+      toast.error('فشل في نسخ المفتاح');
+    }
   };
 
   const handleCloseKeyDialog = () => {

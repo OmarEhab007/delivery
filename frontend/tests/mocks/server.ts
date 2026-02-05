@@ -2,7 +2,7 @@
  * MSW Server for Node.js test environment
  */
 
-const { setupServer } = require('msw/node');
-const { handlers } = require('./handlers');
+import { setupServer } from 'msw/node';
+import { handlers } from './handlers';
 
 export const server = setupServer(...handlers);

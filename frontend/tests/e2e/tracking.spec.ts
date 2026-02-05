@@ -24,64 +24,64 @@ test.describe('Shipment Tracking', () => {
 
     // Navigate to a shipment detail if available
     const shipmentLink = page.locator('table a').first();
-    if (await shipmentLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await shipmentLink.click();
+    const linkVisible = await shipmentLink.isVisible({ timeout: 5000 }).catch(() => false);
+    test.skip(!linkVisible, 'No shipments available to test');
 
-      // Should have tabs including tracking
-      const tabs = page.locator('[role="tablist"]');
-      await expect(tabs).toBeVisible({ timeout: 10000 });
+    await shipmentLink.click();
 
-      // Should have a tracking tab
-      const trackingTab = page.locator('[role="tab"]:has-text("التتبع")');
-      await expect(trackingTab).toBeVisible();
-    }
+    // Should have tabs including tracking
+    const tabs = page.locator('[role="tablist"]');
+    await expect(tabs).toBeVisible({ timeout: 10000 });
+
+    // Should have a tracking tab
+    const trackingTab = page.locator('[role="tab"]:has-text("التتبع")');
+    await expect(trackingTab).toBeVisible();
   });
 
   test('should show tracking content when tab clicked', async ({ page }) => {
     await page.goto('/merchant/shipments');
 
     const shipmentLink = page.locator('table a').first();
-    if (await shipmentLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await shipmentLink.click();
+    const linkVisible = await shipmentLink.isVisible({ timeout: 5000 }).catch(() => false);
+    test.skip(!linkVisible, 'No shipments available to test');
 
-      // Click tracking tab
-      const trackingTab = page.locator('[role="tab"]:has-text("التتبع")');
-      if (await trackingTab.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await trackingTab.click();
+    await shipmentLink.click();
 
-        // Should show tracking content (map or "will show when delivery starts" message)
-        const trackingContent = page.locator('[role="tabpanel"]:visible');
-        await expect(trackingContent).toBeVisible();
-      }
-    }
+    // Click tracking tab
+    const trackingTab = page.locator('[role="tab"]:has-text("التتبع")');
+    await expect(trackingTab).toBeVisible({ timeout: 5000 });
+    await trackingTab.click();
+
+    // Should show tracking content (map or "will show when delivery starts" message)
+    const trackingContent = page.locator('[role="tabpanel"]:visible');
+    await expect(trackingContent).toBeVisible();
   });
 
   test('should show shipment status badge on detail page', async ({ page }) => {
     await page.goto('/merchant/shipments');
 
     const shipmentLink = page.locator('table a').first();
-    if (await shipmentLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await shipmentLink.click();
+    const linkVisible = await shipmentLink.isVisible({ timeout: 5000 }).catch(() => false);
+    test.skip(!linkVisible, 'No shipments available to test');
 
-      // Should display status badge somewhere on the page
-      const statusBadge = page.locator('.badge, [class*="badge"], [class*="status"]');
-      await expect(statusBadge.first()).toBeVisible({ timeout: 10000 });
-    }
+    await shipmentLink.click();
+
+    // Should display status badge somewhere on the page
+    const statusBadge = page.locator('.badge, [class*="badge"], [class*="status"]');
+    await expect(statusBadge.first()).toBeVisible({ timeout: 10000 });
   });
 
   test('should show timeline on detail page', async ({ page }) => {
     await page.goto('/merchant/shipments');
 
     const shipmentLink = page.locator('table a').first();
-    if (await shipmentLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await shipmentLink.click();
+    const linkVisible = await shipmentLink.isVisible({ timeout: 5000 }).catch(() => false);
+    test.skip(!linkVisible, 'No shipments available to test');
 
-      // Timeline component should be visible in sidebar
-      await page.waitForTimeout(2000);
-      const timeline = page.locator('[class*="timeline"], .space-y-4 .relative');
-      // Timeline may or may not be populated, but the area should exist
-      const pageContent = page.locator('main, [role="main"], .space-y-6');
-      await expect(pageContent.first()).toBeVisible();
-    }
+    await shipmentLink.click();
+
+    // Wait for page content to load
+    const pageContent = page.locator('main, [role="main"], .space-y-6');
+    await expect(pageContent.first()).toBeVisible({ timeout: 10000 });
   });
 });

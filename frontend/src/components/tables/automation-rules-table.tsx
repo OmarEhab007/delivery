@@ -68,6 +68,12 @@ const actionLabels: Record<string, string> = {
   escalate: 'تصعيد للإدارة',
 };
 
+const unitLabels: Record<string, string> = {
+  hours: 'ساعات',
+  minutes: 'دقائق',
+  days: 'أيام',
+};
+
 export function AutomationRulesTable({
   rules,
   isLoading = false,
@@ -111,7 +117,7 @@ export function AutomationRulesTable({
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {rule.threshold} ساعات
+                  {rule.threshold} {unitLabels[rule.thresholdUnit] || rule.thresholdUnit}
                 </TableCell>
                 <TableCell>
                   <Badge variant={rule.action === 'escalate' ? 'destructive' : 'default'}>

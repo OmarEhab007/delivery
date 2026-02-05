@@ -43,8 +43,10 @@ export default function PaymentsPage() {
         status: s.status,
       }))
       .filter((p) => {
-        if (dateFrom && p.paymentDate && new Date(p.paymentDate) < new Date(dateFrom)) return false;
-        if (dateTo && p.paymentDate && new Date(p.paymentDate) > new Date(dateTo)) return false;
+        if (!p.paymentDate) return true;
+        const paymentDateStr = p.paymentDate.split('T')[0];
+        if (dateFrom && paymentDateStr < dateFrom) return false;
+        if (dateTo && paymentDateStr > dateTo) return false;
         return true;
       })
       .sort((a, b) => {
@@ -54,10 +56,13 @@ export default function PaymentsPage() {
       });
   }, [data, dateFrom, dateTo]);
 
-  const totalAmount = useMemo(
-    () => payments.reduce((sum, p) => sum + (p.amount || 0), 0),
-    [payments]
-  );
+  const totalsByCurrency = useMemo(() => {
+    return payments.reduce((acc, p) => {
+      const curr = p.currency || 'USD';
+      acc[curr] = (acc[curr] || 0) + (p.amount || 0);
+      return acc;
+    }, {} as Record<string, number>);
+  }, [payments]);
 
   const verifiedCount = useMemo(
     () => payments.filter((p) => p.paymentVerified).length,
@@ -95,7 +100,7 @@ export default function PaymentsPage() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">إجمالي المدفوعات</p>
-              <p className="text-2xl font-bold">{totalAmount.toLocaleString()} USD</p>
+              <p className="text-2xl font-bold">{Object.entries(totalsByCurrency).map(([c, a]) => `${a.toLocaleString()} ${c}`).join(' / ')}</p>
             </div>
           </CardContent>
         </Card>
@@ -227,7 +232,7 @@ export default function PaymentsPage() {
                 <tfoot>
                   <tr className="border-t bg-muted/30 font-medium">
                     <td className="px-4 py-3">الإجمالي</td>
-                    <td className="px-4 py-3">{totalAmount.toLocaleString()} USD</td>
+                    <td className="px-4 py-3">{Object.entries(totalsByCurrency).map(([c, a]) => `${a.toLocaleString()} ${c}`).join(' / ')}</td>
                     <td colSpan={3} />
                   </tr>
                 </tfoot>

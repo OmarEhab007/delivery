@@ -31,18 +31,30 @@ export default function AutomationPage() {
   const rules = rulesResponse?.data || [];
 
   const handleCreate = async (data: AutomationRuleFormData) => {
-    await createMutation.mutateAsync(data);
-    setIsCreateDialogOpen(false);
+    try {
+      await createMutation.mutateAsync(data);
+      setIsCreateDialogOpen(false);
+    } catch {
+      // Error toast shown by mutation onError
+    }
   };
 
   const handleEdit = async (data: AutomationRuleFormData) => {
     if (!editingRule) return;
-    await updateMutation.mutateAsync({ id: editingRule._id, data });
-    setEditingRule(null);
+    try {
+      await updateMutation.mutateAsync({ id: editingRule._id, data });
+      setEditingRule(null);
+    } catch {
+      // Error toast shown by mutation onError
+    }
   };
 
   const handleToggleActive = async (id: string, active: boolean) => {
-    await updateMutation.mutateAsync({ id, data: { active } });
+    try {
+      await updateMutation.mutateAsync({ id, data: { active } });
+    } catch {
+      // Error toast shown by mutation onError
+    }
   };
 
   return (

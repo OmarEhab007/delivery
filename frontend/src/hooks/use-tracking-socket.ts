@@ -93,6 +93,13 @@ export function useTrackingSocket({
     setLocationHistory([]);
   }, []);
 
+  // Clear subscribed rooms on disconnect to allow re-subscription on reconnect
+  useEffect(() => {
+    if (!isConnected) {
+      subscribedRoomsRef.current.clear();
+    }
+  }, [isConnected]);
+
   // Subscribe to shipment room when connected
   useEffect(() => {
     if (isConnected && shipmentId && autoConnect) {
