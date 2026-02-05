@@ -33,42 +33,62 @@ import { LocationPicker } from './location-picker';
 import { CargoDetails } from './cargo-details';
 import { cn } from '@/lib/utils';
 import { useCreateShipment } from '@/hooks/use-shipments';
+import { toast } from 'sonner';
 import type { CreateShipmentRequest } from '@/types/api';
 
-const shipmentSchema = z.object({
-  pricingType: z.enum(['BIDDING', 'FIXED_PRICE'] as const),
-  incoterm: z.string().optional(),
-  fixedPriceDetails: z.object({
-    amount: z.number().min(0).optional(),
-    currency: z.string().optional(),
-  }).optional(),
-  origin: z.object({
-    address: z.string().min(5, 'يرجى إدخال عنوان صحيح'),
-    country: z.string().optional(),
-    coordinates: z.object({
-      lat: z.number(),
-      lng: z.number(),
-    }).optional(),
-  }),
-  destination: z.object({
-    address: z.string().min(5, 'يرجى إدخال عنوان صحيح'),
-    country: z.string().optional(),
-    coordinates: z.object({
-      lat: z.number(),
-      lng: z.number(),
-    }).optional(),
-  }),
-  cargoDetails: z.object({
-    description: z.string().min(10, 'يرجى إدخال وصف تفصيلي للبضاعة'),
-    weight: z.number().min(0.1, 'يرجى إدخال الوزن'),
-    volume: z.number().optional(),
-    category: z.string().optional(),
-    hazardous: z.boolean().default(false),
-    specialInstructions: z.string().optional(),
-  }),
-  estimatedPickupDate: z.string().optional(),
-  estimatedDeliveryDate: z.string().optional(),
-});
+const shipmentSchema = z
+  .object({
+    pricingType: z.enum(['BIDDING', 'FIXED_PRICE'] as const),
+    incoterm: z.string().optional(),
+    fixedPriceDetails: z
+      .object({
+        amount: z.number().min(0).optional(),
+        currency: z.string().optional(),
+      })
+      .optional(),
+    origin: z.object({
+      address: z.string().min(5, 'يرجى إدخال عنوان صحيح'),
+      country: z.string().optional(),
+      coordinates: z
+        .object({
+          lat: z.number(),
+          lng: z.number(),
+        })
+        .optional(),
+    }),
+    destination: z.object({
+      address: z.string().min(5, 'يرجى إدخال عنوان صحيح'),
+      country: z.string().optional(),
+      coordinates: z
+        .object({
+          lat: z.number(),
+          lng: z.number(),
+        })
+        .optional(),
+    }),
+    cargoDetails: z.object({
+      description: z.string().min(10, 'يرجى إدخال وصف تفصيلي للبضاعة'),
+      weight: z.number().min(0.1, 'يرجى إدخال الوزن'),
+      volume: z.number().optional(),
+      category: z.string().optional(),
+      hazardous: z.boolean().default(false),
+      specialInstructions: z.string().optional(),
+    }),
+    estimatedPickupDate: z.string().optional(),
+    estimatedDeliveryDate: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.pricingType === 'FIXED_PRICE') {
+      const amount = data.fixedPriceDetails?.amount;
+      if (!amount || amount <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'يرجى إدخال السعر للشحنات ذات السعر الثابت',
+          path: ['fixedPriceDetails', 'amount'],
+        });
+      }
+    }
+  });
 
 type ShipmentFormData = z.infer<typeof shipmentSchema>;
 
@@ -116,6 +136,8 @@ export function ShipmentForm({ onSuccess }: ShipmentFormProps) {
   });
 
   const pricingType = form.watch('pricingType');
+  const origin = form.watch('origin');
+  const destination = form.watch('destination');
 
   const onSubmit = async (data: ShipmentFormData) => {
     const payload: CreateShipmentRequest = {
@@ -146,7 +168,10 @@ export function ShipmentForm({ onSuccess }: ShipmentFormProps) {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return form.watch('origin.address') && form.watch('destination.address');
+        return (
+          !!origin?.address?.trim() &&
+          !!destination?.address?.trim()
+        );
       case 2:
         return form.watch('cargoDetails.description') && form.watch('cargoDetails.weight') > 0;
       case 3:
@@ -168,9 +193,59 @@ export function ShipmentForm({ onSuccess }: ShipmentFormProps) {
     }
   };
 
+  const onInvalid = (errors: typeof form.formState.errors) => {
+    const messages: string[] = [];
+
+    if (errors.origin?.address) {
+      messages.push(errors.origin.address.message as string);
+    }
+    if (errors.destination?.address) {
+      messages.push(errors.destination.address.message as string);
+    }
+    if (errors.cargoDetails?.description) {
+      messages.push(errors.cargoDetails.description.message as string);
+    }
+    if (errors.cargoDetails?.weight) {
+      messages.push(errors.cargoDetails.weight.message as string);
+    }
+    if (errors.fixedPriceDetails?.amount) {
+      messages.push(errors.fixedPriceDetails.amount.message as string);
+    }
+    if (errors.estimatedPickupDate) {
+      messages.push(errors.estimatedPickupDate.message as string);
+    }
+    if (errors.estimatedDeliveryDate) {
+      messages.push(errors.estimatedDeliveryDate.message as string);
+    }
+
+    if (messages.length > 0) {
+      toast.error('يرجى تصحيح الحقول المطلوبة', {
+        description: messages.join(' • '),
+      });
+    }
+
+    if (errors.origin || errors.destination) {
+      setCurrentStep(1);
+    } else if (errors.cargoDetails) {
+      setCurrentStep(2);
+    } else {
+      setCurrentStep(3);
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={(e) => {
+          if (currentStep < steps.length) {
+            e.preventDefault();
+            nextStep();
+            return;
+          }
+          form.handleSubmit(onSubmit, onInvalid)(e);
+        }}
+        className="space-y-6"
+      >
         {/* Steps indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {steps.map((step, index) => {

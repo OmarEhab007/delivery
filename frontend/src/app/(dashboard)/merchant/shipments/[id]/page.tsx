@@ -21,6 +21,7 @@ import {
   useShipment,
   useShipmentTimeline,
   useShipmentApplications,
+  useShipmentTracking,
 } from '@/hooks/use-shipments';
 import { useAcceptApplication, useRejectApplication } from '@/hooks/use-applications';
 import type { Application } from '@/types/entities';
@@ -32,6 +33,7 @@ export default function ShipmentDetailPage() {
   const { data: shipmentData, isLoading: shipmentLoading } = useShipment(shipmentId);
   const { data: timelineData } = useShipmentTimeline(shipmentId);
   const { data: applicationsData, isLoading: applicationsLoading } = useShipmentApplications(shipmentId);
+  const { data: trackingData } = useShipmentTracking(shipmentId);
 
   const acceptApplication = useAcceptApplication();
   const rejectApplication = useRejectApplication();
@@ -42,7 +44,6 @@ export default function ShipmentDetailPage() {
   const shipment = shipmentData?.data;
   const timeline = timelineData?.data || [];
   const applications = applicationsData?.data || [];
-
   // Real-time tracking
   const {
     connectionStatus,
@@ -53,6 +54,18 @@ export default function ShipmentDetailPage() {
     shipmentId,
     autoConnect: shipment?.status === 'IN_TRANSIT' || shipment?.status === 'LOADING',
   });
+
+  const persistedHistory = (trackingData?.data || [])
+    .map((point) => ({
+      lat: point.location?.coordinates?.[1],
+      lng: point.location?.coordinates?.[0],
+      timestamp: point.timestamp,
+    }))
+    .filter(
+      (point) =>
+        typeof point.lat === 'number' && typeof point.lng === 'number' && !!point.timestamp
+    ) as Array<{ lat: number; lng: number; timestamp: string }>;
+  const trackingHistory = locationHistory.length > 0 ? locationHistory : persistedHistory;
 
   const handleAcceptClick = (application: Application) => {
     setSelectedApplication(application);
@@ -192,15 +205,15 @@ export default function ShipmentDetailPage() {
                       }
                     : undefined)
                 }
-                trackingHistory={locationHistory}
-                showHistory={locationHistory.length > 0}
+                trackingHistory={trackingHistory}
+                showHistory={trackingHistory.length > 0}
                 isLive={connectionStatus === 'connected'}
                 height="350px"
               />
 
-              {locationHistory.length > 0 && (
+              {trackingHistory.length > 0 && (
                 <TrackingHistory
-                  history={locationHistory}
+                  history={trackingHistory}
                   maxHeight="250px"
                 />
               )}
