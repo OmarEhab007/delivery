@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 33% 96%; /* #F9F2E8 */
+    --foreground: 17 36% 17%; /* #3B2418 */
+    --surface: 0 0% 100%; /* #FFFFFF */
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 21%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 21%;
+
+    --muted: 30 33% 90%; /* #F2E6D8 */
+    --muted-foreground: 23 18% 45%; /* #8A6E55 */
+
+    --primary: 32 100% 49%; /* #FB8500 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 24 24% 40%; /* #8A6B52 */
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 32 100% 45%; /* #E57F00 */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 20% 85%; /* #E6D6C4 */
+    --input: 30 20% 85%;
+    --ring: 32 100% 49%;
+
+    --radius: 0.5rem;
+
+    --chart-1: 32 100% 49%;
+    --chart-2: 24 24% 40%;
+    --chart-3: 30 33% 90%;
+    --chart-4: 17 36% 17%;
+    --chart-5: 32 100% 45%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 17 36% 17%;
+    --sidebar-primary: 32 100% 49%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 33% 90%;
+    --sidebar-accent-foreground: 17 36% 17%;
+    --sidebar-border: 30 20% 85%;
+    --sidebar-ring: 32 100% 49%;
+  }
+
+  .dark {
+    --background: 0 0% 10%; /* #1A1A1A */
+    --foreground: 0 0% 90%; /* #E5E5E5 */
+    --surface: 0 0% 18%; /* #2D2D2D */
+
+    --card: 0 0% 18%;
+    --card-foreground: 0 0% 90%;
+
+    --popover: 0 0% 18%;
+    --popover-foreground: 0 0% 90%;
+
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 65%;
+
+    --primary: 32 100% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 30 27% 72%;
+    --secondary-foreground: 0 0% 10%;
+
+    --accent: 32 100% 49%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+
+    --chart-1: 32 100% 45%;
+    --chart-2: 30 27% 72%;
+    --chart-3: 0 0% 40%;
+    --chart-4: 0 0% 65%;
+    --chart-5: 32 100% 49%;
+
+    --sidebar-background: 0 0% 15%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 32 100% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 25%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 25%;
+    --sidebar-ring: 32 100% 45%;
+  }
+
+  .brand-theme {
+    color-scheme: light;
+    --background: 30 40% 97%; /* #FBF4EA */
+    --foreground: 18 38% 15%; /* #3B2418 */
+    --surface: 30 38% 99%; /* #FFF9F3 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 18 38% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 18 38% 15%;
+
+    --muted: 30 36% 92%; /* #F3E7D8 */
+    --muted-foreground: 24 20% 40%; /* #7B5F46 */
+
+    --primary: 32 100% 49%; /* #FB8500 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 24 24% 40%; /* #8A6B52 */
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 28 92% 45%; /* #E57F00 */
+    --accent-foreground: 0 0% 100%;
+
+    --border: 30 24% 85%; /* #E6D6C4 */
+    --input: 30 24% 85%;
+    --ring: 32 100% 49%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 18 38% 15%;
+    --sidebar-primary: 32 100% 49%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 36% 92%;
+    --sidebar-accent-foreground: 18 38% 15%;
+    --sidebar-border: 30 24% 85%;
+    --sidebar-ring: 32 100% 49%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+@layer utilities {
+  .brand-hero {
+    background:
+      radial-gradient(circle at top, hsl(var(--primary) / 0.22), transparent 58%),
+      radial-gradient(circle at 12% 18%, hsl(var(--accent) / 0.12), transparent 42%),
+      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 55%, hsl(var(--muted)) 100%);
+  }
+
+  .brand-glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(48px);
+    opacity: 0.75;
+  }
+}
+
+/* Leaflet map styles */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+}
