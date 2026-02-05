@@ -3,7 +3,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import type { GetUsersParams, GetShipmentsParams, GetPendingApprovalsParams } from '@/types/api';
+import type { User } from '@/types/entities';
 import { toast } from 'sonner';
+
+const STALE_TIME_LIST = 60 * 1000; // 1 minute for lists
+const STALE_TIME_DASHBOARD = 5 * 60 * 1000; // 5 minutes for dashboard
 
 export const adminKeys = {
   dashboard: ['admin', 'dashboard'] as const,
@@ -22,6 +26,7 @@ export function useAdminDashboard() {
   return useQuery({
     queryKey: adminKeys.dashboard,
     queryFn: () => adminApi.getDashboard(),
+    staleTime: STALE_TIME_DASHBOARD,
   });
 }
 
@@ -29,6 +34,7 @@ export function useAdminUsers(params?: GetUsersParams) {
   return useQuery({
     queryKey: adminKeys.users(params),
     queryFn: () => adminApi.getUsers(params),
+    staleTime: STALE_TIME_LIST,
   });
 }
 
@@ -37,6 +43,7 @@ export function useAdminUser(id: string) {
     queryKey: adminKeys.user(id),
     queryFn: () => adminApi.getUser(id),
     enabled: !!id,
+    staleTime: 0, // Always fresh for detail views
   });
 }
 
@@ -73,6 +80,7 @@ export function useAdminRegistrationRequests(params?: GetPendingApprovalsParams)
   return useQuery({
     queryKey: adminKeys.registrations(params),
     queryFn: () => adminApi.getRegistrationRequests(params),
+    staleTime: STALE_TIME_LIST,
   });
 }
 
@@ -106,10 +114,16 @@ export function useAdminRejectRegistration() {
   });
 }
 
+// Aliases for backward compatibility
+export const useRegistrationRequests = useAdminRegistrationRequests;
+export const useApproveRegistration = useAdminApproveRegistration;
+export const useRejectRegistration = useAdminRejectRegistration;
+
 export function useAdminShipments(params?: GetShipmentsParams) {
   return useQuery({
     queryKey: adminKeys.shipments(params),
     queryFn: () => adminApi.getShipments(params),
+    staleTime: STALE_TIME_LIST,
   });
 }
 
@@ -118,6 +132,7 @@ export function useAdminShipment(id: string) {
     queryKey: adminKeys.shipment(id),
     queryFn: () => adminApi.getShipment(id),
     enabled: !!id,
+    staleTime: 0, // Always fresh for detail views
   });
 }
 
@@ -191,6 +206,7 @@ export function useAdminApplications(params?: Record<string, unknown>) {
   return useQuery({
     queryKey: adminKeys.applications(params),
     queryFn: () => adminApi.getApplications(params),
+    staleTime: STALE_TIME_LIST,
   });
 }
 
@@ -213,6 +229,7 @@ export function useAdminTrucks(params?: Record<string, unknown>) {
   return useQuery({
     queryKey: adminKeys.trucks(params),
     queryFn: () => adminApi.getTrucks(params),
+    staleTime: STALE_TIME_LIST,
   });
 }
 
@@ -221,7 +238,7 @@ export function useAdminCreateUser() {
 
   return useMutation({
     mutationFn: (data: { name: string; email: string; password: string; phone: string; role: string; [key: string]: unknown }) =>
-      adminApi.createUser(data),
+      adminApi.createUser(data as Partial<User> & { password: string }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.users() });
       toast.success('تم إنشاء المستخدم بنجاح');

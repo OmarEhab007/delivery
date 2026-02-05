@@ -266,3 +266,45 @@ export const updateRegistrationSchema = z.object({
 });
 
 export type UpdateRegistrationFormData = z.infer<typeof updateRegistrationSchema>;
+
+// =============================================================================
+// BROKER SCHEMAS
+// =============================================================================
+
+export const brokerFormSchema = z.object({
+  name: z.string().min(2, 'Broker name is required'),
+  licenseNumber: z.string().min(2, 'License number is required'),
+  countriesServed: z.array(z.string()),
+  contacts: z.object({
+    email: z.string().email('Invalid email').optional().or(z.literal('')),
+    phone: z.string().optional().or(z.literal('')),
+  }),
+  notes: z.string().optional(),
+});
+
+export type BrokerFormData = z.infer<typeof brokerFormSchema>;
+
+// =============================================================================
+// AUTOMATION RULE SCHEMAS
+// =============================================================================
+
+export const automationRuleFormSchema = z.object({
+  name: z.string().min(2, 'Rule name is required'),
+  triggerType: z.enum(['delay', 'missing-update'], { message: 'Select a trigger type' }),
+  threshold: z.number().positive('Threshold must be a positive number'),
+  thresholdUnit: z.enum(['hours', 'minutes', 'days']),
+  action: z.enum(['notify', 'escalate'], { message: 'Select an action' }),
+});
+
+export type AutomationRuleFormData = z.infer<typeof automationRuleFormSchema>;
+
+// =============================================================================
+// WEBHOOK SCHEMAS
+// =============================================================================
+
+export const webhookFormSchema = z.object({
+  endpointUrl: z.string().url('Must be a valid URL'),
+  eventTypes: z.array(z.string()).min(1, 'Select at least one event type'),
+});
+
+export type WebhookFormData = z.infer<typeof webhookFormSchema>;

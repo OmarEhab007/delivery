@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/shared/empty-state';
 import { useAdminTrucks } from '@/hooks/use-admin';
 
 function formatDate(dateString?: string) {
@@ -64,8 +65,12 @@ export default function AdminTrucksPage() {
                   </TableRow>
                 ) : trucks.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      لا توجد شاحنات
+                    <TableCell colSpan={6} className="border-0">
+                      <EmptyState
+                        icon={TruckIcon}
+                        title="لا توجد شاحنات"
+                        description="لم يتم تسجيل أي شاحنات في النظام بعد"
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (

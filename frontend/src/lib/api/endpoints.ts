@@ -152,6 +152,43 @@ export const API_ENDPOINTS = {
     merchantLanes: '/analytics/lanes',
     truckOwnerStats: '/analytics/truck-owner/stats',
     truckPerformance: '/analytics/truck-owner/trucks',
+    kpis: '/analytics/kpis',
+    lanes: '/analytics/lanes',
+  },
+
+  // Admin Reports
+  reports: {
+    statusTrends: '/reports/shipments/status-trends',
+    revenue: '/reports/revenue',
+    performance: '/reports/performance',
+    customers: '/reports/customers',
+    efficiency: '/reports/efficiency',
+    geo: '/reports/geo',
+  },
+
+  // Brokers
+  brokers: {
+    list: '/admin/brokers',
+    detail: (id: string) => `/admin/brokers/${id}`,
+  },
+
+  // Registration Requests
+  registrations: {
+    list: '/admin/registration-requests',
+    approve: (id: string) => `/admin/registration-requests/${id}/approve`,
+    reject: (id: string) => `/admin/registration-requests/${id}/reject`,
+  },
+
+  // Automation
+  automation: {
+    rules: '/automation/rules',
+    rule: (id: string) => `/automation/rules/${id}`,
+  },
+
+  // Integrations
+  integration: {
+    credentials: '/integration/credentials',
+    webhooks: '/integration/webhooks',
   },
 
   // Health & System

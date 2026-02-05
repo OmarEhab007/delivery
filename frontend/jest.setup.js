@@ -1,4 +1,27 @@
-import '@testing-library/jest-dom';
+const { TextEncoder, TextDecoder } = require('util');
+const { ReadableStream, TransformStream } = require('stream/web');
+const { MessageChannel, MessagePort } = require('worker_threads');
+
+// Polyfill for MSW - must be set before requiring undici
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+global.ReadableStream = ReadableStream;
+global.TransformStream = TransformStream;
+global.MessageChannel = MessageChannel;
+global.MessagePort = MessagePort;
+
+const { fetch, Headers, Request, Response } = require('undici');
+
+// Polyfill fetch for Node.js environment
+global.fetch = fetch;
+global.Headers = Headers;
+global.Request = Request;
+global.Response = Response;
+
+require('@testing-library/jest-dom');
+
+// Note: MSW server is NOT setup globally due to ESM compatibility issues
+// Tests that need MSW should import and setup the server themselves
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({

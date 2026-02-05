@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Bell, LogOut, User, Settings, Menu } from 'lucide-react';
+import { LogOut, User, Settings, Menu } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +14,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ThemeToggle } from './theme-toggle';
+import { ConnectionStatusDot } from './connection-status';
+import { NotificationBell } from './notification-bell';
+import { NotificationDropdown } from './notification-dropdown';
 import { useAuthStore } from '@/stores/auth-store';
+import { useSocket } from '@/lib/providers/socket-provider';
+import { useNotificationSocket } from '@/hooks/use-notifications';
 import { toast } from 'sonner';
 
 interface HeaderProps {
@@ -24,6 +29,8 @@ interface HeaderProps {
 export function Header({ onMobileMenuToggle }: HeaderProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const { connectionStatus } = useSocket();
+  useNotificationSocket(); // Initialize notification socket listener
   const rolePath = user?.role ? user.role.toLowerCase().replace('owner', '-owner') : null;
   const settingsHref = rolePath ? `/${rolePath}/settings` : '/settings';
   const profileHref = user?.role === 'Driver' ? '/driver/profile' : settingsHref;
@@ -64,20 +71,13 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
 
       {/* Right side actions */}
       <div className="flex items-center gap-2">
+        <ConnectionStatusDot status={connectionStatus} size="sm" className="mr-1" />
         <ThemeToggle />
 
         {/* Notifications */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-full"
-          onClick={() => router.push('/notifications')}
-        >
-          <Bell className="h-5 w-5" />
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-            3
-          </span>
-        </Button>
+        <NotificationDropdown
+          trigger={<NotificationBell />}
+        />
 
         {/* User menu */}
         <DropdownMenu>

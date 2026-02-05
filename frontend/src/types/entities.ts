@@ -497,6 +497,113 @@ export interface PendingApprovals {
   documents: Document[];
 }
 
+// =============================================================================
+// BROKER
+// =============================================================================
+
+export interface Broker {
+  _id: string;
+  name: string;
+  licenseNumber: string;
+  countriesServed: string[];
+  contacts: {
+    email?: string;
+    phone?: string;
+  };
+  status: 'ACTIVE' | 'INACTIVE';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// =============================================================================
+// AUTOMATION RULE
+// =============================================================================
+
+export interface AutomationRule {
+  _id: string;
+  merchantId: string;
+  createdBy: string;
+  name: string;
+  triggerType: 'delay' | 'missing-update';
+  threshold: number;
+  thresholdUnit: 'hours';
+  action: 'notify' | 'escalate';
+  active: boolean;
+  lastTriggeredAt?: string;
+  lastTriggeredShipmentId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// =============================================================================
+// INTEGRATION CREDENTIAL
+// =============================================================================
+
+export interface IntegrationCredential {
+  _id: string;
+  name: string;
+  apiKeyPrefix: string;
+  scopes: Array<'shipments:read' | 'shipments:write' | 'webhooks:read' | 'webhooks:write'>;
+  merchantId: string;
+  active: boolean;
+  lastUsedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCredentialResponse {
+  credential: IntegrationCredential;
+  apiKey: string;
+}
+
+// =============================================================================
+// WEBHOOK SUBSCRIPTION
+// =============================================================================
+
+export interface WebhookSubscription {
+  _id: string;
+  merchantId: string;
+  endpointUrl: string;
+  eventTypes: string[];
+  status: 'ACTIVE' | 'PAUSED' | 'DISABLED';
+  lastDeliveredAt?: string;
+  failureCount: number;
+  lastFailureAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// =============================================================================
+// PERSISTENT NOTIFICATION
+// =============================================================================
+
+export type NotificationEventType =
+  | 'SHIPMENT_CREATED'
+  | 'APPLICATION_SUBMITTED'
+  | 'APPLICATION_APPROVED'
+  | 'APPLICATION_REJECTED'
+  | 'SHIPMENT_STATUS_UPDATED'
+  | 'SHIPMENT_DELIVERED'
+  | 'PAYMENT_UPLOADED'
+  | 'FIXED_PRICE_SHIPMENT_AVAILABLE'
+  | 'FIXED_PRICE_SHIPMENT_ACCEPTED'
+  | 'ASSIGNED_TO_SHIPMENT'
+  | 'SHIPMENT_DELAY_ALERT'
+  | 'SHIPMENT_MISSING_UPDATE';
+
+export interface PersistentNotification {
+  id: string;
+  type: NotificationEventType;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  entityType?: 'shipment' | 'application' | 'truck' | 'user';
+  entityId?: string;
+  link?: string;
+}
+
 // Re-export API types for convenience
 export type {
   UserRole,

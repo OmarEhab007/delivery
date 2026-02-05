@@ -67,7 +67,6 @@ export default function DriversListPage() {
             currentPage={pagination?.page || 1}
             totalPages={pagination?.totalPages || 1}
             onPageChange={setPage}
-            emptyMessage="لا يوجد سائقون مسجلون"
           />
         </CardContent>
       </Card>

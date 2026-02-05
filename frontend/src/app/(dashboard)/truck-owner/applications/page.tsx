@@ -91,7 +91,6 @@ export default function TruckOwnerApplicationsPage() {
             currentPage={pagination?.page || 1}
             totalPages={pagination?.totalPages || 1}
             onPageChange={setPage}
-            emptyMessage="لم تقدم أي عروض بعد"
           />
         </CardContent>
       </Card>

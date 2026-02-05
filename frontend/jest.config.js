@@ -27,6 +27,9 @@ const customJestConfig = {
       statements: 70,
     },
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(msw|@mswjs)/)',
+  ],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
