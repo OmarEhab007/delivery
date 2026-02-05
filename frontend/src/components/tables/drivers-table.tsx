@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/shared/empty-state';
 import {
   Eye,
   Edit,
@@ -23,6 +24,7 @@ import {
   Truck,
   CheckCircle2,
   XCircle,
+  Users,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -44,7 +46,6 @@ interface DriversTableProps {
   currentPage?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
-  emptyMessage?: string;
 }
 
 function getStatusBadge(status?: DriverStatus) {
@@ -89,7 +90,6 @@ export function DriversTable({
   currentPage = 1,
   totalPages = 1,
   onPageChange,
-  emptyMessage = 'لا يوجد سائقون',
 }: DriversTableProps) {
   return (
     <div className="space-y-4">
@@ -111,8 +111,12 @@ export function DriversTable({
               <TableSkeleton />
             ) : drivers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  {emptyMessage}
+                <TableCell colSpan={6} className="border-0">
+                  <EmptyState
+                    icon={Users}
+                    title="لا يوجد سائقون"
+                    description="لم يتم تسجيل أي سائقين بعد. قم بإضافة سائق جديد للبدء"
+                  />
                 </TableCell>
               </TableRow>
             ) : (

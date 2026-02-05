@@ -530,6 +530,118 @@ export type DocumentType =
 export type EntityType = 'Shipment' | 'Application' | 'Truck' | 'User';
 
 // =============================================================================
+// ANALYTICS / ADMIN REPORTS API
+// =============================================================================
+
+export interface KpiResponse {
+  success: true;
+  data: {
+    summary: {
+      totalShipments: number;
+      deliveredCount: number;
+      onTimeRate: number;
+      averageTransitHours: number;
+      averageDelayHours: number;
+    };
+  };
+}
+
+export interface StatusTrendsResponse {
+  success: true;
+  data: Array<{
+    period: string;
+    statuses: Record<string, number>;
+  }>;
+}
+
+export interface RevenueResponse {
+  success: true;
+  data: Array<{
+    period: string;
+    totalRevenue: number;
+    shipmentCount: number;
+    averageRevenuePerShipment: number;
+  }>;
+}
+
+export interface PerformanceResponse {
+  success: true;
+  data: Array<{
+    _id: string;
+    driverName?: string;
+    driverEmail?: string;
+    totalShipments: number;
+    totalDistance: number;
+    averageRating: number;
+    onTimeDeliveryRate: number;
+  }>;
+}
+
+export interface CustomerInsightsResponse {
+  success: true;
+  data: Array<{
+    _id: string;
+    merchantName: string;
+    merchantEmail: string;
+    totalShipments: number;
+    totalRevenue: number;
+    avgOrderValue: number;
+    firstOrderDate: string;
+    lastOrderDate: string;
+    daysSinceFirstOrder: number;
+    daysSinceLastOrder: number;
+  }>;
+}
+
+export interface EfficiencyResponse {
+  success: true;
+  data: Array<{
+    period: string;
+    totalShipments: number;
+    completedShipments: number;
+    cancelledShipments: number;
+    delayedShipments: number;
+    completionRate: number;
+    cancellationRate: number;
+    delayRate: number;
+    avgDeliveryTime: number;
+  }>;
+}
+
+export interface GeoResponse {
+  success: true;
+  data: Array<{
+    origin: string;
+    destination: string;
+    shipmentCount: number;
+    totalRevenue: number;
+    averageTravelTime: number;
+  }>;
+}
+
+export interface GeoHotspotsResponse {
+  success: true;
+  data: Array<{
+    originHotspots: Array<{ _id: string; count: number }>;
+    destinationHotspots: Array<{ _id: string; count: number }>;
+  }>;
+}
+
+export interface LanePerformanceResponse {
+  success: true;
+  data: {
+    lanes: Array<{
+      originCountry?: string;
+      destinationCountry?: string;
+      shipmentCount: number;
+      deliveredCount: number;
+      onTimeRate: number;
+      avgTransitHours: number;
+    }>;
+  };
+}
+
+// =============================================================================
 // GENERIC RESPONSE TYPES
 // =============================================================================
 

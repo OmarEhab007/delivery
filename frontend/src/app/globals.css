@@ -166,6 +166,46 @@
   }
 }
 
+/* Focus visible styles for accessibility */
+@layer base {
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Ensure interactive elements have visible focus */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* RTL-specific overrides for third-party components */
+@layer utilities {
+  /* Leaflet map controls RTL adjustment */
+  [dir="rtl"] .leaflet-control-zoom {
+    margin-left: 10px;
+    margin-right: auto;
+  }
+
+  [dir="rtl"] .leaflet-control-attribution {
+    direction: ltr;
+  }
+
+  /* Recharts RTL adjustments */
+  [dir="rtl"] .recharts-legend-wrapper {
+    direction: ltr;
+  }
+
+  [dir="rtl"] .recharts-tooltip-wrapper {
+    direction: ltr;
+  }
+}
+
 /* Leaflet map styles */
 .leaflet-container {
   height: 100%;

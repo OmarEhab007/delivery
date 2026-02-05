@@ -18,6 +18,11 @@ import {
   MapPin,
   User,
   History,
+  Building2,
+  UserCheck,
+  DollarSign,
+  Zap,
+  Plug,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -39,6 +44,8 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
     { title: 'الطلبات', href: '/admin/applications', icon: ClipboardList },
     { title: 'الشاحنات', href: '/admin/trucks', icon: Truck },
     { title: 'الموافقات', href: '/admin/approvals', icon: CheckSquare },
+    { title: 'الوسطاء', href: '/admin/brokers', icon: Building2 },
+    { title: 'طلبات التسجيل', href: '/admin/registrations', icon: UserCheck },
     { title: 'المستندات', href: '/admin/documents', icon: FileText },
     { title: 'التحليلات', href: '/admin/analytics', icon: BarChart3 },
     { title: 'الإعدادات', href: '/admin/settings', icon: Settings },
@@ -46,6 +53,9 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
   Merchant: [
     { title: 'لوحة التحكم', href: '/merchant/dashboard', icon: LayoutDashboard },
     { title: 'الشحنات', href: '/merchant/shipments', icon: Package },
+    { title: 'المدفوعات', href: '/merchant/payments', icon: DollarSign },
+    { title: 'الأتمتة', href: '/merchant/automation', icon: Zap },
+    { title: 'التكاملات', href: '/merchant/integrations', icon: Plug },
     { title: 'التحليلات', href: '/merchant/analytics', icon: BarChart3 },
     { title: 'الإعدادات', href: '/merchant/settings', icon: Settings },
   ],

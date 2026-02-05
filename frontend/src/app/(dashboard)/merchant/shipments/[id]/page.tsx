@@ -16,6 +16,7 @@ import { TrackingMap } from '@/components/maps/tracking-map';
 import { TrackingHistory } from '@/components/shared/tracking-history';
 import { ConnectionStatusIndicator } from '@/components/shared/connection-status';
 import { ShipmentDocumentsSection } from '@/components/shared/shipment-documents-section';
+import { PaymentDetailsCard } from '@/components/shared/payment-details-card';
 import { useTrackingSocket } from '@/hooks/use-tracking-socket';
 import {
   useShipment,
@@ -231,9 +232,12 @@ export default function ShipmentDetailPage() {
           </Tabs>
         </div>
 
-        {/* Sidebar - Timeline */}
-        <div>
+        {/* Sidebar - Timeline + Payment */}
+        <div className="space-y-6">
           <ShipmentTimeline entries={timeline} />
+          {shipment.paymentDetails && (
+            <PaymentDetailsCard payment={shipment.paymentDetails} />
+          )}
         </div>
       </div>
 

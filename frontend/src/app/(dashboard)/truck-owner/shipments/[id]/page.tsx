@@ -37,18 +37,6 @@ export default function TruckOwnerShipmentDetailPage() {
     availableShipments.find((item) => item._id === shipmentId) ||
     assignedShipments.find((item) => item._id === shipmentId);
 
-  const persistedHistory = (trackingData?.data || [])
-    .map((point) => ({
-      lat: point.location?.coordinates?.[1],
-      lng: point.location?.coordinates?.[0],
-      timestamp: point.timestamp,
-    }))
-    .filter(
-      (point) =>
-        typeof point.lat === 'number' && typeof point.lng === 'number' && !!point.timestamp
-    ) as Array<{ lat: number; lng: number; timestamp: string }>;
-  const trackingHistory = locationHistory.length > 0 ? locationHistory : persistedHistory;
-
   // Real-time tracking for assigned shipments
   const isAssigned = !!(
     shipment?.assignedTruckId &&
@@ -64,6 +52,18 @@ export default function TruckOwnerShipmentDetailPage() {
     shipmentId,
     autoConnect: isAssigned,
   });
+
+  const persistedHistory = (trackingData?.data || [])
+    .map((point) => ({
+      lat: point.location?.coordinates?.[1],
+      lng: point.location?.coordinates?.[0],
+      timestamp: point.timestamp,
+    }))
+    .filter(
+      (point) =>
+        typeof point.lat === 'number' && typeof point.lng === 'number' && !!point.timestamp
+    ) as Array<{ lat: number; lng: number; timestamp: string }>;
+  const trackingHistory = locationHistory.length > 0 ? locationHistory : persistedHistory;
 
   const handleBidSuccess = () => {
     router.push('/truck-owner/applications');

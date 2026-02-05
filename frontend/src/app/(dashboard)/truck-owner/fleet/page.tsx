@@ -10,6 +10,8 @@ import { PortalHero } from '@/components/shared/portal-hero';
 import { TrucksTable } from '@/components/tables/trucks-table';
 import { DriversTable } from '@/components/tables/drivers-table';
 import { AssignDriverDialog, AssignTruckDialog } from '@/components/shared/assign-driver-dialog';
+import { AdvancedFilters } from '@/components/shared/advanced-filters';
+import { useUrlFilters } from '@/hooks/use-url-filters';
 import { useMyTrucks, useAssignDriverToTruck } from '@/hooks/use-trucks';
 import { useDrivers } from '@/hooks/use-drivers';
 import type { Truck as TruckEntity, User as UserEntity } from '@/types/entities';
@@ -21,9 +23,21 @@ export default function FleetManagementPage() {
   const [assignDriverTruck, setAssignDriverTruck] = useState<TruckEntity | null>(null);
   const [assignTruckDriver, setAssignTruckDriver] = useState<UserEntity | null>(null);
 
+  // URL-based filters for trucks
+  const { filters: truckFilters, setFilter: setTruckFilter, resetFilters: resetTruckFilters, hasActiveFilters: hasTruckFilters } = useUrlFilters<{
+    status: string | undefined;
+  }>({
+    defaults: { status: 'all' },
+  });
+
   // Fetch trucks
   const { data: trucksData, isLoading: trucksLoading } = useMyTrucks();
-  const trucks = trucksData?.data || [];
+  const allTrucks = trucksData?.data || [];
+
+  // Filter trucks based on status
+  const trucks = truckFilters.status && truckFilters.status !== 'all'
+    ? allTrucks.filter(truck => truck.status === truckFilters.status)
+    : allTrucks;
 
   // Fetch drivers (owned by this truck owner)
   const { data: driversData, isLoading: driversLoading } = useDrivers({
@@ -37,10 +51,13 @@ export default function FleetManagementPage() {
   const assignDriver = useAssignDriverToTruck();
 
   // Stats
-  const totalTrucks = trucks.length;
-  const availableTrucks = trucks.filter((t) => t.available && t.status === 'AVAILABLE').length;
+  const totalTrucks = allTrucks.length;
+  const availableTrucks = allTrucks.filter((t) => t.available && t.status === 'AVAILABLE').length;
   const totalDrivers = driversPagination?.total || drivers.length;
   const availableDrivers = drivers.filter((d) => d.isAvailable).length;
+
+  // Calculate active filter count
+  const activeTruckFilterCount = hasTruckFilters ? Object.values(truckFilters).filter(v => v && v !== 'all').length : 0;
 
   const handleAssignDriverToTruck = async (truckId: string, driverId: string) => {
     await assignDriver.mutateAsync({ id: truckId, data: { driverId } });
@@ -132,7 +149,28 @@ export default function FleetManagementPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="trucks">
+        <TabsContent value="trucks" className="space-y-4">
+          {/* Trucks Filters */}
+          <AdvancedFilters
+            config={[
+              {
+                key: 'status',
+                label: 'الحالة',
+                type: 'select',
+                options: [
+                  { label: 'متاحة', value: 'AVAILABLE' },
+                  { label: 'قيد الاستخدام', value: 'IN_USE' },
+                  { label: 'قيد الصيانة', value: 'MAINTENANCE' },
+                  { label: 'غير نشطة', value: 'INACTIVE' },
+                ],
+              },
+            ]}
+            values={truckFilters}
+            onChange={setTruckFilter as (key: string, value: string | undefined) => void}
+            onReset={resetTruckFilters}
+            activeCount={activeTruckFilterCount}
+          />
+
           <Card className="border-border/60 bg-card/70">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>قائمة الشاحنات</CardTitle>
@@ -148,7 +186,6 @@ export default function FleetManagementPage() {
                 trucks={trucks}
                 isLoading={trucksLoading}
                 onAssignDriver={(truck) => setAssignDriverTruck(truck)}
-                emptyMessage="لا توجد شاحنات مسجلة"
               />
             </CardContent>
           </Card>
@@ -173,7 +210,6 @@ export default function FleetManagementPage() {
                 currentPage={driversPagination?.page || 1}
                 totalPages={driversPagination?.totalPages || 1}
                 onPageChange={setDriverPage}
-                emptyMessage="لا يوجد سائقون مسجلون"
               />
             </CardContent>
           </Card>

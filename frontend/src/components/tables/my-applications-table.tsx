@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApplicationStatusBadge } from '@/components/shared/status-badge';
+import { EmptyState } from '@/components/shared/empty-state';
 import {
   Eye,
   Edit,
@@ -28,6 +29,7 @@ import {
   MapPin,
   DollarSign,
   Clock,
+  FileText,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -49,7 +51,6 @@ interface MyApplicationsTableProps {
   currentPage?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
-  emptyMessage?: string;
 }
 
 function formatCurrency(amount: number, currency = 'SAR') {
@@ -106,7 +107,6 @@ export function MyApplicationsTable({
   currentPage = 1,
   totalPages = 1,
   onPageChange,
-  emptyMessage = 'لا توجد عروض',
 }: MyApplicationsTableProps) {
   return (
     <div className="space-y-4">
@@ -149,8 +149,12 @@ export function MyApplicationsTable({
               <TableSkeleton />
             ) : applications.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  {emptyMessage}
+                <TableCell colSpan={6} className="border-0">
+                  <EmptyState
+                    icon={FileText}
+                    title="لا توجد عروض"
+                    description="لم تقدم أي عروض على الشحنات بعد. تصفح الشحنات المتاحة وقدم عروضك"
+                  />
                 </TableCell>
               </TableRow>
             ) : (

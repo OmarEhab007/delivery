@@ -15,3 +15,7 @@ export { truckOwnerApi } from './truck-owner';
 export { documentsApi } from './documents';
 export { adminApi } from './admin';
 export { settingsApi } from './settings';
+export { automationApi } from './automation';
+export { integrationsApi } from './integrations';
+export { brokersApi } from './brokers';
+export { analyticsApi } from './analytics';

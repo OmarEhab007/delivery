@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/shared/empty-state';
 import {
   Eye,
   Edit,
@@ -42,7 +43,6 @@ interface TrucksTableProps {
   currentPage?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
-  emptyMessage?: string;
 }
 
 function getStatusBadge(status: TruckStatus, available: boolean) {
@@ -97,7 +97,6 @@ export function TrucksTable({
   currentPage = 1,
   totalPages = 1,
   onPageChange,
-  emptyMessage = 'لا توجد شاحنات',
 }: TrucksTableProps) {
   return (
     <div className="space-y-4">
@@ -120,8 +119,12 @@ export function TrucksTable({
               <TableSkeleton />
             ) : trucks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  {emptyMessage}
+                <TableCell colSpan={7} className="border-0">
+                  <EmptyState
+                    icon={TruckIcon}
+                    title="لا توجد شاحنات"
+                    description="لم يتم تسجيل أي شاحنات بعد. قم بإضافة شاحنة جديدة للبدء"
+                  />
                 </TableCell>
               </TableRow>
             ) : (

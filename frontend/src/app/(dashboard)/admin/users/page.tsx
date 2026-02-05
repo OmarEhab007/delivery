@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, UserX, UserCheck, MoreHorizontal, Trash2, UserPlus } from 'lucide-react';
+import { UserX, UserCheck, MoreHorizontal, Trash2, UserPlus } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -35,6 +35,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { AdvancedFilters } from '@/components/shared/advanced-filters';
+import { useUrlFilters } from '@/hooks/use-url-filters';
 import {
   useAdminUsers,
   useAdminUpdateUser,
@@ -42,14 +44,6 @@ import {
   useAdminCreateUser,
 } from '@/hooks/use-admin';
 import type { UserRole } from '@/types/api';
-
-const roleOptions: Array<{ value: UserRole | 'all'; label: string }> = [
-  { value: 'all', label: 'كل الأدوار' },
-  { value: 'Admin', label: 'مدير' },
-  { value: 'Merchant', label: 'تاجر' },
-  { value: 'TruckOwner', label: 'مالك شاحنة' },
-  { value: 'Driver', label: 'سائق' },
-];
 
 function formatDate(dateString?: string) {
   if (!dateString) return '--';
@@ -61,8 +55,6 @@ function formatDate(dateString?: string) {
 }
 
 export default function AdminUsersPage() {
-  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
-  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [createRole, setCreateRole] = useState<UserRole>('Merchant');
@@ -78,8 +70,17 @@ export default function AdminUsersPage() {
   });
   const limit = 10;
 
+  // URL-based filters
+  const { filters, setFilter, resetFilters, hasActiveFilters } = useUrlFilters<{
+    role: string | undefined;
+    status: string | undefined;
+    search: string | undefined;
+  }>({
+    defaults: { role: 'all', status: 'all' },
+  });
+
   const { data, isLoading } = useAdminUsers({
-    role: roleFilter === 'all' ? undefined : roleFilter,
+    role: filters.role && filters.role !== 'all' ? (filters.role as UserRole) : undefined,
     page,
     limit,
   });
@@ -96,14 +97,27 @@ export default function AdminUsersPage() {
   const pagination = data?.data.pagination;
   const truckOwners = truckOwnersData?.data.users ?? [];
 
-  const filteredUsers = search
-    ? users.filter((user) => {
-        const query = search.toLowerCase();
-        return [user.name, user.email, user.phone].some((field) =>
-          field?.toLowerCase().includes(query)
-        );
-      })
-    : users;
+  // Apply filters
+  let filteredUsers = users;
+
+  // Filter by search
+  if (filters.search) {
+    filteredUsers = filteredUsers.filter((user) => {
+      const query = filters.search!.toLowerCase();
+      return [user.name, user.email, user.phone].some((field) =>
+        field?.toLowerCase().includes(query)
+      );
+    });
+  }
+
+  // Filter by status
+  if (filters.status && filters.status !== 'all') {
+    const isActive = filters.status === 'active';
+    filteredUsers = filteredUsers.filter((user) => user.active === isActive);
+  }
+
+  // Calculate active filter count
+  const activeFilterCount = hasActiveFilters ? Object.values(filters).filter(v => v && v !== 'all').length : 0;
 
   return (
     <div className="space-y-6">
@@ -112,42 +126,55 @@ export default function AdminUsersPage() {
         <p className="text-muted-foreground">تحكم في حسابات المستخدمين وصلاحياتهم</p>
       </div>
 
+      {/* Advanced Filters */}
+      <AdvancedFilters
+        config={[
+          {
+            key: 'role',
+            label: 'الدور',
+            type: 'select',
+            options: [
+              { label: 'مدير', value: 'Admin' },
+              { label: 'تاجر', value: 'Merchant' },
+              { label: 'مالك شاحنة', value: 'TruckOwner' },
+              { label: 'سائق', value: 'Driver' },
+            ],
+          },
+          {
+            key: 'status',
+            label: 'الحالة',
+            type: 'select',
+            options: [
+              { label: 'مفعل', value: 'active' },
+              { label: 'معطل', value: 'inactive' },
+            ],
+          },
+          {
+            key: 'search',
+            label: 'بحث',
+            type: 'text',
+            placeholder: 'بحث بالاسم أو البريد',
+          },
+        ]}
+        values={filters}
+        onChange={(key: string, value: string | undefined) => {
+          setFilter(key as 'search' | 'role' | 'status', value);
+          if (key === 'role') setPage(1);
+        }}
+        onReset={() => {
+          resetFilters();
+          setPage(1);
+        }}
+        activeCount={activeFilterCount}
+      />
+
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>قائمة المستخدمين</CardTitle>
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <Button className="sm:order-last" onClick={() => setCreateOpen(true)}>
-              <UserPlus className="ml-2 h-4 w-4" />
-              إضافة مستخدم
-            </Button>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="بحث بالاسم أو البريد"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pr-9"
-              />
-            </div>
-            <Select
-              value={roleFilter}
-              onValueChange={(value) => {
-                setRoleFilter(value as UserRole | 'all');
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-44">
-                <SelectValue placeholder="الدور" />
-              </SelectTrigger>
-              <SelectContent>
-                {roleOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Button onClick={() => setCreateOpen(true)}>
+            <UserPlus className="ml-2 h-4 w-4" />
+            إضافة مستخدم
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border">

@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, Navigation, Truck } from 'lucide-react';
+import { MapPin, Navigation, Truck, Route as RouteIcon } from 'lucide-react';
 import type { LatLngExpression } from 'leaflet';
 
 // Dynamic import to avoid SSR issues with Leaflet
@@ -69,10 +70,15 @@ export function TrackingMap({
   const [isClient, setIsClient] = useState(false);
   const [mapCenter, setMapCenter] = useState<LatLngExpression>(defaultCenter);
   const [mapZoom, setMapZoom] = useState(6);
+  const [showActualRoute, setShowActualRoute] = useState(showHistory);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    setShowActualRoute(showHistory);
+  }, [showHistory]);
 
   useEffect(() => {
     // Calculate map center based on available points
@@ -176,16 +182,16 @@ export function TrackingMap({
               </Marker>
             )}
 
-            {/* Planned Route */}
-            {showRoute && routePath.length > 1 && (
+            {/* Planned Route - shown when not displaying actual route */}
+            {showRoute && !showActualRoute && routePath.length > 1 && (
               <Polyline
                 positions={routePath}
                 pathOptions={{ color: '#3B82F6', weight: 4, opacity: 0.7, dashArray: '10, 10' }}
               />
             )}
 
-            {/* Tracking History */}
-            {showHistory && historyPath.length > 1 && (
+            {/* Tracking History - shown when toggle is enabled */}
+            {showActualRoute && historyPath.length > 1 && (
               <Polyline
                 positions={historyPath}
                 pathOptions={{ color: '#10B981', weight: 3, opacity: 0.8 }}
@@ -194,38 +200,56 @@ export function TrackingMap({
           </MapContainer>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
-          {origin && (
-            <div className="flex items-center gap-1">
-              <div className="h-3 w-3 rounded-full bg-green-500" />
-              <span>الانطلاق</span>
+        {/* Toggle and Legend */}
+        <div className="mt-3 space-y-2">
+          {/* Toggle button for route history */}
+          {trackingHistory.length > 0 && (
+            <div className="flex justify-center">
+              <Button
+                variant={showActualRoute ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowActualRoute(!showActualRoute)}
+                className="gap-2"
+              >
+                <RouteIcon className="h-4 w-4" />
+                {showActualRoute ? 'عرض المسار المخطط' : 'عرض المسار الفعلي'}
+              </Button>
             </div>
           )}
-          {destination && (
-            <div className="flex items-center gap-1">
-              <div className="h-3 w-3 rounded-full bg-red-500" />
-              <span>الوجهة</span>
-            </div>
-          )}
-          {currentLocation && (
-            <div className="flex items-center gap-1">
-              <div className="h-3 w-3 rounded-full bg-blue-500" />
-              <span>الموقع الحالي</span>
-            </div>
-          )}
-          {showRoute && route.length > 0 && (
-            <div className="flex items-center gap-1">
-              <div className="h-1 w-4 bg-blue-500 opacity-70" style={{ borderStyle: 'dashed' }} />
-              <span>المسار المخطط</span>
-            </div>
-          )}
-          {showHistory && trackingHistory.length > 0 && (
-            <div className="flex items-center gap-1">
-              <div className="h-1 w-4 bg-green-500" />
-              <span>المسار الفعلي</span>
-            </div>
-          )}
+
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            {origin && (
+              <div className="flex items-center gap-1">
+                <div className="h-3 w-3 rounded-full bg-green-500" />
+                <span>الانطلاق</span>
+              </div>
+            )}
+            {destination && (
+              <div className="flex items-center gap-1">
+                <div className="h-3 w-3 rounded-full bg-red-500" />
+                <span>الوجهة</span>
+              </div>
+            )}
+            {currentLocation && (
+              <div className="flex items-center gap-1">
+                <div className="h-3 w-3 rounded-full bg-blue-500" />
+                <span>الموقع الحالي</span>
+              </div>
+            )}
+            {showRoute && route.length > 0 && !showActualRoute && (
+              <div className="flex items-center gap-1">
+                <div className="h-1 w-4 bg-blue-500 opacity-70" style={{ borderStyle: 'dashed' }} />
+                <span>المسار المخطط</span>
+              </div>
+            )}
+            {showActualRoute && trackingHistory.length > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="h-1 w-4 bg-green-500" />
+                <span>المسار الفعلي</span>
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

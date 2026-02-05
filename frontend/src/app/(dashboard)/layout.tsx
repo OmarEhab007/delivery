@@ -8,6 +8,8 @@ import { Header } from '@/components/shared/header';
 import { LoadingPage } from '@/components/ui/loading-spinner';
 import { AccessDenied } from '@/components/shared/access-denied';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { SocketProvider } from '@/lib/providers/socket-provider';
+import { CommandPalette } from '@/components/shared/command-palette';
 import type { UserRole } from '@/types/api';
 
 interface DashboardLayoutProps {
@@ -28,6 +30,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, isAuthenticated, isLoading, initializeAuth } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -36,6 +39,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     };
     init();
   }, [initializeAuth]);
+
+  // Register Cmd/Ctrl+K keyboard shortcut for command palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -74,24 +90,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block">
-        <Sidebar role={user.role} />
-      </div>
-
-      {/* Mobile Sidebar */}
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="w-64 p-0">
+    <SocketProvider>
+      <div className="flex min-h-screen">
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block">
           <Sidebar role={user.role} />
-        </SheetContent>
-      </Sheet>
+        </div>
 
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col">
-        <Header onMobileMenuToggle={() => setMobileMenuOpen(true)} />
-        <main className="flex-1 overflow-auto bg-background p-4 md:p-6">{children}</main>
+        {/* Mobile Sidebar */}
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetContent side="left" className="w-64 p-0">
+            <Sidebar role={user.role} />
+          </SheetContent>
+        </Sheet>
+
+        {/* Main Content */}
+        <div className="flex flex-1 flex-col">
+          <Header onMobileMenuToggle={() => setMobileMenuOpen(true)} />
+          <main className="flex-1 overflow-auto bg-background p-4 md:p-6">{children}</main>
+        </div>
       </div>
-    </div>
+
+      {/* Command Palette */}
+      <CommandPalette isOpen={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
+    </SocketProvider>
   );
 }

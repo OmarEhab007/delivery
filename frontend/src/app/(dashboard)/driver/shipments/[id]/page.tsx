@@ -55,7 +55,7 @@ import { ReportIssueForm } from '@/components/forms/report-issue-form';
 import { TrackingMap } from '@/components/maps/tracking-map';
 import { TrackingHistory } from '@/components/shared/tracking-history';
 import { ConnectionStatusIndicator, LiveIndicator } from '@/components/shared/connection-status';
-import type { ShipmentStatus } from '@/types/api';
+import type { ShipmentStatus, IssueType } from '@/types/api';
 import { driversApi } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -230,7 +230,7 @@ export default function ShipmentExecutionPage() {
     await reportIssue.mutateAsync({
       shipmentId,
       data: {
-        issueType: data.type,
+        issueType: data.type as IssueType,
         description: data.description,
       },
     });

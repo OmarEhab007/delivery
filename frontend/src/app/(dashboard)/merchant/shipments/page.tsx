@@ -2,28 +2,35 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { Plus, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PortalHero } from '@/components/shared/portal-hero';
 import { ShipmentsTable } from '@/components/tables/shipments-table';
+import { AdvancedFilters } from '@/components/shared/advanced-filters';
+import { useUrlFilters } from '@/hooks/use-url-filters';
 import { useShipments } from '@/hooks/use-shipments';
 import type { ShipmentStatus } from '@/types/api';
 
 export default function MerchantShipmentsPage() {
-  const searchParams = useSearchParams();
-  const initialStatus = searchParams.get('status') as ShipmentStatus | null;
-
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<ShipmentStatus | 'all'>(initialStatus || 'all');
-  const [search, setSearch] = useState('');
+
+  // URL-based filters
+  const { filters, setFilter, resetFilters, hasActiveFilters } = useUrlFilters<{
+    status: string | undefined;
+    dateFrom: string | undefined;
+    dateTo: string | undefined;
+    origin: string | undefined;
+    search: string | undefined;
+  }>({
+    defaults: { status: 'all' },
+  });
 
   const { data, isLoading } = useShipments({
     page,
     limit: 10,
-    status: status !== 'all' ? status : undefined,
-    search: search || undefined,
+    status: filters.status && filters.status !== 'all' ? (filters.status as ShipmentStatus) : undefined,
+    search: filters.search || undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
@@ -32,14 +39,17 @@ export default function MerchantShipmentsPage() {
   const pagination = data?.pagination;
 
   const handleStatusFilter = (newStatus: ShipmentStatus | 'all') => {
-    setStatus(newStatus);
+    setFilter('status', newStatus === 'all' ? undefined : newStatus);
     setPage(1);
   };
 
   const handleSearch = (query: string) => {
-    setSearch(query);
+    setFilter('search', query || undefined);
     setPage(1);
   };
+
+  // Calculate active filter count
+  const activeFilterCount = hasActiveFilters ? Object.values(filters).filter(v => v && v !== 'all').length : 0;
 
   return (
     <div className="space-y-6">
@@ -71,6 +81,47 @@ export default function MerchantShipmentsPage() {
           </Link>
         </Button>
       </div>
+
+      {/* Advanced Filters */}
+      <AdvancedFilters
+        config={[
+          {
+            key: 'status',
+            label: 'الحالة',
+            type: 'select',
+            options: [
+              { label: 'مسودة', value: 'DRAFT' },
+              { label: 'قيد المراجعة', value: 'PENDING_APPROVAL' },
+              { label: 'معتمدة', value: 'APPROVED' },
+              { label: 'قيد العرض', value: 'OPEN_FOR_BIDS' },
+              { label: 'معينة', value: 'ASSIGNED' },
+              { label: 'قيد التوصيل', value: 'IN_TRANSIT' },
+              { label: 'تم التوصيل', value: 'DELIVERED' },
+              { label: 'مكتملة', value: 'COMPLETED' },
+            ],
+          },
+          {
+            key: 'dateFrom',
+            label: 'من تاريخ',
+            type: 'date',
+          },
+          {
+            key: 'dateTo',
+            label: 'إلى تاريخ',
+            type: 'date',
+          },
+          {
+            key: 'origin',
+            label: 'المنشأ',
+            type: 'text',
+            placeholder: 'بحث حسب المنشأ',
+          },
+        ]}
+        values={filters}
+        onChange={setFilter as (key: string, value: string | undefined) => void}
+        onReset={resetFilters}
+        activeCount={activeFilterCount}
+      />
 
       {/* Shipments Table */}
       <Card className="border-border/60 bg-card/70">

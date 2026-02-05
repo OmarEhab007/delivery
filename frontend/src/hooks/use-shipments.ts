@@ -16,6 +16,8 @@ import type {
 } from '@/types/api';
 import { toast } from 'sonner';
 
+const STALE_TIME_LIST = 60 * 1000; // 1 minute for lists
+
 export const shipmentKeys = {
   all: ['shipments'] as const,
   lists: () => [...shipmentKeys.all, 'list'] as const,
@@ -31,6 +33,7 @@ export function useShipments(params?: GetShipmentsParams) {
   return useQuery({
     queryKey: shipmentKeys.list(params),
     queryFn: () => shipmentsApi.list(params),
+    staleTime: STALE_TIME_LIST,
   });
 }
 
@@ -39,6 +42,7 @@ export function useShipment(id: string) {
     queryKey: shipmentKeys.detail(id),
     queryFn: () => shipmentsApi.get(id),
     enabled: !!id,
+    staleTime: 0, // Always fresh for detail views
   });
 }
 
@@ -47,6 +51,7 @@ export function useShipmentTimeline(id: string) {
     queryKey: shipmentKeys.timeline(id),
     queryFn: () => shipmentsApi.getTimeline(id),
     enabled: !!id,
+    staleTime: 0, // Always fresh for real-time data
   });
 }
 
@@ -55,6 +60,7 @@ export function useShipmentTracking(id: string) {
     queryKey: shipmentKeys.tracking(id),
     queryFn: () => shipmentsApi.getTrackingHistory(id),
     enabled: !!id,
+    staleTime: 0, // Always fresh for real-time tracking
   });
 }
 
@@ -63,6 +69,7 @@ export function useShipmentApplications(id: string) {
     queryKey: shipmentKeys.applications(id),
     queryFn: () => shipmentsApi.getApplications(id),
     enabled: !!id,
+    staleTime: STALE_TIME_LIST,
   });
 }
 
