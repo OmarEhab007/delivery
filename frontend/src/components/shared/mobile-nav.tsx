@@ -63,6 +63,7 @@ const getNavItems = (role: UserRole): NavItem[] => {
         { title: 'الرئيسية', href: '/merchant/dashboard', icon: Home },
         { title: 'الشحنات', href: '/merchant/shipments', icon: Package },
         { title: 'التحليلات', href: '/merchant/analytics', icon: FileText },
+        { title: 'الإعدادات', href: '/merchant/settings', icon: Settings },
       ];
 
     case 'TruckOwner':
@@ -79,6 +80,7 @@ const getNavItems = (role: UserRole): NavItem[] => {
             { title: 'السائقين', href: '/truck-owner/fleet/drivers', icon: Users },
           ],
         },
+        { title: 'الإعدادات', href: '/truck-owner/settings', icon: Settings },
       ];
 
     case 'Driver':
@@ -88,6 +90,7 @@ const getNavItems = (role: UserRole): NavItem[] => {
         { title: 'تسجيل الحضور', href: '/driver/checkin', icon: FileText },
         { title: 'السجل', href: '/driver/history', icon: FileText },
         { title: 'الملف الشخصي', href: '/driver/profile', icon: User },
+        { title: 'الإعدادات', href: '/driver/settings', icon: Settings },
       ];
 
     case 'Admin':
@@ -100,6 +103,7 @@ const getNavItems = (role: UserRole): NavItem[] => {
         { title: 'الموافقات', href: '/admin/approvals', icon: FileText },
         { title: 'المستندات', href: '/admin/documents', icon: FileText },
         { title: 'التحليلات', href: '/admin/analytics', icon: FileText },
+        { title: 'الإعدادات', href: '/admin/settings', icon: Settings },
       ];
 
     default:
@@ -198,6 +202,9 @@ export function MobileNav({ className }: MobileNavProps) {
   }, [pathname]);
 
   const navItems = user?.role ? getNavItems(user.role) : [];
+  const settingsHref = user?.role
+    ? `/${user.role.toLowerCase().replace('owner', '-owner')}/settings`
+    : '/settings';
 
   const handleLogout = async () => {
     await logout.mutateAsync();
@@ -276,7 +283,7 @@ export function MobileNav({ className }: MobileNavProps) {
                 <span>الإشعارات</span>
               </Link>
               <Link
-                href="/settings"
+                href={settingsHref}
                 onClick={() => setIsOpen(false)}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent"
               >

@@ -1,19 +1,6 @@
 import type { Metadata, Viewport } from 'next';
-import { Cairo, Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/lib/providers';
-
-const cairo = Cairo({
-  subsets: ['arabic', 'latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-cairo',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-inter',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://allogisti.com'),
@@ -81,7 +68,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <body className={`${cairo.variable} ${inter.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

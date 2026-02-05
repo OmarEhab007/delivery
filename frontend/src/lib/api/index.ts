@@ -11,5 +11,7 @@ export { shipmentsApi } from './shipments';
 export { applicationsApi } from './applications';
 export { trucksApi } from './trucks';
 export { driversApi } from './drivers';
+export { truckOwnerApi } from './truck-owner';
 export { documentsApi } from './documents';
 export { adminApi } from './admin';
+export { settingsApi } from './settings';

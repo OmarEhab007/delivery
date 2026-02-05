@@ -17,28 +17,28 @@ const shipmentStatusConfig: Record<ShipmentStatus, { label: string; variant: 'de
     label: 'في انتظار الموافقة',
     variant: 'outline',
     className:
-      'border-yellow-500/60 text-yellow-700 bg-yellow-50 dark:border-yellow-400/40 dark:bg-yellow-900/30 dark:text-yellow-200',
+      'border-amber-500/40 text-amber-700 bg-amber-500/15 dark:border-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200',
   },
   REQUESTED: { label: 'مطلوبة', variant: 'secondary' },
-  CONFIRMED: { label: 'مؤكدة', variant: 'default', className: 'bg-blue-500 hover:bg-blue-600' },
-  ASSIGNED: { label: 'تم التعيين', variant: 'default', className: 'bg-indigo-500 hover:bg-indigo-600' },
-  LOADING: { label: 'جاري التحميل', variant: 'default', className: 'bg-purple-500 hover:bg-purple-600' },
-  IN_TRANSIT: { label: 'في الطريق', variant: 'default', className: 'bg-primary hover:bg-primary/90' },
-  UNLOADING: { label: 'جاري التفريغ', variant: 'default', className: 'bg-teal-500 hover:bg-teal-600' },
+  CONFIRMED: { label: 'مؤكدة', variant: 'outline', className: 'border-sky-500/40 bg-sky-500/15 text-sky-700 dark:text-sky-200' },
+  ASSIGNED: { label: 'تم التعيين', variant: 'outline', className: 'border-indigo-500/40 bg-indigo-500/15 text-indigo-700 dark:text-indigo-200' },
+  LOADING: { label: 'جاري التحميل', variant: 'outline', className: 'border-violet-500/40 bg-violet-500/15 text-violet-700 dark:text-violet-200' },
+  IN_TRANSIT: { label: 'في الطريق', variant: 'outline', className: 'border-primary/40 bg-primary/15 text-primary' },
+  UNLOADING: { label: 'جاري التفريغ', variant: 'outline', className: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200' },
   AT_BORDER: {
     label: 'عند الحدود',
     variant: 'outline',
     className:
-      'border-orange-500/60 text-orange-700 bg-orange-50 dark:border-orange-400/40 dark:bg-orange-900/30 dark:text-orange-200',
+      'border-orange-500/40 text-orange-700 bg-orange-500/15 dark:border-orange-400/40 dark:bg-orange-500/15 dark:text-orange-200',
   },
-  DELIVERED: { label: 'تم التسليم', variant: 'default', className: 'bg-green-500 hover:bg-green-600' },
-  COMPLETED: { label: 'مكتملة', variant: 'default', className: 'bg-green-600 hover:bg-green-700' },
+  DELIVERED: { label: 'تم التسليم', variant: 'outline', className: 'border-green-500/40 bg-green-500/15 text-green-700 dark:text-green-200' },
+  COMPLETED: { label: 'مكتملة', variant: 'outline', className: 'border-green-600/40 bg-green-600/15 text-green-700 dark:text-green-200' },
   CANCELLED: { label: 'ملغاة', variant: 'destructive' },
   DELAYED: {
     label: 'متأخرة',
     variant: 'outline',
     className:
-      'border-red-500/60 text-red-700 bg-red-50 dark:border-red-400/40 dark:bg-red-900/30 dark:text-red-200',
+      'border-rose-500/40 text-rose-700 bg-rose-500/15 dark:border-rose-400/40 dark:bg-rose-500/15 dark:text-rose-200',
   },
   REJECTED: { label: 'مرفوضة', variant: 'destructive' },
 };
@@ -49,22 +49,22 @@ const applicationStatusConfig: Record<ApplicationStatus, { label: string; varian
     label: 'قيد المراجعة',
     variant: 'outline',
     className:
-      'border-yellow-500/60 text-yellow-700 bg-yellow-50 dark:border-yellow-400/40 dark:bg-yellow-900/30 dark:text-yellow-200',
+      'border-amber-500/40 text-amber-700 bg-amber-500/15 dark:border-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200',
   },
-  ACCEPTED: { label: 'مقبول', variant: 'default', className: 'bg-green-500 hover:bg-green-600' },
+  ACCEPTED: { label: 'مقبول', variant: 'outline', className: 'border-green-500/40 bg-green-500/15 text-green-700 dark:text-green-200' },
   REJECTED: { label: 'مرفوض', variant: 'destructive' },
   CANCELLED: { label: 'ملغي', variant: 'secondary' },
 };
 
 // Truck Status Configurations
 const truckStatusConfig: Record<TruckStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }> = {
-  AVAILABLE: { label: 'متاحة', variant: 'default', className: 'bg-green-500 hover:bg-green-600' },
-  IN_SERVICE: { label: 'في الخدمة', variant: 'default', className: 'bg-blue-500 hover:bg-blue-600' },
+  AVAILABLE: { label: 'متاحة', variant: 'outline', className: 'border-green-500/40 bg-green-500/15 text-green-700 dark:text-green-200' },
+  IN_SERVICE: { label: 'في الخدمة', variant: 'outline', className: 'border-sky-500/40 bg-sky-500/15 text-sky-700 dark:text-sky-200' },
   IN_MAINTENANCE: {
     label: 'صيانة',
     variant: 'outline',
     className:
-      'border-orange-500/60 text-orange-700 bg-orange-50 dark:border-orange-400/40 dark:bg-orange-900/30 dark:text-orange-200',
+      'border-orange-500/40 text-orange-700 bg-orange-500/15 dark:border-orange-400/40 dark:bg-orange-500/15 dark:text-orange-200',
   },
   OUT_OF_SERVICE: { label: 'خارج الخدمة', variant: 'destructive' },
 };
@@ -75,21 +75,21 @@ const approvalStatusConfig: Record<ApprovalStatus, { label: string; variant: 'de
     label: 'قيد الانتظار',
     variant: 'outline',
     className:
-      'border-yellow-500/60 text-yellow-700 bg-yellow-50 dark:border-yellow-400/40 dark:bg-yellow-900/30 dark:text-yellow-200',
+      'border-amber-500/40 text-amber-700 bg-amber-500/15 dark:border-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200',
   },
-  APPROVED: { label: 'معتمد', variant: 'default', className: 'bg-green-500 hover:bg-green-600' },
+  APPROVED: { label: 'معتمد', variant: 'outline', className: 'border-green-500/40 bg-green-500/15 text-green-700 dark:text-green-200' },
   REJECTED: { label: 'مرفوض', variant: 'destructive' },
 };
 
 // Driver Status Configurations
 const driverStatusConfig: Record<DriverStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }> = {
-  ACTIVE: { label: 'نشط', variant: 'default', className: 'bg-green-500 hover:bg-green-600' },
+  ACTIVE: { label: 'نشط', variant: 'outline', className: 'border-green-500/40 bg-green-500/15 text-green-700 dark:text-green-200' },
   OFF_DUTY: { label: 'خارج الخدمة', variant: 'secondary' },
   ON_BREAK: {
     label: 'في استراحة',
     variant: 'outline',
     className:
-      'border-blue-500/60 text-blue-700 bg-blue-50 dark:border-blue-400/40 dark:bg-blue-900/30 dark:text-blue-200',
+      'border-sky-500/40 text-sky-700 bg-sky-500/15 dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-200',
   },
   INACTIVE: { label: 'غير نشط', variant: 'destructive' },
 };
@@ -101,9 +101,9 @@ const verificationStatusConfig: Record<VerificationStatus, { label: string; vari
     label: 'قيد التوثيق',
     variant: 'outline',
     className:
-      'border-yellow-500/60 text-yellow-700 bg-yellow-50 dark:border-yellow-400/40 dark:bg-yellow-900/30 dark:text-yellow-200',
+      'border-amber-500/40 text-amber-700 bg-amber-500/15 dark:border-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200',
   },
-  VERIFIED: { label: 'موثق', variant: 'default', className: 'bg-green-500 hover:bg-green-600' },
+  VERIFIED: { label: 'موثق', variant: 'outline', className: 'border-green-500/40 bg-green-500/15 text-green-700 dark:text-green-200' },
   REJECTED: { label: 'مرفوض', variant: 'destructive' },
 };
 

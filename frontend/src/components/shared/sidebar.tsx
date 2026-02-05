@@ -41,6 +41,7 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
     { title: 'الموافقات', href: '/admin/approvals', icon: CheckSquare },
     { title: 'المستندات', href: '/admin/documents', icon: FileText },
     { title: 'التحليلات', href: '/admin/analytics', icon: BarChart3 },
+    { title: 'الإعدادات', href: '/admin/settings', icon: Settings },
   ],
   Merchant: [
     { title: 'لوحة التحكم', href: '/merchant/dashboard', icon: LayoutDashboard },
@@ -62,6 +63,7 @@ const navigationByRole: Record<UserRole, NavItem[]> = {
     { title: 'تسجيل الدخول/الخروج', href: '/driver/checkin', icon: CheckSquare },
     { title: 'السجل', href: '/driver/history', icon: History },
     { title: 'الملف الشخصي', href: '/driver/profile', icon: User },
+    { title: 'الإعدادات', href: '/driver/settings', icon: Settings },
   ],
 };
 
@@ -78,16 +80,19 @@ export function Sidebar({ role }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'relative flex h-screen flex-col border-r bg-sidebar transition-all duration-300',
+        'relative flex h-screen flex-col border-r bg-sidebar/95 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur transition-all duration-300',
         isCollapsed ? 'w-16' : 'w-64'
       )}
     >
       {/* Header */}
       <div className="flex h-16 items-center justify-between border-b px-4">
         {!isCollapsed && (
-          <Link href={`/${role.toLowerCase()}/dashboard`} className="flex items-center gap-2">
+          <Link
+            href={`/${role.toLowerCase().replace('owner', '-owner')}/dashboard`}
+            className="flex items-center gap-2"
+          >
             <Truck className="h-6 w-6 text-primary" />
-            <span className="text-lg font-semibold">اللوجستي</span>
+            <span className="text-lg font-semibold tracking-wide">اللوجستي</span>
           </Link>
         )}
         <Button
@@ -116,10 +121,10 @@ export function Sidebar({ role }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                  'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all',
                   isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent/50',
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
+                    : 'text-sidebar-foreground hover:bg-sidebar-accent/60',
                   isCollapsed && 'justify-center px-2'
                 )}
                 title={isCollapsed ? item.title : undefined}

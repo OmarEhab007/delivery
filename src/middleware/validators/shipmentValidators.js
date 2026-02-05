@@ -23,6 +23,10 @@ const ALLOWED_CREATE_FIELDS = [
   'scheduledDate',
   'pricingType',
   'specialRequirements',
+  'incoterm',
+  'fixedPriceDetails',
+  'estimatedPickupDate',
+  'estimatedDeliveryDate',
 ];
 
 /**
@@ -94,16 +98,40 @@ const createShipmentValidation = [
     .withMessage('Origin city cannot exceed 100 characters'),
   body('origin.coordinates')
     .optional()
-    .isArray({ min: 2, max: 2 })
-    .withMessage('Coordinates must be an array of [longitude, latitude]'),
-  body('origin.coordinates.0')
-    .optional()
-    .isFloat({ min: -180, max: 180 })
-    .withMessage('Longitude must be between -180 and 180'),
-  body('origin.coordinates.1')
+    .customSanitizer((value) => {
+      if (Array.isArray(value) && value.length >= 2) {
+        return { lng: value[0], lat: value[1] };
+      }
+      return value;
+    })
+    .custom((value) => {
+      if (value === undefined) return true;
+      if (Array.isArray(value)) {
+        if (value.length !== 2) {
+          throw new Error('Coordinates must be [longitude, latitude]');
+        }
+        if (typeof value[0] !== 'number' || typeof value[1] !== 'number') {
+          throw new Error('Coordinates must be numbers');
+        }
+        return true;
+      }
+      if (typeof value === 'object' && value !== null) {
+        const { lat, lng } = value;
+        if (typeof lat !== 'number' || typeof lng !== 'number') {
+          throw new Error('Coordinates must include numeric lat/lng');
+        }
+        return true;
+      }
+      throw new Error('Coordinates must be an array or object');
+    }),
+  body('origin.coordinates.lat')
     .optional()
     .isFloat({ min: -90, max: 90 })
     .withMessage('Latitude must be between -90 and 90'),
+  body('origin.coordinates.lng')
+    .optional()
+    .isFloat({ min: -180, max: 180 })
+    .withMessage('Longitude must be between -180 and 180'),
 
   // Destination validation
   body('destination').notEmpty().withMessage('Destination is required'),
@@ -125,16 +153,40 @@ const createShipmentValidation = [
     .withMessage('Destination city cannot exceed 100 characters'),
   body('destination.coordinates')
     .optional()
-    .isArray({ min: 2, max: 2 })
-    .withMessage('Coordinates must be an array of [longitude, latitude]'),
-  body('destination.coordinates.0')
-    .optional()
-    .isFloat({ min: -180, max: 180 })
-    .withMessage('Longitude must be between -180 and 180'),
-  body('destination.coordinates.1')
+    .customSanitizer((value) => {
+      if (Array.isArray(value) && value.length >= 2) {
+        return { lng: value[0], lat: value[1] };
+      }
+      return value;
+    })
+    .custom((value) => {
+      if (value === undefined) return true;
+      if (Array.isArray(value)) {
+        if (value.length !== 2) {
+          throw new Error('Coordinates must be [longitude, latitude]');
+        }
+        if (typeof value[0] !== 'number' || typeof value[1] !== 'number') {
+          throw new Error('Coordinates must be numbers');
+        }
+        return true;
+      }
+      if (typeof value === 'object' && value !== null) {
+        const { lat, lng } = value;
+        if (typeof lat !== 'number' || typeof lng !== 'number') {
+          throw new Error('Coordinates must include numeric lat/lng');
+        }
+        return true;
+      }
+      throw new Error('Coordinates must be an array or object');
+    }),
+  body('destination.coordinates.lat')
     .optional()
     .isFloat({ min: -90, max: 90 })
     .withMessage('Latitude must be between -90 and 90'),
+  body('destination.coordinates.lng')
+    .optional()
+    .isFloat({ min: -180, max: 180 })
+    .withMessage('Longitude must be between -180 and 180'),
 
   // Cargo details validation
   body('cargoDetails').notEmpty().withMessage('Cargo details are required'),
@@ -183,6 +235,25 @@ const createShipmentValidation = [
     .isIn(['BIDDING', 'FIXED_PRICE'])
     .withMessage('Pricing type must be BIDDING or FIXED_PRICE'),
 
+  // Fixed price details (required when pricing type is FIXED_PRICE)
+  body('fixedPriceDetails.amount')
+    .if(body('pricingType').equals('FIXED_PRICE'))
+    .notEmpty()
+    .withMessage('Fixed price amount is required for FIXED_PRICE shipments')
+    .isFloat({ min: 0 })
+    .withMessage('Fixed price amount must be a positive number'),
+  body('fixedPriceDetails.currency')
+    .optional()
+    .isIn(['USD', 'EUR', 'GBP', 'EGP', 'SAR', 'AED'])
+    .withMessage('Currency must be one of: USD, EUR, GBP, EGP, SAR, AED'),
+
+  // Incoterm validation
+  body('incoterm')
+    .optional()
+    .trim()
+    .isLength({ max: 10 })
+    .withMessage('Incoterm cannot exceed 10 characters'),
+
   // Notes validation
   body('notes')
     .optional()
@@ -195,6 +266,16 @@ const createShipmentValidation = [
     .optional()
     .isISO8601()
     .withMessage('Scheduled date must be a valid ISO 8601 date'),
+
+  // Estimated dates validation
+  body('estimatedPickupDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Estimated pickup date must be a valid ISO 8601 date'),
+  body('estimatedDeliveryDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Estimated delivery date must be a valid ISO 8601 date'),
 
   // Special requirements validation
   body('specialRequirements')
@@ -218,6 +299,10 @@ const ALLOWED_UPDATE_FIELDS = [
   'notes',
   'scheduledDate',
   'specialRequirements',
+  'incoterm',
+  'fixedPriceDetails',
+  'estimatedPickupDate',
+  'estimatedDeliveryDate',
 ];
 
 /**

@@ -113,6 +113,80 @@ export function useAdminShipments(params?: GetShipmentsParams) {
   });
 }
 
+export function useAdminShipment(id: string) {
+  return useQuery({
+    queryKey: adminKeys.shipment(id),
+    queryFn: () => adminApi.getShipment(id),
+    enabled: !!id,
+  });
+}
+
+export function useAdminApproveShipment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => adminApi.approveShipment(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.shipment(id) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.shipments() });
+      toast.success('تم اعتماد الشحنة');
+    },
+    onError: (error: Error) => {
+      toast.error('فشل اعتماد الشحنة', { description: error.message });
+    },
+  });
+}
+
+export function useAdminRejectShipment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => adminApi.rejectShipment(id, reason),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.shipment(variables.id) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.shipments() });
+      toast.success('تم رفض الشحنة');
+    },
+    onError: (error: Error) => {
+      toast.error('فشل رفض الشحنة', { description: error.message });
+    },
+  });
+}
+
+export function useAdminAssignShipment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, driverId, assignedTruckId }: { id: string; driverId: string; assignedTruckId?: string }) =>
+      adminApi.assignShipment(id, { driverId, assignedTruckId }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.shipment(variables.id) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.shipments() });
+      toast.success('تم تعيين الشحنة للسائق');
+    },
+    onError: (error: Error) => {
+      toast.error('فشل تعيين الشحنة', { description: error.message });
+    },
+  });
+}
+
+export function useAdminUpdateShipmentStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      adminApi.updateShipmentStatus(id, { status }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.shipment(variables.id) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.shipments() });
+      toast.success('تم تحديث حالة الشحنة');
+    },
+    onError: (error: Error) => {
+      toast.error('فشل تحديث حالة الشحنة', { description: error.message });
+    },
+  });
+}
+
 export function useAdminApplications(params?: Record<string, unknown>) {
   return useQuery({
     queryKey: adminKeys.applications(params),
@@ -139,6 +213,22 @@ export function useAdminTrucks(params?: Record<string, unknown>) {
   return useQuery({
     queryKey: adminKeys.trucks(params),
     queryFn: () => adminApi.getTrucks(params),
+  });
+}
+
+export function useAdminCreateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { name: string; email: string; password: string; phone: string; role: string; [key: string]: unknown }) =>
+      adminApi.createUser(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.users() });
+      toast.success('تم إنشاء المستخدم بنجاح');
+    },
+    onError: (error: Error) => {
+      toast.error('فشل إنشاء المستخدم', { description: error.message });
+    },
   });
 }
 

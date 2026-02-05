@@ -22,12 +22,10 @@ export default function DriverShipmentsPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [page, setPage] = useState(1);
 
-  const currentStatuses = statusTabs.find(t => t.value === activeTab)?.statuses || [];
-
   const { data, isLoading, refetch } = useDriverShipments({
     page,
     limit: 10,
-    shipmentStatus: currentStatuses.length > 0 ? currentStatuses[0] : undefined,
+    shipmentStatus: activeTab === 'completed' ? 'DELIVERED' : undefined,
   });
 
   const shipments = data?.data || [];

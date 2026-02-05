@@ -78,7 +78,7 @@ export default function DriverHistoryPage() {
     const distance = (s.endOdometer || 0) - (s.startOdometer || 0);
     return acc + (distance > 0 ? distance : 0);
   }, 0);
-  const avgRating = 4.7; // Would come from API
+  const avgRating = null as number | null; // Placeholder until rating API is available
 
   if (isLoading) {
     return <HistoryPageSkeleton />;
@@ -134,7 +134,7 @@ export default function DriverHistoryPage() {
             <Star className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{avgRating}</div>
+            <div className="text-2xl font-bold">{avgRating !== null ? avgRating : '—'}</div>
             <p className="text-xs text-muted-foreground">من 5 نجوم</p>
           </CardContent>
         </Card>
@@ -256,7 +256,7 @@ export default function DriverHistoryPage() {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                          <span>4.8</span>
+                          <span>—</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -335,7 +335,7 @@ export default function DriverHistoryPage() {
                 <Star className="h-5 w-5" />
                 <span className="font-medium">التقييم</span>
               </div>
-              <p className="text-2xl font-bold mt-2">{avgRating} / 5</p>
+              <p className="text-2xl font-bold mt-2">{avgRating !== null ? `${avgRating} / 5` : '—'}</p>
             </div>
           </div>
         </CardContent>

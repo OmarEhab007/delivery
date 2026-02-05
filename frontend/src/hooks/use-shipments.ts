@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { shipmentsApi } from '@/lib/api';
+import { shipmentsApi, ApiClientError } from '@/lib/api';
 import type {
   GetShipmentsParams,
   CreateShipmentRequest,
@@ -76,7 +76,16 @@ export function useCreateShipment() {
       toast.success('تم إنشاء الشحنة بنجاح');
     },
     onError: (error: Error) => {
-      toast.error('فشل في إنشاء الشحنة', { description: error.message });
+      let description = error.message;
+      if (error instanceof ApiClientError && error.errors?.length) {
+        const messages = error.errors
+          .map((err) => err.message || (err as { msg?: string }).msg || err.field)
+          .filter(Boolean);
+        if (messages.length > 0) {
+          description = messages.join(' • ');
+        }
+      }
+      toast.error('فشل في إنشاء الشحنة', { description });
     },
   });
 }

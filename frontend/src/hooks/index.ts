@@ -10,3 +10,5 @@ export * from './use-trucks';
 export * from './use-drivers';
 export * from './use-user';
 export * from './use-toast';
+export * from './use-settings';
+export * from './use-truck-owner';

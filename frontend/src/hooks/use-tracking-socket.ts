@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getTokens } from '@/lib/api/client';
 
 export interface TrackingLocation {
   lat: number;
@@ -14,7 +15,7 @@ export interface TrackingLocation {
 
 export interface TrackingUpdate {
   shipmentId: string;
-  driverId: string;
+  driverId?: string;
   location: TrackingLocation;
   status?: string;
 }
@@ -66,12 +67,15 @@ export function useTrackingSocket({
 
     setConnectionStatus('connecting');
 
+    const { accessToken } = getTokens();
+
     const socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      auth: accessToken ? { token: accessToken } : undefined,
     });
 
     socket.on('connect', () => {
@@ -79,12 +83,7 @@ export function useTrackingSocket({
 
       // Join shipment tracking room if shipmentId provided
       if (shipmentId) {
-        socket.emit('join:shipment', { shipmentId });
-      }
-
-      // Join driver tracking room if driverId provided
-      if (driverId) {
-        socket.emit('join:driver', { driverId });
+        socket.emit('join:shipment', shipmentId);
       }
     });
 
@@ -98,7 +97,7 @@ export function useTrackingSocket({
     });
 
     // Listen for location updates
-    socket.on('location:update', (update: TrackingUpdate) => {
+    socket.on('shipment:location', (update: TrackingUpdate) => {
       const { location } = update;
 
       setCurrentLocation(location);
@@ -140,14 +139,14 @@ export function useTrackingSocket({
 
     const update: TrackingUpdate = {
       shipmentId: shipmentId || '',
-      driverId: driverId || '',
+      driverId: driverId || undefined,
       location: {
         ...location,
         timestamp: new Date().toISOString(),
       },
     };
 
-    socketRef.current.emit('location:update', update);
+    socketRef.current.emit('driver:location', update);
   }, [shipmentId, driverId]);
 
   const clearHistory = useCallback(() => {

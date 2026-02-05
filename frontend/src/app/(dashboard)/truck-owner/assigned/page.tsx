@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ShipmentStatusBadge } from '@/components/shared/status-badge';
-import { useShipments } from '@/hooks/use-shipments';
+import { useTruckOwnerShipments } from '@/hooks/use-truck-owner';
 
 function TableSkeleton() {
   return (
@@ -36,15 +36,12 @@ function TableSkeleton() {
 
 export default function AssignedShipmentsPage() {
   // Fetch assigned shipments (those with status indicating active assignment)
-  const { data, isLoading } = useShipments({
+  const { data, isLoading } = useTruckOwnerShipments({
     page: 1,
     limit: 10,
-    // Filter for shipments that are assigned (have a truck/driver assigned)
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
   });
 
-  const shipments = data?.data || [];
+  const shipments = data?.data.shipments || [];
 
   // Filter to only show shipments that are assigned to this truck owner's fleet
   // In a real app, this would be filtered on the backend
