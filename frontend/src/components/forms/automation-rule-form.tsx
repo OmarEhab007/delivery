@@ -129,7 +129,7 @@ export function AutomationRuleForm({
                         min={1}
                         placeholder="24"
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        onChange={(e) => { const v = parseInt(e.target.value, 10); field.onChange(isNaN(v) ? 1 : Math.max(v, 1)); }}
                         className="max-w-[120px]"
                       />
                       <span className="text-sm text-muted-foreground">ساعات</span>

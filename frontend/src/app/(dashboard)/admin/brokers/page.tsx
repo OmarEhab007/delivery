@@ -54,7 +54,7 @@ export default function BrokersPage() {
     }
   };
 
-  const handleUpdate = async (data: Parameters<typeof createMutation.mutateAsync>[0]) => {
+  const handleUpdate = async (data: Parameters<typeof updateMutation.mutateAsync>[0]['data']) => {
     if (!selectedBroker) return;
     try {
       await updateMutation.mutateAsync({ id: selectedBroker._id, data });
@@ -93,7 +93,7 @@ export default function BrokersPage() {
 
           <BrokersTable
             brokers={brokers}
-            isLoading={isLoading}
+            isLoading={false}
             onEdit={handleEdit}
             onDeactivate={handleDeactivate}
           />

@@ -25,14 +25,6 @@ export function useKpiSummary(params?: AnalyticsParams) {
   });
 }
 
-export function useLanePerformance(params?: AnalyticsParams) {
-  return useQuery({
-    queryKey: analyticsKeys.lanes(params),
-    queryFn: () => analyticsApi.getLanePerformance(params),
-    staleTime: STALE_TIME,
-  });
-}
-
 export function useStatusTrends(params?: AnalyticsParams) {
   return useQuery({
     queryKey: analyticsKeys.statusTrends(params),

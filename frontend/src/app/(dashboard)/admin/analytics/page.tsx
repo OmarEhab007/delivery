@@ -132,7 +132,8 @@ export default function AdminAnalyticsPage() {
           toast.error('نوع التصدير غير معروف');
           return;
       }
-    } catch {
+    } catch (error) {
+      console.error('Export failed:', error);
       toast.error('فشل في تصدير البيانات');
     }
   };
@@ -312,6 +313,7 @@ async function exportRevenueData(
     averageRevenuePerShipment: number;
   }>
 ) {
+  if (data.length === 0) return;
   const rows = data.map((item) => ({
     الفترة: item.period,
     'إجمالي الإيرادات': item.totalRevenue,
@@ -343,6 +345,7 @@ async function exportPerformanceData(
     onTimeDeliveryRate: number;
   }>
 ) {
+  if (data.length === 0) return;
   const rows = data.map((item) => ({
     'اسم السائق': item.driverName || item._id,
     'البريد الإلكتروني': item.driverEmail || '-',
@@ -375,6 +378,7 @@ async function exportCustomerData(
     daysSinceLastOrder: number;
   }>
 ) {
+  if (data.length === 0) return;
   const rows = data.map((item) => ({
     'اسم العميل': item.merchantName,
     'البريد الإلكتروني': item.merchantEmail,
@@ -410,6 +414,7 @@ async function exportEfficiencyData(
     avgDeliveryTime: number;
   }>
 ) {
+  if (data.length === 0) return;
   const rows = data.map((item) => ({
     الفترة: item.period,
     'إجمالي الشحنات': item.totalShipments,
@@ -444,6 +449,7 @@ async function exportGeoData(
     averageTravelTime: number;
   }>
 ) {
+  if (data.length === 0) return;
   const rows = data.map((item) => ({
     الأصل: item.origin,
     الوجهة: item.destination,
