@@ -155,3 +155,10 @@ src/
 - Client-side React application is in `/client` directory
 - Comprehensive logging system with daily rotation
 - Rate limiting configured for different endpoint types
+
+## Active Technologies
+- TypeScript 5 on Next.js 14.2.35 (App Router) with React 18 + @tanstack/react-query 5.90, zustand 5.0, socket.io-client 4.8, react-leaflet 4.2, react-hook-form 7.71, zod 4.3, Radix UI, Tailwind CSS 3.4, cmdk 1.1, lucide-react 0.563, sonner 2.0, date-fns 4.1 (007-production-frontend)
+- N/A (frontend consumes backend REST API + Socket.io) (007-production-frontend)
+
+## Recent Changes
+- 007-production-frontend: Added TypeScript 5 on Next.js 14.2.35 (App Router) with React 18 + @tanstack/react-query 5.90, zustand 5.0, socket.io-client 4.8, react-leaflet 4.2, react-hook-form 7.71, zod 4.3, Radix UI, Tailwind CSS 3.4, cmdk 1.1, lucide-react 0.563, sonner 2.0, date-fns 4.1
