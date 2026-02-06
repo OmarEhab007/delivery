@@ -34,9 +34,14 @@ lerna-debug.log*
 /dist/
 /build/
 client/build/
+frontend/.next/
 /tmp/
 /temp/
 /backups/
+
+# Test artifacts
+playwright-report/
+test-results/
 
 # OS specific files
 .DS_Store
