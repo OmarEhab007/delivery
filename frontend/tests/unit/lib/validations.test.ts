@@ -16,7 +16,7 @@ describe('Validation Schemas', () => {
     it('should validate valid login data', () => {
       const validData = {
         email: 'test@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
       };
 
       const result = loginSchema.safeParse(validData);
@@ -29,7 +29,7 @@ describe('Validation Schemas', () => {
 
     it('should fail when email is missing', () => {
       const invalidData = {
-        password: 'password123',
+        password: 'StrongP@ss123!',
       };
 
       const result = loginSchema.safeParse(invalidData);
@@ -43,7 +43,7 @@ describe('Validation Schemas', () => {
     it('should fail when email is invalid', () => {
       const invalidData = {
         email: 'not-an-email',
-        password: 'password123',
+        password: 'StrongP@ss123!',
       };
 
       const result = loginSchema.safeParse(invalidData);
@@ -55,10 +55,10 @@ describe('Validation Schemas', () => {
       }
     });
 
-    it('should fail when password is too short', () => {
+    it('should fail when password is empty', () => {
       const invalidData = {
         email: 'test@example.com',
-        password: '12345',
+        password: '',
       };
 
       const result = loginSchema.safeParse(invalidData);
@@ -66,8 +66,18 @@ describe('Validation Schemas', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.issues[0].path).toContain('password');
-        expect(result.error.issues[0].message).toContain('6 أحرف');
       }
+    });
+
+    it('should accept weak passwords for login (existing users)', () => {
+      const data = {
+        email: 'test@example.com',
+        password: 'short',
+      };
+
+      const result = loginSchema.safeParse(data);
+
+      expect(result.success).toBe(true);
     });
 
     it('should fail when password is missing', () => {
@@ -89,7 +99,7 @@ describe('Validation Schemas', () => {
       const validData = {
         name: 'John Doe',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
         phone: '12345678',
         role: 'Merchant' as const,
         companyName: 'Test Company',
@@ -108,7 +118,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         name: 'J',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
         phone: '12345678',
         role: 'Merchant',
       };
@@ -125,7 +135,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         name: 'John Doe',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
         phone: '12345678',
         role: 'InvalidRole',
       };
@@ -142,7 +152,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         name: 'John Doe',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
         phone: '123',
         role: 'Merchant',
       };
@@ -159,7 +169,7 @@ describe('Validation Schemas', () => {
       const validData = {
         name: 'John Doe',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
         phone: '12345678',
         role: 'Merchant' as const,
       };
@@ -374,7 +384,7 @@ describe('Validation Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should set default values for optional fields', () => {
+    it('should accept missing optional fields', () => {
       const validData = {
         name: 'Test Broker',
         licenseNumber: 'LIC-12345',
@@ -384,8 +394,8 @@ describe('Validation Schemas', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.countriesServed).toEqual([]);
-        expect(result.data.contacts).toEqual({ email: '', phone: '' });
+        expect(result.data.countriesServed).toBeUndefined();
+        expect(result.data.contacts).toBeUndefined();
       }
     });
   });
@@ -560,6 +570,109 @@ describe('Validation Schemas', () => {
       if (!result.success) {
         expect(result.error.issues[0].path).toContain('endpointUrl');
       }
+    });
+  });
+
+  describe('Password Schema Validation (Hardened)', () => {
+    it('should reject passwords shorter than 12 characters on register', () => {
+      const result = registerSchema.safeParse({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'Aa1!short',
+        phone: '12345678',
+        role: 'Merchant',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(' ');
+        expect(messages).toContain('12 حرفاً');
+      }
+    });
+
+    it('should reject passwords missing uppercase letters on register', () => {
+      const result = registerSchema.safeParse({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'nouppercase1!@#',
+        phone: '12345678',
+        role: 'Merchant',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(' ');
+        expect(messages).toContain('حرف كبير');
+      }
+    });
+
+    it('should reject passwords missing lowercase letters on register', () => {
+      const result = registerSchema.safeParse({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'NOLOWERCASE1!@#',
+        phone: '12345678',
+        role: 'Merchant',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(' ');
+        expect(messages).toContain('حرف صغير');
+      }
+    });
+
+    it('should reject passwords missing digits on register', () => {
+      const result = registerSchema.safeParse({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'NoDigitsHere!@#',
+        phone: '12345678',
+        role: 'Merchant',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(' ');
+        expect(messages).toContain('رقم واحد');
+      }
+    });
+
+    it('should reject passwords missing special characters on register', () => {
+      const result = registerSchema.safeParse({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'NoSpecialChar12',
+        phone: '12345678',
+        role: 'Merchant',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(' ');
+        expect(messages).toContain('رمز خاص');
+      }
+    });
+
+    it('should accept fully compliant passwords on register', () => {
+      const result = registerSchema.safeParse({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'StrongP@ss123!',
+        phone: '12345678',
+        role: 'Merchant',
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should not enforce complexity on loginSchema (existing users)', () => {
+      const result = loginSchema.safeParse({
+        email: 'test@example.com',
+        password: 'weakpassword',
+      });
+
+      expect(result.success).toBe(true);
     });
   });
 });

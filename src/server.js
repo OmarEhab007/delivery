@@ -373,6 +373,49 @@ if (process.env.NODE_ENV !== 'test') {
   // Test if port is available
   testServer.listen(PORT);
 
+  // Graceful shutdown handler
+  const gracefulShutdown = (signal) => {
+    logger.info(`Received ${signal}. Starting graceful shutdown...`);
+
+    // Set a force-kill timeout of 30 seconds
+    const forceKillTimeout = setTimeout(() => {
+      logger.error('Graceful shutdown timed out after 30s. Forcing exit.');
+      process.exit(1);
+    }, 30000);
+    forceKillTimeout.unref();
+
+    // Close Socket.IO connections first
+    try {
+      io.close();
+      logger.info('Socket.IO server closed.');
+    } catch (ioErr) {
+      logger.error(`Error closing Socket.IO server: ${ioErr.message}`);
+    }
+
+    // Stop accepting new HTTP connections
+    httpServer.close(async (err) => {
+      if (err) {
+        logger.error(`Error closing HTTP server: ${err.message}`);
+      }
+      logger.info('HTTP server closed. No longer accepting connections.');
+
+      try {
+        // Close MongoDB connection
+        const mongoose = require('mongoose'); // eslint-disable-line global-require
+        await mongoose.connection.close();
+        logger.info('MongoDB connection closed.');
+      } catch (mongoErr) {
+        logger.error(`Error closing MongoDB connection: ${mongoErr.message}`);
+      }
+
+      logger.info('Shutdown complete.');
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (err) => {
     logger.error(`Unhandled Rejection: ${err.message}`, { error: err });
