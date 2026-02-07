@@ -152,8 +152,8 @@ const recordLocationHistory = async (shipmentId, location, status = null) => {
     const timelineEntry = {
       status: status || shipment.status,
       location: {
-        lat: location.lat,
-        lng: location.lng,
+        type: 'Point',
+        coordinates: [location.lng, location.lat],
         address: location.address,
       },
     };

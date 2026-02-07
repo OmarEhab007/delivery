@@ -1,3 +1,11 @@
+// Force MongoMemoryServer to bind to localhost to avoid sandbox restrictions
+process.env.MONGOMS_IP = process.env.MONGOMS_IP || '127.0.0.1';
+
+// Patch get-port to bind to localhost instead of 0.0.0.0
+const originalGetPort = require('get-port');
+const patchedGetPort = (options = {}) => originalGetPort({ host: '127.0.0.1', ...options });
+require.cache[require.resolve('get-port')].exports = patchedGetPort;
+
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const promClient = require('prom-client');

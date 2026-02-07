@@ -149,10 +149,10 @@ const createTestApplication = async (shipmentId, ownerId, overrides = {}) => {
   const randomSuffix = Math.random().toString(36).substring(7);
 
   // Create a truck if truckId is not provided
-  let truckId = overrides.truckId;
-  if (!truckId) {
+  let assignedTruckId = overrides.assignedTruckId;
+  if (!assignedTruckId) {
     const truck = await createTestTruck(ownerId);
-    truckId = truck._id;
+    assignedTruckId = truck._id;
   }
 
   // Create a driver if driverId is not provided
@@ -165,7 +165,7 @@ const createTestApplication = async (shipmentId, ownerId, overrides = {}) => {
   const defaultApplication = {
     shipmentId,
     ownerId,
-    truckId,
+    assignedTruckId,
     driverId,
     bidDetails: {
       price: 1000 + Math.floor(Math.random() * 9000),
@@ -208,7 +208,7 @@ const createCompleteScenario = async (options = {}) => {
 
   // Create application
   const application = await createTestApplication(shipment._id, truckOwner._id, {
-    truckId: truck._id,
+    assignedTruckId: truck._id,
     driverId: driver._id,
     ...options.applicationOverrides,
   });
