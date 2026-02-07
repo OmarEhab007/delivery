@@ -104,7 +104,7 @@
 
 ## Dependency Graph
 
-```
+```text
 T001, T002 (parallel) → T003, T004 (verify)
     ↓
 T005, T006, T007, T008, T009, T010 (backend + frontend hardening, mostly parallel)

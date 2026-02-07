@@ -385,12 +385,15 @@ if (process.env.NODE_ENV !== 'test') {
     forceKillTimeout.unref();
 
     // Stop accepting new connections
-    httpServer.close(async () => {
+    httpServer.close(async (err) => {
+      if (err) {
+        logger.error(`Error closing HTTP server: ${err.message}`);
+      }
       logger.info('HTTP server closed. No longer accepting connections.');
 
       try {
         // Close MongoDB connection
-        const mongoose = require('mongoose');
+        const mongoose = require('mongoose'); // eslint-disable-line global-require
         await mongoose.connection.close();
         logger.info('MongoDB connection closed.');
       } catch (err) {

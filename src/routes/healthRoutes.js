@@ -46,10 +46,14 @@ router.get('/', (req, res) => {
  * @access  Public (unauthenticated)
  */
 router.get('/live', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  });
+  try {
+    res.status(200).json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error' });
+  }
 });
 
 /**

@@ -50,7 +50,7 @@ export function BrokerForm({ broker, onSubmit, onCancel, isLoading = false }: Br
 
   const addCountry = () => {
     if (countryInput.trim()) {
-      const currentCountries = form.getValues('countriesServed');
+      const currentCountries = form.getValues('countriesServed') ?? [];
       if (!currentCountries.includes(countryInput.trim())) {
         form.setValue('countriesServed', [...currentCountries, countryInput.trim()]);
       }
@@ -59,7 +59,7 @@ export function BrokerForm({ broker, onSubmit, onCancel, isLoading = false }: Br
   };
 
   const removeCountry = (country: string) => {
-    const currentCountries = form.getValues('countriesServed');
+    const currentCountries = form.getValues('countriesServed') ?? [];
     form.setValue(
       'countriesServed',
       currentCountries.filter((c) => c !== country)

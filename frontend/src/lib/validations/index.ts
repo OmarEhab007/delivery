@@ -21,7 +21,7 @@ const passwordSchema = z
 
 export const loginSchema = z.object({
   email: z.string().email('يرجى إدخال بريد إلكتروني صحيح'),
-  password: passwordSchema,
+  password: z.string().min(1, 'كلمة المرور مطلوبة'),
 });
 
 export const registerSchema = z.object({
@@ -285,13 +285,13 @@ export type UpdateRegistrationFormData = z.infer<typeof updateRegistrationSchema
 export const brokerFormSchema = z.object({
   name: z.string().min(2, 'Broker name is required'),
   licenseNumber: z.string().min(2, 'License number is required'),
-  countriesServed: z.array(z.string()).default([]),
+  countriesServed: z.array(z.string()).optional(),
   contacts: z
     .object({
       email: z.string().email('Invalid email').optional().or(z.literal('')),
       phone: z.string().optional().or(z.literal('')),
     })
-    .default({ email: '', phone: '' }),
+    .optional(),
   notes: z.string().optional(),
 });
 

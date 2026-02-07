@@ -9,6 +9,9 @@ const { csrfProtection } = require('../middleware/csrfProtection');
 
 // Password complexity validator
 const passwordValidator = (value) => {
+  if (typeof value !== 'string') {
+    throw new Error('Password is required');
+  }
   if (value.length < 12) {
     throw new Error('Password must be at least 12 characters');
   }
@@ -376,6 +379,7 @@ router.post(
 // Reset Password
 router.patch(
   '/resetPassword/:token',
+  csrfProtection,
   [body('password').custom(passwordValidator)],
   authController.resetPassword
 );
@@ -384,6 +388,7 @@ router.patch(
 router.patch(
   '/updatePassword',
   protect,
+  csrfProtection,
   [
     body('currentPassword').notEmpty().withMessage('Current password is required'),
     body('newPassword').custom(passwordValidator),
