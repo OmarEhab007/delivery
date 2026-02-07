@@ -1,8 +1,18 @@
 const RefreshToken = require('../../src/models/RefreshToken');
+const ORIGINAL_REFRESH_TOKEN_EXPIRES_IN_DAYS = process.env.REFRESH_TOKEN_EXPIRES_IN_DAYS;
 
 describe('RefreshToken model statics', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    if (ORIGINAL_REFRESH_TOKEN_EXPIRES_IN_DAYS === undefined) {
+      delete process.env.REFRESH_TOKEN_EXPIRES_IN_DAYS;
+    } else {
+      process.env.REFRESH_TOKEN_EXPIRES_IN_DAYS = ORIGINAL_REFRESH_TOKEN_EXPIRES_IN_DAYS;
+    }
   });
 
   it('hashes and generates tokens', () => {
@@ -29,7 +39,6 @@ describe('RefreshToken model statics', () => {
         ipAddress: 'ip',
       })
     );
-    nowSpy.mockRestore();
   });
 
   it('uses configured expiry days', async () => {
@@ -41,9 +50,6 @@ describe('RefreshToken model statics', () => {
 
     const expiresAt = createSpy.mock.calls[0][0].expiresAt;
     expect(expiresAt.getTime()).toBe(2_000_000 + 24 * 60 * 60 * 1000);
-
-    nowSpy.mockRestore();
-    delete process.env.REFRESH_TOKEN_EXPIRES_IN_DAYS;
   });
 
   it('revokes tokens', async () => {

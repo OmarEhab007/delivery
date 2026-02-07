@@ -1,11 +1,7 @@
+const mongoose = require('mongoose');
+
 jest.mock('jsonwebtoken', () => ({
   verify: jest.fn(),
-}));
-
-jest.mock('../../src/models/Shipment', () => ({
-  Shipment: {
-    findById: jest.fn(),
-  },
 }));
 
 jest.mock('../../src/utils/logger', () => ({
@@ -16,9 +12,37 @@ jest.mock('../../src/utils/logger', () => ({
 }));
 
 const jwt = require('jsonwebtoken');
-const { Shipment } = require('../../src/models/Shipment');
+const { Shipment, ShipmentStatus } = require('../../src/models/Shipment');
 const logger = require('../../src/utils/logger');
 const trackingService = require('../../src/services/tracking/trackingService');
+
+const createShipment = async (overrides = {}) => {
+  return Shipment.create({
+    merchantId: new mongoose.Types.ObjectId(),
+    origin: {
+      address: 'Origin',
+      coordinates: { lat: 1, lng: 2 },
+      country: 'US',
+    },
+    destination: {
+      address: 'Destination',
+      coordinates: { lat: 3, lng: 4 },
+      country: 'CA',
+    },
+    cargoDetails: {
+      description: 'Cargo',
+      weight: 1000,
+      category: 'general',
+    },
+    status: ShipmentStatus.REQUESTED,
+    approval: {
+      state: 'APPROVED',
+      submittedBy: new mongoose.Types.ObjectId(),
+    },
+    timeline: [],
+    ...overrides,
+  });
+};
 
 describe('trackingService', () => {
   beforeEach(() => {
@@ -70,17 +94,23 @@ describe('trackingService', () => {
     middleware(socket, next);
 
     expect(socket.data.user).toEqual({ id: 'u1' });
-    expect(next).toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith();
   });
 
   it('handles socket events for tracking', async () => {
+    const roomEmitter = { emit: jest.fn() };
     const io = {
       use: jest.fn(),
       on: jest.fn(),
-      to: jest.fn(() => ({ emit: jest.fn() })),
+      to: jest.fn(() => roomEmitter),
     };
 
     trackingService.initializeTracking(io);
+
+    const shipment = await createShipment({
+      status: ShipmentStatus.IN_TRANSIT,
+      trackingHistory: [],
+    });
 
     const handler = io.on.mock.calls.find((call) => call[0] === 'connection')[1];
     const events = {};
@@ -99,9 +129,20 @@ describe('trackingService', () => {
     await events['driver:location']({ shipmentId: null, location: null });
     expect(logger.warn).toHaveBeenCalled();
 
-    Shipment.findById.mockResolvedValue({ addTrackingPoint: jest.fn() });
-    await events['driver:location']({ shipmentId: 's1', location: { lat: 1, lng: 2 } });
-    expect(Shipment.findById).toHaveBeenCalled();
+    await events['driver:location']({
+      shipmentId: shipment._id.toString(),
+      location: { lat: 1, lng: 2, address: 'A' },
+    });
+    const updated = await Shipment.findById(shipment._id);
+    expect(updated.trackingHistory).toHaveLength(1);
+    expect(io.to).toHaveBeenCalledWith(`shipment:${shipment._id.toString()}`);
+    expect(roomEmitter.emit).toHaveBeenCalledWith(
+      'shipment:location',
+      expect.objectContaining({
+        shipmentId: shipment._id.toString(),
+        location: expect.objectContaining({ lat: 1, lng: 2 }),
+      })
+    );
 
     events['join:shipment']('s1');
     expect(socket.join).toHaveBeenCalledWith('shipment:s1');
@@ -109,44 +150,67 @@ describe('trackingService', () => {
     events['leave:shipment']('s1');
     expect(socket.leave).toHaveBeenCalledWith('shipment:s1');
 
-    events['disconnect']();
+    events.disconnect();
     expect(logger.info).toHaveBeenCalled();
   });
 
   it('updateShipmentLocation throws when shipment missing', async () => {
-    Shipment.findById.mockResolvedValue(null);
-
     await expect(
-      trackingService.updateShipmentLocation('missing', { lat: 1, lng: 2 })
+      trackingService.updateShipmentLocation(new mongoose.Types.ObjectId().toString(), {
+        lat: 1,
+        lng: 2,
+      })
     ).rejects.toThrow('Shipment not found');
   });
 
   it('getShipmentLocation returns current location', async () => {
-    Shipment.findById.mockResolvedValue({ currentLocation: { lat: 1, lng: 2 } });
+    const shipment = await createShipment({
+      currentLocation: {
+        type: 'Point',
+        coordinates: [2, 1],
+        address: 'Current',
+      },
+    });
 
-    const result = await trackingService.getShipmentLocation('s1');
+    const result = await trackingService.getShipmentLocation(shipment._id.toString());
 
-    expect(result).toEqual({ lat: 1, lng: 2 });
+    expect(result).toEqual(
+      expect.objectContaining({
+        coordinates: [2, 1],
+        address: 'Current',
+      })
+    );
   });
 
   it('recordLocationHistory adds timeline entry', async () => {
-    const addTimelineEntry = jest.fn();
-    Shipment.findById.mockResolvedValue({
-      status: 'IN_TRANSIT',
-      addTimelineEntry,
+    const shipment = await createShipment({
+      status: ShipmentStatus.IN_TRANSIT,
+      timeline: [],
     });
 
-    await trackingService.recordLocationHistory('s1', { lat: 1, lng: 2, address: 'A' });
+    await trackingService.recordLocationHistory(shipment._id.toString(), {
+      lat: 1,
+      lng: 2,
+      address: 'A',
+    });
 
-    expect(addTimelineEntry).toHaveBeenCalled();
+    const updated = await Shipment.findById(shipment._id);
+    expect(updated.timeline).toHaveLength(1);
+    expect(updated.timeline[0]).toEqual(
+      expect.objectContaining({
+        status: ShipmentStatus.IN_TRANSIT,
+        location: expect.objectContaining({ address: 'A' }),
+      })
+    );
   });
 
   it('calculateETA returns a future date', async () => {
-    Shipment.findById.mockResolvedValue({});
+    const shipment = await createShipment();
 
-    const eta = await trackingService.calculateETA('s1');
+    const eta = await trackingService.calculateETA(shipment._id.toString());
 
     expect(eta).toBeInstanceOf(Date);
+    expect(eta.getTime()).toBeGreaterThan(Date.now());
   });
 
   it('isWithinGeofence evaluates distance', () => {

@@ -126,7 +126,7 @@ describe('uploadMiddleware', () => {
     });
 
     const req = {
-      body: { entityType: 'Shipment', entityId: mongoose.Types.ObjectId().toString() },
+      body: { entityType: 'Shipment', entityId: new mongoose.Types.ObjectId().toString() },
     };
     const res = {};
     const next = jest.fn();
@@ -288,7 +288,7 @@ describe('uploadMiddleware', () => {
     });
 
     const req = {
-      body: { entityType: 'Shipment', entityId: mongoose.Types.ObjectId().toString() },
+      body: { entityType: 'Shipment', entityId: new mongoose.Types.ObjectId().toString() },
     };
     const res = {};
     const next = jest.fn();

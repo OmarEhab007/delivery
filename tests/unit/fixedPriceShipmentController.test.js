@@ -70,6 +70,15 @@ const makeRes = () => {
   return res;
 };
 
+const makeQuery = (result) => {
+  const query = Promise.resolve(result);
+  query.populate = jest.fn().mockReturnValue(query);
+  query.skip = jest.fn().mockReturnValue(query);
+  query.limit = jest.fn().mockReturnValue(query);
+  query.sort = jest.fn().mockReturnValue(query);
+  return query;
+};
+
 describe('fixedPriceShipmentController (unit)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -114,13 +123,7 @@ describe('fixedPriceShipmentController (unit)', () => {
   });
 
   it('returns available fixed price shipments with filters', async () => {
-    Shipment.find.mockReturnValue({
-      populate: jest.fn().mockReturnThis(),
-      skip: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockReturnThis(),
-      sort: jest.fn().mockReturnThis(),
-      then: (resolve, reject) => Promise.resolve([{ id: 's1' }]).then(resolve, reject),
-    });
+    Shipment.find.mockReturnValue(makeQuery([{ id: 's1' }]));
     Shipment.countDocuments.mockResolvedValue(1);
     const res = makeRes();
 
@@ -134,13 +137,7 @@ describe('fixedPriceShipmentController (unit)', () => {
   });
 
   it('returns available fixed price shipments with maxPrice only', async () => {
-    Shipment.find.mockReturnValue({
-      populate: jest.fn().mockReturnThis(),
-      skip: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockReturnThis(),
-      sort: jest.fn().mockReturnThis(),
-      then: (resolve, reject) => Promise.resolve([{ id: 's1' }]).then(resolve, reject),
-    });
+    Shipment.find.mockReturnValue(makeQuery([{ id: 's1' }]));
     Shipment.countDocuments.mockResolvedValue(1);
     const res = makeRes();
 
@@ -452,11 +449,7 @@ describe('fixedPriceShipmentController (unit)', () => {
   });
 
   it('returns my fixed price shipments with status filter', async () => {
-    Shipment.find.mockReturnValue({
-      populate: jest.fn().mockReturnThis(),
-      sort: jest.fn().mockReturnThis(),
-      then: (resolve, reject) => Promise.resolve([{ id: 's1' }]).then(resolve, reject),
-    });
+    Shipment.find.mockReturnValue(makeQuery([{ id: 's1' }]));
     const res = makeRes();
 
     await controller.getMyFixedPriceShipments(
@@ -469,11 +462,7 @@ describe('fixedPriceShipmentController (unit)', () => {
   });
 
   it('returns accepted fixed price shipments with status filter', async () => {
-    Shipment.find.mockReturnValue({
-      populate: jest.fn().mockReturnThis(),
-      sort: jest.fn().mockReturnThis(),
-      then: (resolve, reject) => Promise.resolve([{ id: 's1' }]).then(resolve, reject),
-    });
+    Shipment.find.mockReturnValue(makeQuery([{ id: 's1' }]));
     const res = makeRes();
 
     await controller.getMyAcceptedFixedPriceShipments(

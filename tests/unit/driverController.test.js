@@ -71,12 +71,13 @@ const makeRes = () => {
   return res;
 };
 
-const makeQuery = (result) => ({
-  populate: jest.fn().mockReturnThis(),
-  sort: jest.fn().mockReturnThis(),
-  select: jest.fn().mockReturnThis(),
-  then: (resolve, reject) => Promise.resolve(result).then(resolve, reject),
-});
+const makeQuery = (result) => {
+  const query = Promise.resolve(result);
+  query.populate = jest.fn().mockReturnValue(query);
+  query.sort = jest.fn().mockReturnValue(query);
+  query.select = jest.fn().mockReturnValue(query);
+  return query;
+};
 
 describe('driverController (unit)', () => {
   beforeEach(() => {

@@ -98,14 +98,14 @@ describe('analyticsController', () => {
     getLanePerformance.mockResolvedValue([{ originCountry: 'US' }]);
     const req = {
       user: { id: 'merchant-1', role: 'Merchant' },
-      query: { limit: 5 },
+      query: { limit: '5' },
     };
     const res = mockRes();
 
     await analyticsController.getLanePerformanceReport(req, res, jest.fn());
 
     expect(getLanePerformance).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 5, merchantId: 'merchant-1' })
+      expect.objectContaining({ limit: '5', merchantId: 'merchant-1' })
     );
     expect(res.status).toHaveBeenCalledWith(200);
   });

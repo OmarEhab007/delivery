@@ -36,12 +36,13 @@ const makeRes = () => {
   return res;
 };
 
-const makeQuery = (result) => ({
-  skip: jest.fn().mockReturnThis(),
-  limit: jest.fn().mockReturnThis(),
-  sort: jest.fn().mockReturnThis(),
-  then: (resolve, reject) => Promise.resolve(result).then(resolve, reject),
-});
+const makeQuery = (result) => {
+  const query = Promise.resolve(result);
+  query.skip = jest.fn().mockReturnValue(query);
+  query.limit = jest.fn().mockReturnValue(query);
+  query.sort = jest.fn().mockReturnValue(query);
+  return query;
+};
 
 describe('truckController (unit)', () => {
   beforeEach(() => {

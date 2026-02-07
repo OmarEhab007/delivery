@@ -14,10 +14,11 @@ const makeRes = () => {
   return res;
 };
 
-const makeQuery = (result) => ({
-  sort: jest.fn().mockReturnThis(),
-  then: (resolve, reject) => Promise.resolve(result).then(resolve, reject),
-});
+const makeQuery = (result) => {
+  const query = Promise.resolve(result);
+  query.sort = jest.fn().mockReturnValue(query);
+  return query;
+};
 
 describe('adminBrokerController (unit)', () => {
   beforeEach(() => {
