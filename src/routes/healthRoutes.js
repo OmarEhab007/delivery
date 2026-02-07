@@ -11,6 +11,7 @@ const {
 } = require('../utils/healthCheck');
 const logger = require('../utils/logger');
 const { cacheControl } = require('../middleware/cacheControlMiddleware');
+const { apiLimiter } = require('../middleware/rateLimiters');
 
 /**
  * @route   GET /health
@@ -45,13 +46,14 @@ router.get('/', (req, res) => {
  * @desc    Kubernetes liveness probe — confirms the process is alive
  * @access  Public (unauthenticated)
  */
-router.get('/live', (req, res) => {
+router.get('/live', apiLimiter, (req, res) => {
   try {
     res.status(200).json({
       status: 'ok',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    logger.error(`Liveness probe failed: ${error.message}`, { error });
     res.status(500).json({ status: 'error' });
   }
 });
@@ -61,20 +63,25 @@ router.get('/live', (req, res) => {
  * @desc    Kubernetes readiness probe — confirms process is alive and DB connected
  * @access  Public (unauthenticated)
  */
-router.get('/ready', (req, res) => {
-  const dbReady = mongoose.connection.readyState === 1;
+router.get('/ready', apiLimiter, (req, res) => {
+  try {
+    const dbReady = mongoose.connection.readyState === 1;
 
-  if (dbReady) {
-    return res.status(200).json({
-      status: 'ready',
+    if (dbReady) {
+      return res.status(200).json({
+        status: 'ready',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return res.status(503).json({
+      status: 'not_ready',
       timestamp: new Date().toISOString(),
     });
+  } catch (error) {
+    logger.error(`Readiness probe failed: ${error.message}`, { error });
+    return res.status(500).json({ status: 'error' });
   }
-
-  return res.status(503).json({
-    status: 'not_ready',
-    timestamp: new Date().toISOString(),
-  });
 });
 
 /**

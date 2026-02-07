@@ -9,7 +9,7 @@ const { csrfProtection } = require('../middleware/csrfProtection');
 
 // Password complexity validator
 const passwordValidator = (value) => {
-  if (typeof value !== 'string') {
+  if (typeof value !== 'string' || value.length === 0) {
     throw new Error('Password is required');
   }
   if (value.length < 12) {

@@ -396,8 +396,8 @@ if (process.env.NODE_ENV !== 'test') {
         const mongoose = require('mongoose'); // eslint-disable-line global-require
         await mongoose.connection.close();
         logger.info('MongoDB connection closed.');
-      } catch (err) {
-        logger.error(`Error closing MongoDB connection: ${err.message}`);
+      } catch (mongoErr) {
+        logger.error(`Error closing MongoDB connection: ${mongoErr.message}`);
       }
 
       logger.info('Shutdown complete.');

@@ -8,6 +8,7 @@ const DISALLOWED_DEFAULT_VALUES = {
   JWT_SECRET: ['your_jwt_secret_key_here', 'replace_with_strong_secret'],
   COOKIE_SECRET: ['your_cookie_secret_key_here', 'replace_with_cookie_secret'],
   ADMIN_PASSWORD: ['admin123456', 'replace_with_secure_password'],
+  OTP_SECRET: ['test-otp-secret', 'secret', 'otp-secret'],
 };
 
 const hasDisallowedValue = (key, value) => {
