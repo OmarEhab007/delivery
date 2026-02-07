@@ -8,15 +8,26 @@ import { z } from 'zod';
 // AUTH SCHEMAS
 // =============================================================================
 
+const passwordSchema = z
+  .string()
+  .min(12, 'كلمة المرور يجب ألا تقل عن 12 حرفاً')
+  .regex(/[A-Z]/, 'كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل')
+  .regex(/[a-z]/, 'كلمة المرور يجب أن تحتوي على حرف صغير واحد على الأقل')
+  .regex(/[0-9]/, 'كلمة المرور يجب أن تحتوي على رقم واحد على الأقل')
+  .regex(
+    /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+    'كلمة المرور يجب أن تحتوي على رمز خاص واحد على الأقل'
+  );
+
 export const loginSchema = z.object({
   email: z.string().email('يرجى إدخال بريد إلكتروني صحيح'),
-  password: z.string().min(6, 'كلمة المرور يجب ألا تقل عن 6 أحرف'),
+  password: passwordSchema,
 });
 
 export const registerSchema = z.object({
   name: z.string().min(2, 'الاسم يجب ألا يقل عن حرفين'),
   email: z.string().email('يرجى إدخال بريد إلكتروني صحيح'),
-  password: z.string().min(6, 'كلمة المرور يجب ألا تقل عن 6 أحرف'),
+  password: passwordSchema,
   phone: z.string().min(8, 'يرجى إدخال رقم هاتف صحيح'),
   role: z.enum(['Merchant', 'TruckOwner'], { message: 'يرجى اختيار نوع الحساب' }),
   companyName: z.string().optional(),
@@ -127,7 +138,7 @@ export type CreateTruckFormData = z.infer<typeof createTruckSchema>;
 export const createDriverSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: passwordSchema,
   phone: z.string().min(8, 'Please enter a valid phone number'),
   licenseNumber: z.string().min(5, 'License number must be at least 5 characters'),
 });
@@ -274,11 +285,13 @@ export type UpdateRegistrationFormData = z.infer<typeof updateRegistrationSchema
 export const brokerFormSchema = z.object({
   name: z.string().min(2, 'Broker name is required'),
   licenseNumber: z.string().min(2, 'License number is required'),
-  countriesServed: z.array(z.string()),
-  contacts: z.object({
-    email: z.string().email('Invalid email').optional().or(z.literal('')),
-    phone: z.string().optional().or(z.literal('')),
-  }),
+  countriesServed: z.array(z.string()).default([]),
+  contacts: z
+    .object({
+      email: z.string().email('Invalid email').optional().or(z.literal('')),
+      phone: z.string().optional().or(z.literal('')),
+    })
+    .default({ email: '', phone: '' }),
   notes: z.string().optional(),
 });
 

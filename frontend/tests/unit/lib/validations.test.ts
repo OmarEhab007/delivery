@@ -16,7 +16,7 @@ describe('Validation Schemas', () => {
     it('should validate valid login data', () => {
       const validData = {
         email: 'test@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
       };
 
       const result = loginSchema.safeParse(validData);
@@ -29,7 +29,7 @@ describe('Validation Schemas', () => {
 
     it('should fail when email is missing', () => {
       const invalidData = {
-        password: 'password123',
+        password: 'StrongP@ss123!',
       };
 
       const result = loginSchema.safeParse(invalidData);
@@ -43,7 +43,7 @@ describe('Validation Schemas', () => {
     it('should fail when email is invalid', () => {
       const invalidData = {
         email: 'not-an-email',
-        password: 'password123',
+        password: 'StrongP@ss123!',
       };
 
       const result = loginSchema.safeParse(invalidData);
@@ -58,7 +58,7 @@ describe('Validation Schemas', () => {
     it('should fail when password is too short', () => {
       const invalidData = {
         email: 'test@example.com',
-        password: '12345',
+        password: 'Short1!',
       };
 
       const result = loginSchema.safeParse(invalidData);
@@ -66,7 +66,7 @@ describe('Validation Schemas', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.issues[0].path).toContain('password');
-        expect(result.error.issues[0].message).toContain('6 أحرف');
+        expect(result.error.issues[0].message).toContain('12 حرفاً');
       }
     });
 
@@ -89,7 +89,7 @@ describe('Validation Schemas', () => {
       const validData = {
         name: 'John Doe',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
         phone: '12345678',
         role: 'Merchant' as const,
         companyName: 'Test Company',
@@ -108,7 +108,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         name: 'J',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
         phone: '12345678',
         role: 'Merchant',
       };
@@ -125,7 +125,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         name: 'John Doe',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
         phone: '12345678',
         role: 'InvalidRole',
       };
@@ -142,7 +142,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         name: 'John Doe',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
         phone: '123',
         role: 'Merchant',
       };
@@ -159,7 +159,7 @@ describe('Validation Schemas', () => {
       const validData = {
         name: 'John Doe',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'StrongP@ss123!',
         phone: '12345678',
         role: 'Merchant' as const,
       };
@@ -560,6 +560,102 @@ describe('Validation Schemas', () => {
       if (!result.success) {
         expect(result.error.issues[0].path).toContain('endpointUrl');
       }
+    });
+  });
+
+  describe('Password Schema Validation (Hardened)', () => {
+    it('should reject passwords shorter than 12 characters', () => {
+      const result = loginSchema.safeParse({
+        email: 'test@example.com',
+        password: 'Aa1!short',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(' ');
+        expect(messages).toContain('12 حرفاً');
+      }
+    });
+
+    it('should reject passwords missing uppercase letters', () => {
+      const result = loginSchema.safeParse({
+        email: 'test@example.com',
+        password: 'nouppercase1!@#',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(' ');
+        expect(messages).toContain('حرف كبير');
+      }
+    });
+
+    it('should reject passwords missing lowercase letters', () => {
+      const result = loginSchema.safeParse({
+        email: 'test@example.com',
+        password: 'NOLOWERCASE1!@#',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(' ');
+        expect(messages).toContain('حرف صغير');
+      }
+    });
+
+    it('should reject passwords missing digits', () => {
+      const result = loginSchema.safeParse({
+        email: 'test@example.com',
+        password: 'NoDigitsHere!@#',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(' ');
+        expect(messages).toContain('رقم واحد');
+      }
+    });
+
+    it('should reject passwords missing special characters', () => {
+      const result = loginSchema.safeParse({
+        email: 'test@example.com',
+        password: 'NoSpecialChar12',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((i) => i.message).join(' ');
+        expect(messages).toContain('رمز خاص');
+      }
+    });
+
+    it('should accept fully compliant passwords', () => {
+      const result = loginSchema.safeParse({
+        email: 'test@example.com',
+        password: 'StrongP@ss123!',
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should enforce same rules on registerSchema', () => {
+      const weakResult = registerSchema.safeParse({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'weak',
+        phone: '12345678',
+        role: 'Merchant',
+      });
+      expect(weakResult.success).toBe(false);
+
+      const strongResult = registerSchema.safeParse({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'StrongP@ss123!',
+        phone: '12345678',
+        role: 'Merchant',
+      });
+      expect(strongResult.success).toBe(true);
     });
   });
 });

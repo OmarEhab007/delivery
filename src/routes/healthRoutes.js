@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 
 const router = express.Router();
 const { authenticateToken, restrictTo } = require('../middleware/authMiddleware');
@@ -37,6 +38,39 @@ router.get('/', (req, res) => {
       error: error.message,
     });
   }
+});
+
+/**
+ * @route   GET /health/live
+ * @desc    Kubernetes liveness probe — confirms the process is alive
+ * @access  Public (unauthenticated)
+ */
+router.get('/live', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * @route   GET /health/ready
+ * @desc    Kubernetes readiness probe — confirms process is alive and DB connected
+ * @access  Public (unauthenticated)
+ */
+router.get('/ready', (req, res) => {
+  const dbReady = mongoose.connection.readyState === 1;
+
+  if (dbReady) {
+    return res.status(200).json({
+      status: 'ready',
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  return res.status(503).json({
+    status: 'not_ready',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 /**

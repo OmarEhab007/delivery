@@ -10,6 +10,7 @@ import { AccessDenied } from '@/components/shared/access-denied';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { SocketProvider } from '@/lib/providers/socket-provider';
 import { CommandPalette } from '@/components/shared/command-palette';
+import { ErrorBoundary } from '@/components/shared/error-boundary';
 import type { UserRole } from '@/types/api';
 
 interface DashboardLayoutProps {
@@ -107,7 +108,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Main Content */}
         <div className="flex flex-1 flex-col">
           <Header onMobileMenuToggle={() => setMobileMenuOpen(true)} />
-          <main className="flex-1 overflow-auto bg-background p-4 md:p-6">{children}</main>
+          <ErrorBoundary>
+            <main className="flex-1 overflow-auto bg-background p-4 md:p-6">{children}</main>
+          </ErrorBoundary>
         </div>
       </div>
 

@@ -40,14 +40,17 @@ const getSecret = () => {
     throw new Error('OTP_SECRET environment variable must be set in production');
   }
 
+  if (process.env.NODE_ENV === 'test') {
+    return 'test-otp-secret';
+  }
+
   if (process.env.JWT_SECRET) {
     logger.warn('OTP_SECRET is not set. Falling back to JWT_SECRET for OTP hashing.');
     return process.env.JWT_SECRET;
   }
 
-  const fallbackSecret = 'delivery-app-otp-secret';
-  logger.warn('OTP_SECRET and JWT_SECRET are not set. Using fallback OTP secret.');
-  return fallbackSecret;
+  logger.warn('OTP_SECRET and JWT_SECRET are not set. Auto-generating OTP secret for development.');
+  return crypto.randomBytes(32).toString('hex');
 };
 
 /**

@@ -7,11 +7,31 @@ const authController = require('../controllers/auth/authController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 const { csrfProtection } = require('../middleware/csrfProtection');
 
+// Password complexity validator
+const passwordValidator = (value) => {
+  if (value.length < 12) {
+    throw new Error('Password must be at least 12 characters');
+  }
+  if (!/[A-Z]/.test(value)) {
+    throw new Error('Password must contain at least one uppercase letter');
+  }
+  if (!/[a-z]/.test(value)) {
+    throw new Error('Password must contain at least one lowercase letter');
+  }
+  if (!/[0-9]/.test(value)) {
+    throw new Error('Password must contain at least one digit');
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
+    throw new Error('Password must contain at least one special character');
+  }
+  return true;
+};
+
 // Validation middleware for registration
 const registerValidation = [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Please provide a valid email'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password').custom(passwordValidator),
   body('phone').notEmpty().withMessage('Phone number is required'),
 ];
 
@@ -356,7 +376,7 @@ router.post(
 // Reset Password
 router.patch(
   '/resetPassword/:token',
-  [body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')],
+  [body('password').custom(passwordValidator)],
   authController.resetPassword
 );
 
@@ -366,7 +386,7 @@ router.patch(
   protect,
   [
     body('currentPassword').notEmpty().withMessage('Current password is required'),
-    body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('newPassword').custom(passwordValidator),
   ],
   authController.updatePassword
 );

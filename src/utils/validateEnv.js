@@ -2,7 +2,7 @@ const logger = require('./logger');
 
 const REQUIRED_ENV_VARS = ['MONGODB_URI', 'JWT_SECRET', 'COOKIE_SECRET'];
 
-const PRODUCTION_ONLY_ENV_VARS = ['FRONTEND_URL', 'ADMIN_EMAIL', 'ADMIN_PASSWORD', 'ADMIN_PHONE'];
+const PRODUCTION_ONLY_ENV_VARS = ['FRONTEND_URL', 'ADMIN_EMAIL', 'ADMIN_PASSWORD', 'ADMIN_PHONE', 'OTP_SECRET'];
 
 const DISALLOWED_DEFAULT_VALUES = {
   JWT_SECRET: ['your_jwt_secret_key_here', 'replace_with_strong_secret'],
