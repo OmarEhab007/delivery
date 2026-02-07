@@ -5,11 +5,17 @@
 
 const request = require('supertest');
 const { app } = require('../../src/server');
+const { createAuthenticatedUser } = require('../utils/authHelpers');
+const { authHeaders } = require('../utils/requestHelpers');
 
 describe('Observability Integration Tests', () => {
-  describe('GET /metrics', () => {
+  describe('GET /api/metrics', () => {
     it('should return metrics in Prometheus text format', async () => {
-      const response = await request(app).get('/metrics').expect(200);
+      const { token } = await createAuthenticatedUser('Admin');
+      const response = await request(app)
+        .get('/api/metrics')
+        .set(authHeaders(token))
+        .expect(200);
 
       // Check content type is Prometheus format
       expect(response.headers['content-type']).toContain('text/plain');
@@ -41,15 +47,18 @@ describe('Observability Integration Tests', () => {
       expect(metricsText).toContain('trucks_by_status');
     });
 
-    it('should be accessible without authentication', async () => {
-      // No Authorization header
-      const response = await request(app).get('/metrics');
+    it('should reject requests without authentication', async () => {
+      const response = await request(app).get('/api/metrics');
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(401);
     });
 
     it('should return valid Prometheus exposition format', async () => {
-      const response = await request(app).get('/metrics').expect(200);
+      const { token } = await createAuthenticatedUser('Admin');
+      const response = await request(app)
+        .get('/api/metrics')
+        .set(authHeaders(token))
+        .expect(200);
 
       const metricsText = response.text;
 
@@ -77,7 +86,11 @@ describe('Observability Integration Tests', () => {
       // Wait for metrics to be recorded
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const response = await request(app).get('/metrics').expect(200);
+      const { token } = await createAuthenticatedUser('Admin');
+      const response = await request(app)
+        .get('/api/metrics')
+        .set(authHeaders(token))
+        .expect(200);
 
       const metricsText = response.text;
 
@@ -87,7 +100,11 @@ describe('Observability Integration Tests', () => {
     });
 
     it('should include event loop lag percentiles', async () => {
-      const response = await request(app).get('/metrics').expect(200);
+      const { token } = await createAuthenticatedUser('Admin');
+      const response = await request(app)
+        .get('/api/metrics')
+        .set(authHeaders(token))
+        .expect(200);
 
       const metricsText = response.text;
 
@@ -98,19 +115,17 @@ describe('Observability Integration Tests', () => {
   });
 
   describe('Public metrics endpoint accessibility', () => {
-    it('should return metrics from /metrics without authentication', async () => {
-      // The public /metrics endpoint is for Prometheus scraping
-      const response = await request(app).get('/metrics');
+    it('should require authentication for metrics endpoint', async () => {
+      const response = await request(app).get('/api/metrics');
 
-      expect(response.status).toBe(200);
-      expect(response.headers['content-type']).toContain('text/plain');
-      // Check for default metrics which are always present
-      expect(response.text).toContain('process_cpu_seconds_total');
+      expect(response.status).toBe(401);
     });
   });
 
   describe('Metrics Collection', () => {
     it('should record metrics for API requests', async () => {
+      const { token } = await createAuthenticatedUser('Admin');
+
       // Make a request to trigger metrics collection
       await request(app).get('/health').expect(200);
 
@@ -118,12 +133,34 @@ describe('Observability Integration Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Check metrics endpoint for the recorded request
-      const metricsResponse = await request(app).get('/metrics').expect(200);
+      const metricsResponse = await request(app)
+        .get('/api/metrics')
+        .set(authHeaders(token))
+        .expect(200);
 
       const metricsText = metricsResponse.text;
 
       // Should have recorded the /health request
       expect(metricsText).toContain('http_requests_total');
+    });
+
+    it('should expose additional metrics routes for admins', async () => {
+      const { token } = await createAuthenticatedUser('Admin');
+
+      await request(app)
+        .get('/api/metrics/open')
+        .set(authHeaders(token))
+        .expect(200);
+
+      await request(app)
+        .get('/api/metrics/demo-data')
+        .set(authHeaders(token))
+        .expect(200);
+
+      await request(app)
+        .get('/api/metrics/status-counts')
+        .set(authHeaders(token))
+        .expect(200);
     });
   });
 });

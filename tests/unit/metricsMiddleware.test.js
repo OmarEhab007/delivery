@@ -144,6 +144,22 @@ describe('Metrics Middleware', () => {
       }, 50);
     });
 
+    it('should normalize trailing slashes', (done) => {
+      req.path = '/api/';
+      req.method = 'GET';
+
+      metrics.metricsMiddleware(req, res, next);
+
+      res.statusCode = 200;
+      res.emit('finish');
+
+      setTimeout(async () => {
+        const metricsOutput = await metrics.register.metrics();
+        expect(metricsOutput).toContain('route="/api"');
+        done();
+      }, 50);
+    });
+
     it('should handle nested IDs in paths', (done) => {
       req.path = '/api/users/507f1f77bcf86cd799439011/documents/507f1f77bcf86cd799439012';
       req.method = 'GET';
@@ -195,6 +211,22 @@ describe('Metrics Middleware', () => {
         done();
       }, 50);
     });
+
+    it('should use unknown route when path is missing', (done) => {
+      req.path = '';
+      req.method = 'GET';
+
+      metrics.metricsMiddleware(req, res, next);
+
+      res.statusCode = 200;
+      res.emit('finish');
+
+      setTimeout(async () => {
+        const metricsOutput = await metrics.register.metrics();
+        expect(metricsOutput).toContain('route="unknown"');
+        done();
+      }, 50);
+    });
   });
 
   describe('Error Handling', () => {
@@ -220,6 +252,40 @@ describe('Metrics Middleware', () => {
       // Should complete without throwing
       setTimeout(() => {
         expect(true).toBe(true);
+        done();
+      }, 50);
+    });
+
+    it('logs slow requests when duration is high', (done) => {
+      const logger = require('../../src/utils/logger');
+      const originalStartTimer = metrics.httpRequestDurationMicroseconds.startTimer;
+      metrics.httpRequestDurationMicroseconds.startTimer = () => () => 2;
+
+      metrics.metricsMiddleware(req, res, next);
+      res.statusCode = 200;
+      res.emit('finish');
+
+      setTimeout(() => {
+        expect(logger.performance).toHaveBeenCalled();
+        metrics.httpRequestDurationMicroseconds.startTimer = originalStartTimer;
+        done();
+      }, 50);
+    });
+
+    it('logs errors when finish metrics throw', (done) => {
+      const logger = require('../../src/utils/logger');
+      const originalInc = metrics.httpRequestCounter.inc;
+      metrics.httpRequestCounter.inc = () => {
+        throw new Error('boom');
+      };
+
+      metrics.metricsMiddleware(req, res, next);
+      res.statusCode = 200;
+      res.emit('finish');
+
+      setTimeout(() => {
+        expect(logger.error).toHaveBeenCalled();
+        metrics.httpRequestCounter.inc = originalInc;
         done();
       }, 50);
     });

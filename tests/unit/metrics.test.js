@@ -169,6 +169,13 @@ describe('Metrics Module', () => {
       expect(metricsOutput).toContain('status="AVAILABLE"');
       expect(metricsOutput).toContain('status="IN_SERVICE"');
     });
+
+    it('should update job queue size metrics', async () => {
+      metrics.updateJobQueueMetric('emails', 3);
+      const metricsOutput = await metrics.register.metrics();
+      expect(metricsOutput).toContain('job_queue_size');
+      expect(metricsOutput).toContain('queue_name="emails"');
+    });
   });
 
   describe('Database Metrics', () => {
@@ -194,6 +201,92 @@ describe('Metrics Module', () => {
       expect(metricsOutput).toContain('database_operation_duration_seconds');
       expect(metricsOutput).toContain('operation="find"');
       expect(metricsOutput).toContain('collection="shipments"');
+    });
+  });
+
+  describe('Error Branches', () => {
+    it('handles errors when recording errors', () => {
+      const original = metrics.errorCounter.inc;
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      metrics.errorCounter.inc = jest.fn(() => {
+        throw new Error('fail');
+      });
+
+      expect(() => metrics.recordError('type', '/route')).not.toThrow();
+
+      metrics.errorCounter.inc = original;
+      consoleSpy.mockRestore();
+    });
+
+    it('handles errors when updating mongo connection metrics', () => {
+      const original = metrics.mongoConnectionsGauge.set;
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      metrics.mongoConnectionsGauge.set = jest.fn(() => {
+        throw new Error('fail');
+      });
+
+      expect(() => metrics.updateMongoConnectionMetrics({ total: 1, available: 1, inUse: 0 })).not.toThrow();
+
+      metrics.mongoConnectionsGauge.set = original;
+      consoleSpy.mockRestore();
+    });
+
+    it('ignores null pool stats when updating mongo metrics', () => {
+      expect(() => metrics.updateMongoConnectionMetrics(null)).not.toThrow();
+    });
+
+    it('handles errors when recording slow queries', () => {
+      const original = metrics.mongoSlowQueryCounter.inc;
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      metrics.mongoSlowQueryCounter.inc = jest.fn(() => {
+        throw new Error('fail');
+      });
+
+      expect(() => metrics.recordSlowQuery('shipments')).not.toThrow();
+
+      metrics.mongoSlowQueryCounter.inc = original;
+      consoleSpy.mockRestore();
+    });
+
+    it('handles errors when updating application metrics', () => {
+      const original = metrics.applicationsByStatusGauge.set;
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      metrics.applicationsByStatusGauge.set = jest.fn(() => {
+        throw new Error('fail');
+      });
+
+      expect(() =>
+        metrics.updateApplicationStatusMetrics({ PENDING: 1, ACCEPTED: 2 })
+      ).not.toThrow();
+
+      metrics.applicationsByStatusGauge.set = original;
+      consoleSpy.mockRestore();
+    });
+
+    it('handles errors when updating user metrics', () => {
+      const original = metrics.usersTotalGauge.set;
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      metrics.usersTotalGauge.set = jest.fn(() => {
+        throw new Error('fail');
+      });
+
+      expect(() => metrics.updateUserMetrics({ Admin: 1 })).not.toThrow();
+
+      metrics.usersTotalGauge.set = original;
+      consoleSpy.mockRestore();
+    });
+
+    it('handles errors when incrementing shipment counter', () => {
+      const original = metrics.shipmentsCreatedCounter.inc;
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      metrics.shipmentsCreatedCounter.inc = jest.fn(() => {
+        throw new Error('fail');
+      });
+
+      expect(() => metrics.incrementShipmentsCreated()).not.toThrow();
+
+      metrics.shipmentsCreatedCounter.inc = original;
+      consoleSpy.mockRestore();
     });
   });
 

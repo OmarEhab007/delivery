@@ -162,7 +162,7 @@ const createTestApplication = async (shipmentId, truckOwnerId, truckId, override
   const defaultApplication = {
     shipmentId,
     ownerId: truckOwnerId,
-    truckId,
+    assignedTruckId: truckId,
     driverId: mongoose.Types.ObjectId(),
     bidDetails: {
       price: 5000,
