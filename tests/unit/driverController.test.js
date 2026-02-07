@@ -467,19 +467,24 @@ describe('driverController (unit)', () => {
     const fileFilter = multer._opts.fileFilter;
     const cb = jest.fn();
     const mkdirSpy = jest.spyOn(fs, 'mkdirSync').mockImplementation(() => {});
-    jest.spyOn(fs, 'existsSync').mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const existsSpy = jest.spyOn(fs, 'existsSync').mockReturnValueOnce(false).mockReturnValueOnce(true);
 
-    destination({}, { originalname: 'file.pdf' }, cb);
-    destination({}, { originalname: 'file.pdf' }, cb);
+    try {
+      destination({}, { originalname: 'file.pdf' }, cb);
+      destination({}, { originalname: 'file.pdf' }, cb);
 
-    const acceptCb = jest.fn();
-    fileFilter({}, { mimetype: 'image/png' }, acceptCb);
-    const rejectCb = jest.fn();
-    fileFilter({}, { mimetype: 'text/plain' }, rejectCb);
+      const acceptCb = jest.fn();
+      fileFilter({}, { mimetype: 'image/png' }, acceptCb);
+      const rejectCb = jest.fn();
+      fileFilter({}, { mimetype: 'text/plain' }, rejectCb);
 
-    expect(mkdirSpy).toHaveBeenCalled();
-    expect(acceptCb).toHaveBeenCalledWith(null, true);
-    expect(rejectCb.mock.calls[0][0]).toBeInstanceOf(Error);
+      expect(mkdirSpy).toHaveBeenCalled();
+      expect(acceptCb).toHaveBeenCalledWith(null, true);
+      expect(rejectCb.mock.calls[0][0]).toBeInstanceOf(Error);
+    } finally {
+      mkdirSpy.mockRestore();
+      existsSpy.mockRestore();
+    }
   });
 
   it('rejects shipment status update when shipment is missing', async () => {
