@@ -384,7 +384,15 @@ if (process.env.NODE_ENV !== 'test') {
     }, 30000);
     forceKillTimeout.unref();
 
-    // Stop accepting new connections
+    // Close Socket.IO connections first
+    try {
+      io.close();
+      logger.info('Socket.IO server closed.');
+    } catch (ioErr) {
+      logger.error(`Error closing Socket.IO server: ${ioErr.message}`);
+    }
+
+    // Stop accepting new HTTP connections
     httpServer.close(async (err) => {
       if (err) {
         logger.error(`Error closing HTTP server: ${err.message}`);
